@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>currentDocument</key>
+	<string>Scripts/read.ebs.R</string>
 	<key>documents</key>
 	<array>
 		<dict>
@@ -10,18 +12,28 @@
 				<dict>
 					<key>filename</key>
 					<string>Scripts/read.aleutians.R</string>
+					<key>lastUsed</key>
+					<date>2014-08-14T20:36:53Z</date>
 				</dict>
 				<dict>
 					<key>filename</key>
 					<string>Scripts/read.ebs.R</string>
+					<key>lastUsed</key>
+					<date>2014-08-14T20:36:53Z</date>
+					<key>selected</key>
+					<true/>
 				</dict>
 				<dict>
 					<key>filename</key>
 					<string>Scripts/read.gmex.R</string>
+					<key>lastUsed</key>
+					<date>2014-08-14T20:33:20Z</date>
 				</dict>
 				<dict>
 					<key>filename</key>
 					<string>Scripts/read.goa.R</string>
+					<key>lastUsed</key>
+					<date>2014-08-14T20:34:36Z</date>
 				</dict>
 				<dict>
 					<key>filename</key>
@@ -45,14 +57,129 @@
 			<key>name</key>
 			<string>Data</string>
 		</dict>
+		<dict>
+			<key>children</key>
+			<array>
+				<dict>
+					<key>filename</key>
+					<string>Scripts/rmWhite.R</string>
+					<key>lastUsed</key>
+					<date>2014-08-14T20:34:35Z</date>
+				</dict>
+				<dict>
+					<key>filename</key>
+					<string>Scripts/rm9s.R</string>
+					<key>lastUsed</key>
+					<date>2014-08-14T20:32:34Z</date>
+				</dict>
+			</array>
+			<key>expanded</key>
+			<true/>
+			<key>name</key>
+			<string>Data Functions</string>
+		</dict>
 	</array>
 	<key>fileHierarchyDrawerWidth</key>
 	<integer>241</integer>
 	<key>metaData</key>
-	<dict/>
+	<dict>
+		<key>Scripts/read.aleutians.R</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>9</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+		</dict>
+		<key>Scripts/read.ebs.R</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>27</integer>
+				<key>line</key>
+				<integer>46</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+		</dict>
+		<key>Scripts/read.gmex.R</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>0</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+		</dict>
+		<key>Scripts/read.goa.R</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>30</integer>
+				<key>line</key>
+				<integer>36</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>27</integer>
+		</dict>
+		<key>Scripts/rm9s.R</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>9</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+		</dict>
+		<key>Scripts/rmWhite.R</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>9</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+		</dict>
+	</dict>
+	<key>openDocuments</key>
+	<array>
+		<string>Scripts/read.aleutians.R</string>
+		<string>Scripts/read.ebs.R</string>
+		<string>Scripts/read.gmex.R</string>
+		<string>Scripts/read.goa.R</string>
+		<string>Scripts/rmWhite.R</string>
+		<string>Scripts/rm9s.R</string>
+	</array>
 	<key>showFileHierarchyDrawer</key>
 	<true/>
 	<key>windowFrame</key>
-	<string>{{10, 372}, {1186, 506}}</string>
+	<string>{{1, 372}, {1186, 506}}</string>
 </dict>
 </plist>
