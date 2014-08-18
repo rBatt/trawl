@@ -1,3 +1,7 @@
+library(data.table)
+source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/rmWhite.R")
+source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/rm9s.R")
+
 
 # ====================
 # = Read in Raw Data =

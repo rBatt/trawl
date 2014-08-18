@@ -1,4 +1,6 @@
-
+library(data.table)
+source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/rmWhite.R")
+source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/rm9s.R")
 
 # ====================
 # = Read in Raw Data =
@@ -25,27 +27,5 @@ for(i in 1:n.ebs){ # loop through data files and combine them. Assumes that colu
 
 rmWhite(ebs.raw) # remove whitespace in the elements of each column
 rm9s(ebs.raw) # check each column for 9999, and replace with NA
-# 
-# # system.time({ # time was 6.875
-# # for(i in 1:ncol(ebs.raw)){
-# # 	set(ebs.raw, i=NULL, j=i, value=gsub("^\\s* | \\s*$", "", ebs.raw[[i]]))
-# # }	
-# # })
-# 
-# 
-# # system.time({ # time was 6.775
-# # Remove trailing and leading whitespaces in the elements of each column
-# for(i in 1:ncol(ebs.raw)){
-# 	t.name <- names(ebs.raw)[i]
-# 	expr <- bquote(.(as.name(t.name)):=gsub("^\\s* | \\s*$", "", .(as.name(t.name))))
-# 	ebs.raw[,eval(expr)]
-# }	
-# # })
-# 
-# # change -9999's to NA
-# for(i in seq_along(ebs.raw)){
-# 	set(ebs.raw, i=which(ebs.raw[[i]]==-9999L), j=i, value=as.character(NA))
-# 	set(ebs.raw, i=which(ebs.raw[[i]]==-9999.0), j=i, value=as.character(NA))
-# }
-# 
+
 
