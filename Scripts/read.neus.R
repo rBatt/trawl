@@ -60,6 +60,6 @@ neus0 <- neus00["SPRING"] # trim to spring survey only; note that SEASON has to 
 
 # Merge spp and strata into neus data.table
 neus <- merge(neus0, neus.spp, by="SVSPP") # add species names
-neus2 <- merge(neus, neus.strata, by="STRATUM", all.x=TRUE)
+neus <- merge(neus, neus.strata, by="STRATUM", all.x=TRUE)
 
 
