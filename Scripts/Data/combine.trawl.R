@@ -2,9 +2,9 @@
 library(data.table)
 library(rfishbase)
 
-source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/rmWhite.R")
-source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/sumna.R")
-source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/meanna.R")
+source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rmWhite.R")
+source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/sumna.R")
+source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/meanna.R")
 
 
 # ============================================
