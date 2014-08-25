@@ -4,10 +4,10 @@ library(PBSmapping) # for calculating stratum areas
 library(maptools) # for calculating stratum areas
 library(Hmisc)
 
-source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/rmWhite.R")
-source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/rm9s.R")
-source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/calcarea.R")
-source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/sumna.R")
+source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rmWhite.R")
+source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rm9s.R")
+source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/calcarea.R")
+source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/sumna.R")
 
 
 # ====================

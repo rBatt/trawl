@@ -7,12 +7,10 @@ library(PBSmapping) # for calculating stratum areas
 library(maptools) # for calculating stratum areas
 library(Hmisc)
 
-source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/rmWhite.R")
-source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/rm9s.R")
-source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/calcarea.R")
-source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/sumna.R")
-
-
+source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rmWhite.R")
+source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rm9s.R")
+source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/calcarea.R")
+source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/sumna.R")
 
 
 # ====================
@@ -147,6 +145,10 @@ gmex[,stratumarea:=calcarea(cbind(lon, lat)), by=stratum]
 # =============
 setnames(gmex, c("TAXONOMIC", "TEMP_SSURF", "TEMP_BOT", "MO_DAY_YR"), c("spp", "stemp", "btemp", "datetime"))
 
+par(mfrow=c(1,1), mar=c(2.5, 2.5, 0.5, 0.5), ps=8, family="Times", tcl=-0.25, mgp=c(1.5, 0.4, 
+	
+dev.new(3.5, 3.5)
+par(mfrow=c(1,1), mar=c(2.5, 2.5, 0.5, 0.5), ps=8, family="Times", tcl=-0.25, mgp=c(1.5, 0.4, 0))
 
 # ============
 # = Get CPUE =
