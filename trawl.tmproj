@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>currentDocument</key>
-	<string>Scripts/read.neus.R</string>
+	<string>Scripts/read.newf.R</string>
 	<key>documents</key>
 	<array>
 		<dict>
@@ -13,51 +13,87 @@
 					<key>filename</key>
 					<string>Scripts/read.ai.R</string>
 					<key>lastUsed</key>
-					<date>2014-08-20T21:07:52Z</date>
+					<date>2014-08-22T16:24:57Z</date>
 				</dict>
 				<dict>
 					<key>filename</key>
 					<string>Scripts/read.ebs.R</string>
 					<key>lastUsed</key>
-					<date>2014-08-20T21:07:55Z</date>
+					<date>2014-08-22T16:25:02Z</date>
 				</dict>
 				<dict>
 					<key>filename</key>
 					<string>Scripts/read.goa.R</string>
 					<key>lastUsed</key>
-					<date>2014-08-20T21:07:59Z</date>
+					<date>2014-08-22T16:31:21Z</date>
 				</dict>
 				<dict>
 					<key>filename</key>
 					<string>Scripts/read.gmex.R</string>
 					<key>lastUsed</key>
-					<date>2014-08-21T13:04:14Z</date>
+					<date>2014-08-22T20:31:12Z</date>
 				</dict>
 				<dict>
 					<key>filename</key>
 					<string>Scripts/read.neus.R</string>
 					<key>lastUsed</key>
-					<date>2014-08-21T13:04:14Z</date>
-					<key>selected</key>
-					<true/>
+					<date>2014-08-22T16:37:03Z</date>
 				</dict>
 				<dict>
 					<key>filename</key>
 					<string>Scripts/read.sa.R</string>
 					<key>lastUsed</key>
-					<date>2014-08-20T21:08:07Z</date>
+					<date>2014-08-22T16:22:39Z</date>
 				</dict>
 				<dict>
 					<key>filename</key>
 					<string>Scripts/read.wcann.R</string>
 					<key>lastUsed</key>
-					<date>2014-08-20T21:08:10Z</date>
+					<date>2014-08-22T16:37:11Z</date>
 				</dict>
 				<dict>
 					<key>filename</key>
 					<string>Scripts/read.wctri.R</string>
 					<key>lastUsed</key>
-					<date>2014-08-21T12:58:06Z</date>
+					<date>2014-08-22T16:37:17Z</date>
+				</dict>
+				<dict>
+					<key>filename</key>
+					<string>Scripts/combine.trawl.R</string>
+					<key>lastUsed</key>
+					<date>2014-08-24T18:30:40Z</date>
+				</dict>
+				<dict>
+					<key>filename</key>
+					<string>Scripts/add.fishbase.R</string>
+					<key>lastUsed</key>
+					<date>2014-08-24T18:18:53Z</date>
+				</dict>
+				<dict>
+					<key>filename</key>
+					<string>Scripts/read.shelf.R</string>
+					<key>lastUsed</key>
+					<date>2014-08-24T18:31:02Z</date>
+				</dict>
+				<dict>
+					<key>filename</key>
+					<string>Scripts/read.ngulf.R</string>
+					<key>lastUsed</key>
+					<date>2014-08-24T18:31:38Z</date>
+				</dict>
+				<dict>
+					<key>filename</key>
+					<string>Scripts/read.sgulf.R</string>
+					<key>lastUsed</key>
+					<date>2014-08-24T18:31:12Z</date>
+				</dict>
+				<dict>
+					<key>filename</key>
+					<string>Scripts/read.newf.R</string>
+					<key>lastUsed</key>
+					<date>2014-08-24T18:31:38Z</date>
+					<key>selected</key>
+					<true/>
 				</dict>
 			</array>
 			<key>expanded</key>
@@ -72,19 +108,31 @@
 					<key>filename</key>
 					<string>Scripts/rmWhite.R</string>
 					<key>lastUsed</key>
-					<date>2014-08-20T21:04:46Z</date>
+					<date>2014-08-22T16:33:26Z</date>
 				</dict>
 				<dict>
 					<key>filename</key>
 					<string>Scripts/rm9s.R</string>
 					<key>lastUsed</key>
-					<date>2014-08-18T13:54:53Z</date>
+					<date>2014-08-22T16:09:15Z</date>
 				</dict>
 				<dict>
 					<key>filename</key>
 					<string>Scripts/calcarea.R</string>
 					<key>lastUsed</key>
-					<date>2014-08-20T21:04:25Z</date>
+					<date>2014-08-21T13:53:37Z</date>
+				</dict>
+				<dict>
+					<key>filename</key>
+					<string>Scripts/sumna.R</string>
+					<key>lastUsed</key>
+					<date>2014-08-22T19:27:31Z</date>
+				</dict>
+				<dict>
+					<key>filename</key>
+					<string>Scripts/meanna.R</string>
+					<key>lastUsed</key>
+					<date>2014-08-22T20:45:19Z</date>
 				</dict>
 			</array>
 			<key>expanded</key>
@@ -92,19 +140,76 @@
 			<key>name</key>
 			<string>Data Functions</string>
 		</dict>
+		<dict>
+			<key>children</key>
+			<array>
+				<dict>
+					<key>filename</key>
+					<string>Scripts/plotTS.R</string>
+					<key>lastUsed</key>
+					<date>2014-08-24T17:23:12Z</date>
+				</dict>
+			</array>
+			<key>expanded</key>
+			<true/>
+			<key>name</key>
+			<string>Figures</string>
+		</dict>
 	</array>
 	<key>fileHierarchyDrawerWidth</key>
 	<integer>241</integer>
 	<key>metaData</key>
 	<dict>
-		<key>Scripts/calcarea.R</key>
+		<key>Scripts/add.fishbase.R</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>71</integer>
+				<integer>26</integer>
 				<key>line</key>
-				<integer>1</integer>
+				<integer>66</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>47</integer>
+		</dict>
+		<key>Scripts/combine.trawl.R</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>36</integer>
+				<key>line</key>
+				<integer>21</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+		</dict>
+		<key>Scripts/meanna.R</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>41</integer>
+				<key>line</key>
+				<integer>2</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+		</dict>
+		<key>Scripts/plotTS.R</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>2</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
@@ -116,9 +221,9 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>14</integer>
+				<integer>0</integer>
 				<key>line</key>
-				<integer>4</integer>
+				<integer>10</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
@@ -130,9 +235,9 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>14</integer>
+				<integer>0</integer>
 				<key>line</key>
-				<integer>5</integer>
+				<integer>13</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
@@ -144,44 +249,116 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>57</integer>
+				<integer>0</integer>
 				<key>line</key>
-				<integer>136</integer>
+				<integer>9</integer>
 			</dict>
+			<key>columnSelection</key>
+			<false/>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>111</integer>
+			<integer>0</integer>
+			<key>selectFrom</key>
+			<dict>
+				<key>column</key>
+				<integer>78</integer>
+				<key>line</key>
+				<integer>12</integer>
+			</dict>
+			<key>selectTo</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>9</integer>
+			</dict>
 		</dict>
 		<key>Scripts/read.goa.R</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>14</integer>
+				<integer>0</integer>
 				<key>line</key>
-				<integer>6</integer>
+				<integer>119</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>0</integer>
+			<integer>100</integer>
 		</dict>
 		<key>Scripts/read.neus.R</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>36</integer>
+				<integer>0</integer>
 				<key>line</key>
-				<integer>85</integer>
+				<integer>147</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>58</integer>
+			<integer>126</integer>
+		</dict>
+		<key>Scripts/read.newf.R</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>0</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+		</dict>
+		<key>Scripts/read.ngulf.R</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>0</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
 		</dict>
 		<key>Scripts/read.sa.R</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>0</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+		</dict>
+		<key>Scripts/read.sgulf.R</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>0</integer>
+			</dict>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+		</dict>
+		<key>Scripts/read.shelf.R</key>
 		<dict>
 			<key>caret</key>
 			<dict>
@@ -200,37 +377,37 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>14</integer>
+				<integer>21</integer>
 				<key>line</key>
-				<integer>5</integer>
+				<integer>27</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>0</integer>
+			<integer>10</integer>
 		</dict>
 		<key>Scripts/read.wctri.R</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>124</integer>
+				<integer>0</integer>
 				<key>line</key>
-				<integer>17</integer>
+				<integer>12</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
-			<integer>29</integer>
+			<integer>112</integer>
 		</dict>
 		<key>Scripts/rm9s.R</key>
 		<dict>
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>0</integer>
+				<integer>2</integer>
 				<key>line</key>
-				<integer>9</integer>
+				<integer>7</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
@@ -242,7 +419,7 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>65</integer>
+				<integer>21</integer>
 				<key>line</key>
 				<integer>6</integer>
 			</dict>
@@ -250,6 +427,36 @@
 			<integer>0</integer>
 			<key>firstVisibleLine</key>
 			<integer>0</integer>
+		</dict>
+		<key>Scripts/sumna.R</key>
+		<dict>
+			<key>caret</key>
+			<dict>
+				<key>column</key>
+				<integer>41</integer>
+				<key>line</key>
+				<integer>2</integer>
+			</dict>
+			<key>columnSelection</key>
+			<false/>
+			<key>firstVisibleColumn</key>
+			<integer>0</integer>
+			<key>firstVisibleLine</key>
+			<integer>0</integer>
+			<key>selectFrom</key>
+			<dict>
+				<key>column</key>
+				<integer>0</integer>
+				<key>line</key>
+				<integer>0</integer>
+			</dict>
+			<key>selectTo</key>
+			<dict>
+				<key>column</key>
+				<integer>1</integer>
+				<key>line</key>
+				<integer>3</integer>
+			</dict>
 		</dict>
 	</dict>
 	<key>openDocuments</key>
@@ -262,13 +469,21 @@
 		<string>Scripts/read.sa.R</string>
 		<string>Scripts/read.wcann.R</string>
 		<string>Scripts/read.wctri.R</string>
+		<string>Scripts/combine.trawl.R</string>
+		<string>Scripts/read.shelf.R</string>
+		<string>Scripts/read.sgulf.R</string>
+		<string>Scripts/read.ngulf.R</string>
+		<string>Scripts/read.newf.R</string>
+		<string>Scripts/add.fishbase.R</string>
+		<string>Scripts/plotTS.R</string>
+		<string>Scripts/sumna.R</string>
+		<string>Scripts/meanna.R</string>
 		<string>Scripts/rmWhite.R</string>
 		<string>Scripts/rm9s.R</string>
-		<string>Scripts/calcarea.R</string>
 	</array>
 	<key>showFileHierarchyDrawer</key>
 	<true/>
 	<key>windowFrame</key>
-	<string>{{1, 564}, {1677, 852}}</string>
+	<string>{{-3, 556}, {1913, 862}}</string>
 </dict>
 </plist>
