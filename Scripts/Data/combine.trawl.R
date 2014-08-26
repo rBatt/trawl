@@ -106,28 +106,37 @@ trawl[,isSpecies:=is.species(spp)] # infer whether the taxa are identified to sp
 
 uspp <- unique(trawl[,spp])
 
-grb.spp1 <- function(x) {x[which.max(x[,"score"]),c("submitted_name","matched_name2")]}
+grb.spp1 <- function(x) {
+	tryCatch(
+		x$results[which.max(x$results[,"score"]),c("submitted_name","matched_name2")], 
+		error=function(cond){data.frame(submitted_name=NA, matched_name2=NA)}
+	)
+}
 
 tax.files <- dir("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy")
 if(!"spp.corr1.RData"%in%tax.files){
-	spp.corr1 <- ddply(gnr_resolve(uspp, stripauthority=TRUE, http="post", resolve_once=TRUE)$results, "submitted_name", grb.spp1)
+	spp.corr1.names <- gnr_resolve(uspp, stripauthority=TRUE, http="post", resolve_once=TRUE)
+	spp.corr1 <- ddply(spp.corr1.names, "submitted_name", grb.spp1)
 	spp.corr1 <- data.table(spp.corr1)
 	setnames(spp.corr1, c("submitted_name", "matched_name2"), c("spp", "sppCorr"))
 	setkey(spp.corr1, spp)
+	save(spp.corr1.names, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.corr1.RData")
 	save(spp.corr1, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.corr1.RData")
 }else{
 	load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.corr1.RData")
 	new.spp0 <- !uspp%in%unique(spp.corr1[,spp])
 	if(any(new.spp0)){
 		new.spp <- uspp[new.spp0]
-		spp.corr2 <- ddply(gnr_resolve(uspp, stripauthority=TRUE, http="post")$results, "submitted_name", grb.spp1)
+		spp.corr2.names <- gnr_resolve(new.spp, stripauthority=TRUE, http="post", resolve_once=TRUE)
+		spp.corr2 <- ddply(spp.corr2.names, "submitted_name", grb.spp1)
 		spp.corr2 <- data.table(spp.corr2)
-		setnames(spp.corr2, c("submitted_name", "matched_name2"), c("spp", "sppCorr"))
+		setnames(spp.corr1, c("submitted_name", "matched_name2"), c("spp", "sppCorr"))
 		setkey(spp.corr2, spp)
 		spp.corr1 <- spp.corr1[spp.corr2]
 		save(spp.corr1, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.corr1.RData")
 	}
 }
+uspp[cut(1:length(uspp), breaks = c(seq(1, length(uspp), by=100), max(1:length(uspp))))[1]]
 spp.corr1[trawl[,list(spp,isSpecies)]]
 # spp.corr1.isSpecies <- merge(spp.corr1, trawl[unique(spp),list(spp,isSpecies), mult="first"], all=FALSE, by="spp")[,isSpecies]
 # spp.cmmn1 <- sci2comm(spp.corr1[spp.corr1.isSpecies,sppCorr], db="itis")

@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>currentDocument</key>
-	<string>Scripts/read.newf.R</string>
+	<string>Scripts/read.ai.R</string>
 	<key>documents</key>
 	<array>
 		<dict>
@@ -13,7 +13,9 @@
 					<key>filename</key>
 					<string>Scripts/read.ai.R</string>
 					<key>lastUsed</key>
-					<date>2014-08-22T16:24:57Z</date>
+					<date>2014-08-25T13:33:26Z</date>
+					<key>selected</key>
+					<true/>
 				</dict>
 				<dict>
 					<key>filename</key>
@@ -61,7 +63,7 @@
 					<key>filename</key>
 					<string>Scripts/combine.trawl.R</string>
 					<key>lastUsed</key>
-					<date>2014-08-24T18:30:40Z</date>
+					<date>2014-08-25T13:33:26Z</date>
 				</dict>
 				<dict>
 					<key>filename</key>
@@ -91,9 +93,7 @@
 					<key>filename</key>
 					<string>Scripts/read.newf.R</string>
 					<key>lastUsed</key>
-					<date>2014-08-24T18:31:38Z</date>
-					<key>selected</key>
-					<true/>
+					<date>2014-08-25T12:45:43Z</date>
 				</dict>
 			</array>
 			<key>expanded</key>
@@ -179,9 +179,9 @@
 			<key>caret</key>
 			<dict>
 				<key>column</key>
-				<integer>36</integer>
+				<integer>49</integer>
 				<key>line</key>
-				<integer>21</integer>
+				<integer>15</integer>
 			</dict>
 			<key>firstVisibleColumn</key>
 			<integer>0</integer>
@@ -484,6 +484,6 @@
 	<key>showFileHierarchyDrawer</key>
 	<true/>
 	<key>windowFrame</key>
-	<string>{{-3, 556}, {1913, 862}}</string>
+	<string>{{1569, 328}, {1195, 513}}</string>
 </dict>
 </plist>
