@@ -1,20 +1,46 @@
 
+# =================
+# = Load packages =
+# =================
 library(data.table)
 library(PBSmapping) # for calculating stratum areas
 library(maptools) # for calculating stratum areas
 library(Hmisc)
 
+# ====================
+# = Source Functions =
+# ====================
 source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rmWhite.R")
 source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rm9s.R")
 source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/calcarea.R")
 source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/sumna.R")
 
 
-
-
+# =====================
+# = Set preliminaries =
+# =====================
+# String to begin directory
 newf.start <- "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/raw_data/DFO_Newfoundland/"
 
 
+# =====================================
+# = Read in Tables (spp, strata, etc) =
+# =====================================
+# Read in Species
+newf.spp <- fread(paste(newf.start, "Tables/", "GFSPCY.CODE_2012-07-05.csv", sep=""), drop="V1")
+
+
+# =======================
+# = Read in Survey Info =
+# =======================
+newf.surv1 <- fread(paste(newf.start, "Tables/", "surveys_table.csv", sep=""), colClasses=rep("character", 16), drop=c("Comment"))
+newf.surv2 <- fread(paste(newf.start, "Tables/", "surveys_table2009-2011.csv", sep=""), colClasses=rep("character", 7))
+
+
+
+# ======================
+# = Read in Data Files =
+# ======================
 newf.files <- list.files(path=paste(newf.start, "Data/", sep=""), pattern = "199[23456789]|200[0123456789]|201[012]")
 
 n <- numeric(0)
@@ -151,6 +177,169 @@ newf.raw[,wtcpue:=(wgt/100)*(meanarea/area)]
 newf.raw[,numcpue:=num*(meanarea/area)]
 
 # newf.raw[,list(sum(is.na(wtcpue)), sum(is.na(numcpue)))] # malin got 27, 448, I get 27, 451.
+
+
+# ====================
+# = Fix temperatures =
+# ====================
+# Change column class to numeric
+newf.raw[,surftemp:=as.numeric(surftemp)]
+newf.raw[,bottemp:=as.numeric(bottemp)]
+
+# Fix the surface temp
+fixT.surf <- newf.raw[,surftemp >= 900 & !is.na(surftemp)]
+newf.raw[fixT.surf, surftemp:= -(surftemp - 900)/10]
+
+fixT.surf2 <- newf.raw[,surftemp < 900 & surftemp > 0 & !is.na(surftemp)]
+newf.raw[fixT.surf2, surftemp:=surftemp/10]
+summary(newf.raw$surftemp) # 379,007 NAs (of 383,710 rows): nearly all missing # Ryan gets 379,007 NA's too
+
+# Fix the bottom temp
+fixT.bot <- newf.raw[,bottemp >= 900 & !is.na(bottemp)]
+newf.raw[fixT.bot, bottemp:= -(bottemp - 900)/10]
+
+fixT.bot2 <- newf.raw[,bottemp < 900 & bottemp > 0 & !is.na(bottemp)]
+newf.raw[fixT.bot2, bottemp:=bottemp/10]
+summary(newf.raw$bottemp) # only 6459 NAs
+
+
+# =====================
+# = Add Species Names =
+# =====================
+setkey(newf.raw, sppcode)
+setkey(newf.spp, sppcode)
+newf.raw <- merge(newf.raw, newf.spp, all.x=TRUE)
+
+
+# =======================
+# = Rename some columns =
+# =======================
+setnames(newf.raw, c("vessel", "trip", "set"), c("svvessel", "cruise", "tow"))
+
+# =====================
+# = Add empty columns =
+# =====================
+# newf.raw[,station:=as.character(NA)]
+# newf.raw[,surfsal:=as.numeric(NA)]
+# newf.raw[,botsal:=as.numeric(NA)]
+
+
+# ====================================
+# = Identifying Spring/ Fall Surveys =
+# ====================================
+fallseries <- c(as.character(newf.surv1$CRUISE[newf.surv1$Series %in% c('2GH - Stratified Random Bottom Trawl Survey - Campelen 1800', 'Fall - Stratified Random Bottom Trawl Survey - Campelen 1800')]), as.character(newf.surv2$cruise[newf.surv2$season=='fall']))
+
+springseries <- c(as.character(newf.surv1$CRUISE[newf.surv1$Series %in% c('Annual 3P - Stratified Random Bottom Trawl Survey - Campelen 1800', 'Spring 3LNO - Stratified Random Bottom Trawl Survey - Campelen 1800')]), as.character(newf.surv2$cruise[newf.surv2$season == 'spring']))
+
+cruiseid <- paste(newf.raw$svvessel, formatC(newf.raw$cruise, width=3, flag=0), sep='')
+
+is.fall <- cruiseid %in% fallseries
+is.spring <- cruiseid %in% springseries
+newf.season <- rep(NA, nrow(newf.raw))
+newf.season[is.fall] <- "fall"
+newf.season[is.spring] <- "spring"
+
+bad.series <- is.na(newf.season)
+
+newf.raw[, season:=newf.season]
+
+
+# Fix years for spring and fall (fall might cover 2 calendar years per 1 survey)
+# TODO 
+datafal$yearsurv = datafal$year
+datafal$yearsurv[datafal$month<4] =	datafal$yearsurv[datafal$month<4] - 1
+
+# ===============
+# = Trim Strata =
+# ===============
+newf00 <- newf.raw
+setnames(newf00, "yearl", "year")
+setkey(newf00, season)
+
+
+# Trim to high quality strata (sampled every year)
+	# for Spring
+	strat.year.spr <- newf00["spring"][,table(stratum, year)]
+	sys.spring.rsum <- rowSums(strat.year.spr>0)
+	sys.spring.csum <- colSums(strat.year.spr>0)
+		# as.data.frame(sys.spring.rsum) # how many years per stratum?
+	# 		hist(sys.spring.rsum, breaks=60, col='grey') # most strata cover 1 years, next most cover 15 #????
+	# 		sum(sys.spring.rsum==14) # 34 stratum
+	# 		sum(sys.spring.rsum==15) # 50 strata
+	# 	as.data.frame(sys.spring.csum) # how many strata per year?
+	# 	hist(sys.spring.csum, col='grey', breaks=60) # most years have 82 strata
+	strat.year.spr2 <- strat.year.spr[sys.spring.rsum==15,]#;  strat.year.spr2
+		# colSums(strat.year.spr2>0) # all years have 50 strata
+	# 	rowSums(strat.year.spr2>0) # all strata have 15 years
+	strats.spr <- rownames(strat.year.spr2)[rowSums(strat.year.spr2>0)==15]
+	# 	length(strats.spr) # 50 strata
+	# 	 	i = !duplicated(newf00["spring"]$haulid) & newf00["spring"]$stratum %in% strats.spr
+	# 	 	dev.new();plot(newf00["spring"]$lon[i], newf00["spring"]$lat[i])
+	# 		plot(newf00["spring"]$lon, newf00["spring"]$lat)
+	#
+	# dataspr = newf00["spring"][newf00["spring"]$stratum %in% strats.spr,]
+	# 	dim(dataspr) # 62,249
+
+	# Fall
+	strat.year.fall <- newf00["fall"][,table(stratum, year)]
+	sys.fall.rsum <- rowSums(strat.year.fall>0)
+	sys.fall.csum <- colSums(strat.year.fall>0)
+		# as.data.frame(sys.fall.rsum) # how many years per stratum?
+	# 		hist(sys.fall.rsum, breaks=60, col='grey') # most strata cover 1 years, next most cover 15 #????
+			sum(sys.fall.rsum==15) # 31 stratum #?? I get 
+			sum(sys.fall.rsum==16) # 130 strata
+	# 	as.data.frame(sys.fall.csum) # how many strata per year?
+		hist(sys.fall.csum, col='grey', breaks=60) # most years have ~230 strata
+	strat.year.fall2 <- strat.year.fall[sys.fall.rsum==16,]#;  strat.year.fall2
+		colSums(strat.year.fall2>0) # all years have 130 strata # ?????
+		rowSums(strat.year.fall2>0) # all strata have 16 years
+	strats.fall <- rownames(strat.year.fall2)[rowSums(strat.year.fall2>0)==16]
+		length(strats.fall) # 50 strata
+		 	i = !duplicated(newf00["fall"]$haulid) & newf00["fall"]$stratum %in% strats.fall
+		 	dev.new();plot(newf00["fall"]$lon[i], newf00["fall"]$lat[i])
+	# 		plot(newf00["fall"]$lon, newf00["fall"]$lat)
+	#
+	# datafall = newf00["fall"][newf00["fall"]$stratum %in% strats.fall,]
+	# 	dim(datafall) # 62,249
+	
+	
+	
+	i = table(datafal$stratum, datafal$yearsurv); i
+	sum = rowSums(i>0)
+	sumc = colSums(i>0)
+		as.data.frame(sum) # how many years per stratum?
+			hist(sum, breaks=60, col='grey') # most strata cover 1 years, next most cover 16
+			sum(sum==15) # 31 strata
+			sum(sum==16) # 130 strata
+		as.data.frame(sumc) # how many strata per year?
+		hist(sumc, col='grey', breaks=60) # most years have ~230 strata
+	i2 = i[sum==16,];  i2
+		colSums(i2>0) # all years have 130 strata
+		rowSums(i2>0) # all strata have 16 years
+			all(rowSums(i2>0)==16)
+	strats = rownames(i2)[rowSums(i2>0)==16]
+		length(strats) # 130 strata
+		 	i = !duplicated(datafal$haulid) & datafal$stratum %in% strats
+		 	plot(datafal$lon[i], datafal$lat[i])
+		
+	datafal = datafal[datafal$stratum %in% strats,]
+		dim(datafal) # 166,034
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
