@@ -110,7 +110,7 @@ grb.spp1 <- function(x) {x[which.max(x[,"score"]),c("submitted_name","matched_na
 
 tax.files <- dir("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy")
 if(!"spp.corr1.RData"%in%tax.files){
-	spp.corr1 <- ddply(gnr_resolve(uspp[1:10], stripauthority=TRUE, http="post", resolve_once=TRUE)$results, "submitted_name", grb.spp1)
+	spp.corr1 <- ddply(gnr_resolve(uspp, stripauthority=TRUE, http="post", resolve_once=TRUE)$results, "submitted_name", grb.spp1)
 	spp.corr1 <- data.table(spp.corr1)
 	setnames(spp.corr1, c("submitted_name", "matched_name2"), c("spp", "sppCorr"))
 	setkey(spp.corr1, spp)
