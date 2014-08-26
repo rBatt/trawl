@@ -117,7 +117,7 @@ if(!"spp.corr1.RData"%in%tax.files){
 	save(spp.corr1, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.corr1.RData")
 }else{
 	load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.corr1.RData")
-	new.spp0 <- !uspp%in%unique(spp.corr1[,spp]))
+	new.spp0 <- !uspp%in%unique(spp.corr1[,spp])
 	if(any(new.spp0)){
 		new.spp <- uspp[new.spp0]
 		spp.corr2 <- ddply(gnr_resolve(uspp, stripauthority=TRUE, http="post")$results, "submitted_name", grb.spp1)
