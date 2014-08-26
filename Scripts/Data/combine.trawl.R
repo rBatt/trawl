@@ -1,6 +1,8 @@
 
 library(data.table)
 library(rfishbase)
+library(plyr)
+library(taxize)
 
 source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rmWhite.R")
 source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/sumna.R")
@@ -32,6 +34,8 @@ local({
 # ============================
 trawl[,spp:=as.character(spp)]
 
+
+
 # ======================
 # = Remove bad species =
 # ======================
@@ -54,7 +58,7 @@ trawl <- trawl[!.(badSpp),]
 # # and
 # "ACATHOCARPUS ALEXADRI" 
 
-trawl["ACATHOCARPUS ALEXADRI", spp:="ACANTHOCARPUS ALEXANDRI"] # fix a redundant species name due to typo
+# trawl["ACATHOCARPUS ALEXADRI", spp:="ACANTHOCARPUS ALEXANDRI"] # fix a redundant species name due to typo
 
 
 # ====================================
@@ -88,12 +92,63 @@ setkey(trawl, spp, year, s.reg)
 
 trawl[,isSpecies:=is.species(spp)] # infer whether the taxa are identified to species or to genus (1 or 2 words)
 
-
-
 # trawl2 <- trawl
 # trawl2[,c("wtcpue", "cntcpue","depth","btemp","stemp"):=list(wtcpue=sumna(wtcpue), cntcpue=sumna(cntcpue), depth=meanna(depth), btemp=meanna(btemp), stemp=meanna(stemp)), by=c("year","datetime","spp","haulid","stratum","stratumarea","lat","lon","region","s.reg")]
 # dim(trawl) # 997913     15
 # dim(trawl2) # 997913     15 ... this means that species weren't ID'd in multiple ways during the same haul.
+
+
+# ================================
+# = Use Taxize to clean up names =
+# ================================
+# eol.key <- "f0822ff32cb0af5fda7e4c9e02c66e47e7848e74"
+# getkey("f0822ff32cb0af5fda7e4c9e02c66e47e7848e74", service="eol")
+
+uspp <- unique(trawl[,spp])
+
+grb.spp1 <- function(x) {x[which.max(x[,"score"]),c("submitted_name","matched_name2")]}
+
+tax.files <- dir("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy")
+if(!"spp.corr1.RData"%in%tax.files){
+	spp.corr1 <- ddply(gnr_resolve(uspp[1:10], stripauthority=TRUE, http="post", resolve_once=TRUE)$results, "submitted_name", grb.spp1)
+	spp.corr1 <- data.table(spp.corr1)
+	setnames(spp.corr1, c("submitted_name", "matched_name2"), c("spp", "sppCorr"))
+	setkey(spp.corr1, spp)
+	save(spp.corr1, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.corr1.RData")
+}else{
+	load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.corr1.RData")
+	new.spp0 <- !uspp%in%unique(spp.corr1[,spp]))
+	if(any(new.spp0)){
+		new.spp <- uspp[new.spp0]
+		spp.corr2 <- ddply(gnr_resolve(uspp, stripauthority=TRUE, http="post")$results, "submitted_name", grb.spp1)
+		spp.corr2 <- data.table(spp.corr2)
+		setnames(spp.corr2, c("submitted_name", "matched_name2"), c("spp", "sppCorr"))
+		setkey(spp.corr2, spp)
+		spp.corr1 <- spp.corr1[spp.corr2]
+		save(spp.corr1, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.corr1.RData")
+	}
+}
+spp.corr1[trawl[,list(spp,isSpecies)]]
+# spp.corr1.isSpecies <- merge(spp.corr1, trawl[unique(spp),list(spp,isSpecies), mult="first"], all=FALSE, by="spp")[,isSpecies]
+# spp.cmmn1 <- sci2comm(spp.corr1[spp.corr1.isSpecies,sppCorr], db="itis")
+spp.cmmn1 <- c()
+for(i in 1:length(spp.corr1[,sppCorr])){
+	t.spp.cmmn1 <- tryCatch(
+		{
+			sci2comm(spp.corr1[i,sppCorr], db="itis", ask=FALSE)[[1]][1]
+		},
+			error=function(cond){
+				tryCatch(
+					sci2comm(spp.corr1[i,sppCorr], db="eol", ask=FALSE)[[1]][1], 
+					error=function(cond){NA}
+					)
+			}
+	)
+	spp.cmmn1[i] <- t.spp.cmmn1
+}
+
+
+
 
 
 
