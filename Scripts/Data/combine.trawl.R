@@ -114,13 +114,14 @@ grb.spp1 <- function(x) {
 }
 
 tax.files <- dir("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy")
+
 if(!"spp.corr1.RData"%in%tax.files){
-	spp.corr1.names <- gnr_resolve(uspp, stripauthority=TRUE, http="post", resolve_once=TRUE)
+	spp.corr1.names <- gnr_resolve(uspp, stripauthority=TRUE, http="post")
+	save(spp.corr1.names, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.corr1.names.RData")
 	spp.corr1 <- ddply(spp.corr1.names, "submitted_name", grb.spp1)
 	spp.corr1 <- data.table(spp.corr1)
 	setnames(spp.corr1, c("submitted_name", "matched_name2"), c("spp", "sppCorr"))
 	setkey(spp.corr1, spp)
-	save(spp.corr1.names, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.corr1.RData")
 	save(spp.corr1, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.corr1.RData")
 }else{
 	load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.corr1.RData")
@@ -136,10 +137,10 @@ if(!"spp.corr1.RData"%in%tax.files){
 		save(spp.corr1, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.corr1.RData")
 	}
 }
-uspp[cut(1:length(uspp), breaks = c(seq(1, length(uspp), by=100), max(1:length(uspp))))[1]]
-spp.corr1[trawl[,list(spp,isSpecies)]]
 # spp.corr1.isSpecies <- merge(spp.corr1, trawl[unique(spp),list(spp,isSpecies), mult="first"], all=FALSE, by="spp")[,isSpecies]
 # spp.cmmn1 <- sci2comm(spp.corr1[spp.corr1.isSpecies,sppCorr], db="itis")
+
+
 spp.cmmn1 <- c()
 for(i in 1:length(spp.corr1[,sppCorr])){
 	t.spp.cmmn1 <- tryCatch(
@@ -155,7 +156,7 @@ for(i in 1:length(spp.corr1[,sppCorr])){
 	)
 	spp.cmmn1[i] <- t.spp.cmmn1
 }
-
+save(spp.cmmn1, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.cmmn1.RData")
 
 
 
