@@ -106,20 +106,55 @@ trawl[,isSpecies:=is.species(spp)] # infer whether the taxa are identified to sp
 
 uspp <- unique(trawl[,spp])
 
+
+countN <- function(x){ # count the number of times the letter "n" appears
+	sapply(strsplit(x,""), FUN=function(x)length(grep("n",x)))
+}
 grb.spp1 <- function(x) {
 	tryCatch(
-		x$results[which.max(x$results[,"score"]),c("submitted_name","matched_name2")], 
+		{
+			x <- x$results
+			x <- x[!duplicated(x[,"matched_name2"]),]
+			adjN <- pmax(countN(x$matched_name2) - countN(x$submitted_name), 0)*0.01 # gets bonus match score if the matched name has more n's, because n's appear to be missing a lot
+			x$score <- x$score + adjN
+			x[which.max(x[,"score"]),c("submitted_name","matched_name2")]
+		}, 
 		error=function(cond){data.frame(submitted_name=NA, matched_name2=NA)}
 	)
 }
 
 tax.files <- dir("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy")
 
+
+
 if(!"spp.corr1.RData"%in%tax.files){
-	spp.corr1.names <- gnr_resolve(uspp, stripauthority=TRUE, http="post")
-	save(spp.corr1.names, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.corr1.names.RData")
-	spp.corr1 <- ddply(spp.corr1.names, "submitted_name", grb.spp1)
-	spp.corr1 <- data.table(spp.corr1)
+	# cut(seq_along(uspp), length(uspp)/(2:20)[which.min(length(uspp)%%(2:20))])
+	# n.cuts <- length(uspp)/(2:20)[which.min(length(uspp)%%(2:20))] # finds the smallest integer between 2 and 20 of which length(uspp) is a multiple (modulus %% == 0)
+	uspp.chunks <- as.character(cut(seq_along(uspp), length(uspp)))
+	u.uspp.chunks <- unique(uspp.chunks)
+	start.time <- proc.time()["elapsed"]/60/60
+	for(s in seq_along(u.uspp.chunks)){
+		
+		t.chunk <- u.uspp.chunks[s]
+		t.uspp <- uspp[uspp.chunks==t.chunk]
+		t.spp.corr1.names <- gnr_resolve(t.uspp, stripauthority=TRUE, http="get", resolve_once=TRUE)
+		t.spp.corr1 <- data.table(grb.spp1(t.spp.corr1.names))
+		if(s==1){
+			spp.corr1 <- t.spp.corr1
+		}else{
+			spp.corr1 <- rbind(spp.corr1, t.spp.corr1)	
+		}
+		t.time <- proc.time()["elapsed"]/60/60
+		t.perc <- formatC(round(s/length(u.uspp.chunks)*100,2), 3)
+		t.elap <- formatC(round(t.time-start.time, 2),3)
+		print(paste("# ", formatC(s, digits=4), " has completed (", t.perc, "%); ", t.elap, " hours elapsed", sep=""))
+		flush.console()
+	}
+	
+	# spp.corr1.names <- gnr_resolve(uspp, stripauthority=TRUE, http="post")
+	# save(spp.corr1.names, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.corr1.names.RData")
+	# spp.corr1 <- ddply(spp.corr1.names, "submitted_name", grb.spp1)
+	# spp.corr1 <- data.table(spp.corr1)
 	setnames(spp.corr1, c("submitted_name", "matched_name2"), c("spp", "sppCorr"))
 	setkey(spp.corr1, spp)
 	save(spp.corr1, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.corr1.RData")
