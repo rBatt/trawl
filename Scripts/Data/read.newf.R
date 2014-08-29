@@ -392,7 +392,109 @@ print(blah[, list(haulid, year, season, numcpue, wtcpue, spp, common)], nrow=Inf
 # ========================
 # = Remove bad spp names =
 # ========================
+newf <- newf0
+# datafal$spp = as.character(datafal$spp)
+tab <- table(newf$spp, newf$year);# write.csv(tab, 'Output/sppbyyearfal.csv') # for checking by eye
 
+# i <- newf$spp %in% c('ARTEDIELLUS ATLANTICUS', 'ARTEDIELLUS UNCINATUS')
+# newf$spp[i] <- 'ARTEDIELLUS  SP.'
+
+# i <- newf$spp %in% c('BUCCINUM  SP.', 'BUCCINUM TOTTENI', 'BUCCINUM UNDATUM')
+# newf$spp[i] <- 'BUCCINIDAE' # didn't search for all included genera (many!)
+
+i <- newf$spp %in% c('CHIONOECETES OPILIO FEMALE', 'CHIONOECETES OPILIO MALE')
+newf$spp[i] <- 'CHIONOECETES OPILIO'
+
+i <- newf$spp %in% c('EUALUS GAIMARDII BELCHERI', 'EUALUS GAIMARDII GAIMARDII')
+newf$spp[i] <- 'EUALUS GAIMARDII'
+
+i <- newf$spp %in% c('EUMICROTREMUS SPINOSUS VARIABILIS')
+newf$spp[i] <- 'EUMICROTREMUS SPINOSUS'
+
+# i <- newf$spp %in% c('GAIDROPSARUS ARGENTATUS', 'GAIDROPSARUS ENSIS')
+# newf$spp[i] <- 'GAIDROPSARUS  SP.'
+
+# i <- newf$spp %in% c('GONATUS FABRICII')
+# newf$spp[i] <- 'GONATUS  SP.'
+
+# i <- newf$spp %in% c('GORGONOCEPHALUS ARCTICUS', 'GORGONOCEPHALUS SP.')
+i <- newf$spp %in% c('GORGONOCEPHALUS SP.')
+newf$spp[i] <- 'GORGONOCEPHALUS ARCTICUS'
+
+# i <- newf$spp %in% c('HYAS ARANEUS', 'HYAS COARCTATUS')
+# newf$spp[i] <- 'HYAS  SP.'
+
+# i <- newf$spp %in% c('LIPARIS ATLANTICUS', 'LIPARIS FABRICII', 'LIPARIS GIBBUS', 'LIPARIS LIPARIS', 'LIPARIS TUNICATUS')
+# newf$spp[i] <- 'LIPARIDAE'
+
+i <- newf$spp %in% c('LITHODES  SP.', 'LITHODES  SP.', 'NEOLITHODES  SP.', 'NEOLITHODES GRIMALDII')
+newf$spp[i] <- 'LITHODIDAE'
+
+# i <- newf$spp %in% c('LYCENCHELYS PAXILLUS', 'LYCENCHELYS SARSI', 'LYCENCHELYS VERRILLI')
+# newf$spp[i] <- 'LYCENCHELYS  SP.'
+
+# i <- newf$spp %in% c('NOTACANTHUS NASUS')
+# newf$spp[i] <- 'NOTACANTHIDAE'
+
+i <- newf$spp %in% c('PANDALUS BOREALIS(FEE 1ST W/HR)', 'PANDALUS BOREALIS(FEE 1ST W/O HR)', 'PANDALUS BOREALIS(FEE 1ST)', 'PANDALUS BOREALIS(FEE OVIG.)', 'PANDALUS BOREALIS(FEE(1+) W/HR)', 'PANDALUS BOREALIS(FEE(1+) W/O HR)', 'PANDALUS BOREALIS(MALE)', 'PANDALUS BOREALIS(TRANS. W/HR)', 'PANDALUS BOREALIS(TRANS. W/O HR)')
+newf$spp[i] <- 'PANDALUS BOREALIS'
+
+i <- newf$spp %in% c('PANDALUS MONTAGUI(FEE 1ST W/HR)', 'PANDALUS MONTAGUI(FEE 1ST W/O HR)', 'PANDALUS MONTAGUI(FEE OVIG.)', 'PANDALUS MONTAGUI(FEE(1+) W/HR)', 'PANDALUS MONTAGUI(FEE(1+) W/O HR)', 'PANDALUS MONTAGUI(MALE)', 'PANDALUS MONTAGUI(TRANS. W/HR)', 'PANDALUS MONTAGUI(TRANS.W/O HR))')
+newf$spp[i] <- 'PANDALUS MONTAGUI'
+
+i <- newf$spp %in% c('ANOTOPTERIDAE', 'PARALEPIS  SP.') #c('PARALEPIS  SP.', 'PARALEPIS BREVIS (ATLANTICA)', 'PARALEPIS COREGONOIDES BOREALIS', 'ANOTOPTERIDAE', 'ANOTOPTERUS PHARAO', 'NOTOLEPIS RISSOI KROYERI') # see http://www.itis.gov/servlet/SingleRpt/SingleRpt?search_topic=TSN&search_value=162532: Anotopteridae should be Paralepididae
+# rdb changed to maintain more specific tax info to be checked by gnr_resolve
+newf$spp[i] <- 'PARALEPIDIDAE' # most observations seem to be at family level
+
+# i <- newf$spp %in% c('PASIPHAEA MULTIDENTATA', 'PASIPHAEA TARDA')
+# newf$spp[i] <- 'PASIPHAEA  SP.'
+
+i <- newf$spp %in% c('SCOPELOSAURUS  SP.')
+newf$spp[i] <- 'SCOPELOSAURIDAE' # according to ITIS, this should be 	Scopelosauridae
+
+# i <- newf$spp %in% c('SIMENCHELYS PARASITICUS')
+# newf$spp[i] <- 'SIMENCHELYIDAE'
+
+# i <- newf$spp %in% c('TRIGLOPS MURRAYI', 'TRIGLOPS NYBELINI', 'TRIGLOPS PINGELI')
+# newf$spp[i] <- 'TRIGLOPS  SP.'
+
+# remove unidentified spp
+i <- !(newf$spp %in% c('EGGS, FISH(SPAWN)', 'EGGS, INVERTEBRATE', 'EGGS, SKATE CASES', 'EGGS, UNIDENTIFIED', 'OFFAL, OTHER', 'PLANT MATERIAL', 'SHELLS', 'STONE', 'UNIDENTIFIED FISH', 'UNIDENTIFIED MATERIAL'))
+newf <- newf[i,]
+
+# =======================================
+# = Trim down to known spp, and to fall =
+# =======================================
+dim(newf) # 378070, 50
+newf[,sum(spp=="", na.rm=TRUE)] # 454
+newf[,sum(is.na(spp))] # 120
+
+newf <- newf["fall"] # trim to only fall
+dim(newf) # 257486, 50
+newf[,sum(spp=="", na.rm=TRUE)] # 234
+newf[,sum(is.na(spp))] # 26
+
+setkey(newf, spp)
+newf <- newf[spp!=""&!is.na(spp),]
+dim(newf) # 257226, 50
+
+# ================
+# = Trim columns =
+# ================
+# setkey(neus, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth, btemp, stemp)
+newf <- newf[,list(yearsurv, datetime, spp, haulid, stratum, area, lat, lon, depth, bottemp, surftemp, wtcpue, numcpue)]
+setnames(newf, old=c("yearsurv", "area", "bottemp", "surftemp", "numcpue"), new=c("year", "stratumarea", "btemp", "stemp", "cntcpue"))
+
+setkey(newf, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth, btemp, stemp)
+newf2 <- newf[j=lapply(list(wtcpue=wtcpue, cntcpue=cntcpue), FUN=sumna), by=key(newf)] # ~5500 fewer rows after summing
+
+# ==============
+# = Add Region =
+# ==============
+newf2[,region:="DFO_Newfoundland_Fall"] # malin's version of the region name
+newf2[,s.reg:="newf"] # my short region (s.reg) name
+
+save(newf2, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/cleanedRegions/newf2.RData")
 
 
 
