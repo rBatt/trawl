@@ -186,7 +186,6 @@ for(i in 1:length(files)){ # for each file
 		sum(is.na(data$wtcpue))	# 27
 		sum(is.na(data$numcpue)) # 448
 
-		# TODO LEFT OFF HERE 
 # Fix temperature fields: one decimal place. 900 means negative
 	i = data$surftemp >= 900 & !is.na(data$surftemp)
 	data$surftemp[i] = -(data$surftemp[i] - 900)/10
