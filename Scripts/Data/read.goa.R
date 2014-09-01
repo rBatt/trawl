@@ -1,4 +1,5 @@
 
+
 # NOTE: using the data.table code took 0.790 seconds, whereas the original code took 5.567 seconds
 library(bit64)
 library(data.table)
@@ -10,6 +11,7 @@ source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctio
 source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rm9s.R")
 source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/calcarea.R")
 source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/sumna.R")
+source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/meanna.R")
 
 
 
@@ -97,9 +99,12 @@ goa[.(c('Bathyrajaabyssicola', 'Bathyrajaaleutica', 'Bathyrajgoanterrupta', 'Bat
 # =============
 # = Aggregate =
 # =============
-setkey(goa, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth, btemp, stemp)
+# setkey(goa, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth, btemp, stemp)
 # goa2 <- goa[j=lapply(list(wtcpue=wtcpue, cntcpue=NUMCPUE), FUN=sumna), by=key(goa)]
-goa2 <- goa[j=lapply(list(wtcpue=wtcpue, cntcpue=NUMCPUE), FUN=meanna), by=key(goa)] # I think cpue should be avgg
+# goa2 <- goa[j=lapply(list(wtcpue=wtcpue, cntcpue=NUMCPUE), FUN=meanna), by=key(goa)] # I think cpue should be avgd
+
+setkey(goa, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth)
+goa2 <- goa[j=lapply(list(stemp=stemp, btemp=btemp, wtcpue=wtcpue, cntcpue=NUMCPUE), FUN=meanna), by=key(goa)]
 
 
 # ==============

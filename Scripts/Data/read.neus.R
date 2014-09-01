@@ -10,6 +10,7 @@ source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctio
 source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rm9s.R")
 source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/calcarea.R")
 source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/sumna.R")
+source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/meanna.R")
 
 
 
@@ -129,9 +130,12 @@ if(any(i)){
 # = Aggregate =
 # =============
 neus[,datetime:=as.character(year)]
-setkey(neus, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth, btemp, stemp)
+# setkey(neus, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth, btemp, stemp)
 # neus2 <- neus[j=lapply(list(wtcpue=wtcpue, cntcpue=cntcpue), FUN=sumna), by=key(neus)]
-neus2 <- neus[j=lapply(list(wtcpue=wtcpue, cntcpue=cntcpue), FUN=sumna), by=key(neus)] # I think cpue should be avgd
+# neus2 <- neus[j=lapply(list(wtcpue=wtcpue, cntcpue=cntcpue), FUN=meanna), by=key(neus)] # I think cpue should be avgd
+
+setkey(neus, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth)
+neus2 <- neus[j=lapply(list(stemp=stemp, btemp=btemp, wtcpue=wtcpue, cntcpue=cntcpue), FUN=meanna), by=key(neus)]
 
 
 # ==============

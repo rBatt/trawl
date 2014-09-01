@@ -11,6 +11,7 @@ source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctio
 source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rm9s.R")
 source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/calcarea.R")
 source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/sumna.R")
+source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/meanna.R")
 
 
 # ====================
@@ -145,10 +146,6 @@ gmex[,stratumarea:=calcarea(cbind(lon, lat)), by=stratum]
 # =============
 setnames(gmex, c("TAXONOMIC", "TEMP_SSURF", "TEMP_BOT", "MO_DAY_YR"), c("spp", "stemp", "btemp", "datetime"))
 
-par(mfrow=c(1,1), mar=c(2.5, 2.5, 0.5, 0.5), ps=8, family="Times", tcl=-0.25, mgp=c(1.5, 0.4, 
-	
-dev.new(3.5, 3.5)
-par(mfrow=c(1,1), mar=c(2.5, 2.5, 0.5, 0.5), ps=8, family="Times", tcl=-0.25, mgp=c(1.5, 0.4, 0))
 
 # ============
 # = Get CPUE =
@@ -216,10 +213,12 @@ gmex[.(c('TRACHYPENEUS CONSTRICTUS', 'TRACHYPENEUS SIMILIS')), spp:='TRACHYPENEU
 # =============
 # = Aggregate =
 # =============
-setkey(gmex, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth, btemp, stemp)
+# setkey(gmex, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth, btemp, stemp)
 # gmex2 <- gmex[j=lapply(list(wtcpue=wtcpue, cntcpue=cntcpue), FUN=sumna), by=key(gmex)]
-gmex2 <- gmex[j=lapply(list(wtcpue=wtcpue, cntcpue=cntcpue), FUN=meanna), by=key(gmex)] # I think cpue should be avgd
+# gmex2 <- gmex[j=lapply(list(wtcpue=wtcpue, cntcpue=cntcpue), FUN=meanna), by=key(gmex)] # I think cpue should be avgd
 
+setkey(gmex, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth)
+gmex2 <- gmex[j=lapply(list(stemp=stemp, btemp=btemp, wtcpue=wtcpue, cntcpue=cntcpue), FUN=meanna), by=key(gmex)]
 
 
 # ==============
@@ -233,4 +232,6 @@ gmex2[,s.reg:="gmex"]
 # = Save =
 # ========
 save(gmex2, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/cleanedRegions/gmex2.RData")
+
+
 

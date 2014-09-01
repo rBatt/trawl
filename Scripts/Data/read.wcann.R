@@ -1,4 +1,5 @@
 
+
 library(data.table)
 library(bit64)
 library(PBSmapping) # for calculating stratum areas
@@ -9,6 +10,7 @@ source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctio
 source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rm9s.R")
 source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/calcarea.R")
 source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/sumna.R")
+source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/meanna.R")
 
 
 wcann.start <- "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/raw_data/NWFSC/2014-02-11/"
@@ -108,9 +110,12 @@ wcann[.(c('Bathyrajaabyssicola', 'Bathyrajaaleutica', 'Bathyrajwcannnterrupta', 
 # = Aggregate =
 # =============
 wcann[,stemp:=as.numeric(NA)]
-setkey(wcann, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth, btemp, stemp)
+# setkey(wcann, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth, btemp, stemp)
 # wcann2 <- wcann[j=lapply(list(wtcpue=wtcpue, cntcpue=cntcpue), FUN=sumna), by=key(wcann)]
-wcann2 <- wcann[j=lapply(list(wtcpue=wtcpue, cntcpue=cntcpue), FUN=sumna), by=key(wcann)] # I think cpue should be avgd
+# wcann2 <- wcann[j=lapply(list(wtcpue=wtcpue, cntcpue=cntcpue), FUN=meanna), by=key(wcann)] # I think cpue should be avgd
+
+setkey(wcann, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth)
+wcann2 <- wcann[j=lapply(list(stemp=stemp, btemp=btemp, wtcpue=wtcpue, cntcpue=cntcpue), FUN=meanna), by=key(wcann)]
 
 
 # ==============
@@ -118,9 +123,6 @@ wcann2 <- wcann[j=lapply(list(wtcpue=wtcpue, cntcpue=cntcpue), FUN=sumna), by=ke
 # ==============
 wcann2[,region:="NWFSC_WCAnn"]
 wcann2[,s.reg:="wcann"]
-
-
-
 
 
 # ========
