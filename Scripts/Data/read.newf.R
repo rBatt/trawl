@@ -485,9 +485,12 @@ dim(newf) # 257226, 50
 newf <- newf[,list(yearsurv, datetime, spp, haulid, stratum, area, lat, lon, depth, bottemp, surftemp, wtcpue, numcpue)]
 setnames(newf, old=c("yearsurv", "area", "bottemp", "surftemp", "numcpue"), new=c("year", "stratumarea", "btemp", "stemp", "cntcpue"))
 
-setkey(newf, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth, btemp, stemp)
+# setkey(newf, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth, btemp, stemp)
 # newf2 <- newf[j=lapply(list(wtcpue=wtcpue, cntcpue=cntcpue), FUN=sumna), by=key(newf)] # ~5500 fewer rows after summing
-newf2 <- newf[j=lapply(list(wtcpue=wtcpue, cntcpue=cntcpue), FUN=meanna), by=key(newf)] # I think cpue should be averaged
+# newf2 <- newf[j=lapply(list(wtcpue=wtcpue, cntcpue=cntcpue), FUN=meanna), by=key(newf)] # I think cpue should be averaged
+
+setkey(newf, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth)
+newf2 <- newf[j=lapply(list(stemp=stemp, btemp=btemp, wtcpue=wtcpue, cntcpue=cntcpue), FUN=meanna), by=key(newf)]
 
 # ==============
 # = Add Region =

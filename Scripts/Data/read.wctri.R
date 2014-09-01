@@ -112,11 +112,12 @@ wctri[.(c('Bathyrajaabyssicola', 'Bathyrajaaleutica', 'Bathyrajwctrinterrupta', 
 # =============
 # = Aggregate =
 # =============
-setkey(wctri, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth, btemp, stemp)
+# setkey(wctri, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth, btemp, stemp)
 # wctri2 <- wctri[j=lapply(list(wtcpue=wtcpue, cntcpue=cntcpue), FUN=sumna), by=key(wctri)]
-wctri2 <- wctri[j=lapply(list(wtcpue=wtcpue, cntcpue=cntcpue), FUN=sumna), by=key(wctri)] # I think cpue should be avgd
+# wctri2 <- wctri[j=lapply(list(wtcpue=wtcpue, cntcpue=cntcpue), FUN=meanna), by=key(wctri)] # I think cpue should be avgd
 
-
+setkey(wctri, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth)
+wctri2 <- wctri[j=lapply(list(stemp=stemp, btemp=btemp, wtcpue=wtcpue, cntcpue=cntcpue), FUN=meanna), by=key(wctri)]
 
 # ==============
 # = Add region =

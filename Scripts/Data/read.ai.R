@@ -10,6 +10,7 @@ source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctio
 source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rm9s.R")
 source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/calcarea.R")
 source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/sumna.R")
+source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/meanna.R")
 
 
 # ====================
@@ -89,10 +90,12 @@ ai[.(c('Bathyrajaabyssicola', 'Bathyrajaaleutica', 'Bathyrajainterrupta', 'Bathy
 # =============
 # = Aggregate =
 # =============
-setkey(ai, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth, btemp, stemp)
+# setkey(ai, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth, btemp, stemp)
 # ai2 <- ai[j=lapply(list(wtcpue=wtcpue, cntcpue=NUMCPUE), FUN=sumna), by=key(ai)]
-ai2 <- ai[j=lapply(list(wtcpue=wtcpue, cntcpue=NUMCPUE), FUN=meanna), by=key(ai)] # I think cpue should be avgd
+# ai2 <- ai[j=lapply(list(wtcpue=wtcpue, cntcpue=NUMCPUE), FUN=meanna), by=key(ai)] # I think cpue should be avgd
 
+setkey(ai, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth)
+ai2 <- ai[j=lapply(list(stemp=stemp, btemp=btemp, wtcpue=wtcpue, cntcpue=NUMCPUE), FUN=meanna), by=key(ai)]
 
 
 # Calculate a corrected longitude for Aleutians (all in western hemisphere coordinates)

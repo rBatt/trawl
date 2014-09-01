@@ -9,6 +9,7 @@ source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctio
 source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rm9s.R")
 source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/calcarea.R")
 source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/sumna.R")
+source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/meanna.R")
 
 
 # ====================
@@ -93,9 +94,12 @@ ebs[.(c('Bathyrajaabyssicola', 'Bathyrajaaleutica', 'Bathyrajebsnterrupta', 'Bat
 # =============
 # = Aggregate =
 # =============
-setkey(ebs, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth, btemp, stemp)
+# setkey(ebs, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth, btemp, stemp)
 # ebs2 <- ebs[j=lapply(list(wtcpue=wtcpue, cntcpue=NUMCPUE), FUN=sumna), by=key(ebs)]
-ebs2 <- ebs[j=lapply(list(wtcpue=wtcpue, cntcpue=NUMCPUE), FUN=meanna), by=key(ebs)] # I think cpue should be avgd
+# ebs2 <- ebs[j=lapply(list(wtcpue=wtcpue, cntcpue=NUMCPUE), FUN=meanna), by=key(ebs)] # I think cpue should be avgd
+
+setkey(ebs, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth)
+ebs2 <- ebs[j=lapply(list(stemp=stemp, btemp=btemp, wtcpue=wtcpue, cntcpue=NUMCPUE), FUN=meanna), by=key(ebs)]
 
 # ==============
 # = Add region =
