@@ -94,7 +94,8 @@ ebs[.(c('Bathyrajaabyssicola', 'Bathyrajaaleutica', 'Bathyrajebsnterrupta', 'Bat
 # = Aggregate =
 # =============
 setkey(ebs, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth, btemp, stemp)
-ebs2 <- ebs[j=lapply(list(wtcpue=wtcpue, cntcpue=NUMCPUE), FUN=sumna), by=key(ebs)]
+# ebs2 <- ebs[j=lapply(list(wtcpue=wtcpue, cntcpue=NUMCPUE), FUN=sumna), by=key(ebs)]
+ebs2 <- ebs[j=lapply(list(wtcpue=wtcpue, cntcpue=NUMCPUE), FUN=meanna), by=key(ebs)] # I think cpue should be avgd
 
 # ==============
 # = Add region =

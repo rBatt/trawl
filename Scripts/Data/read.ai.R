@@ -1,3 +1,5 @@
+
+
 library(data.table)
 library(bit64)
 library(PBSmapping) # for calculating stratum areas
@@ -88,7 +90,8 @@ ai[.(c('Bathyrajaabyssicola', 'Bathyrajaaleutica', 'Bathyrajainterrupta', 'Bathy
 # = Aggregate =
 # =============
 setkey(ai, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth, btemp, stemp)
-ai2 <- ai[j=lapply(list(wtcpue=wtcpue, cntcpue=NUMCPUE), FUN=sumna), by=key(ai)]
+# ai2 <- ai[j=lapply(list(wtcpue=wtcpue, cntcpue=NUMCPUE), FUN=sumna), by=key(ai)]
+ai2 <- ai[j=lapply(list(wtcpue=wtcpue, cntcpue=NUMCPUE), FUN=meanna), by=key(ai)] # I think cpue should be avgd
 
 
 

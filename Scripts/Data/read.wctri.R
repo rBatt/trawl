@@ -113,7 +113,8 @@ wctri[.(c('Bathyrajaabyssicola', 'Bathyrajaaleutica', 'Bathyrajwctrinterrupta', 
 # = Aggregate =
 # =============
 setkey(wctri, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth, btemp, stemp)
-wctri2 <- wctri[j=lapply(list(wtcpue=wtcpue, cntcpue=cntcpue), FUN=sumna), by=key(wctri)]
+# wctri2 <- wctri[j=lapply(list(wtcpue=wtcpue, cntcpue=cntcpue), FUN=sumna), by=key(wctri)]
+wctri2 <- wctri[j=lapply(list(wtcpue=wtcpue, cntcpue=cntcpue), FUN=sumna), by=key(wctri)] # I think cpue should be avgd
 
 
 
