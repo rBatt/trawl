@@ -217,7 +217,8 @@ gmex[.(c('TRACHYPENEUS CONSTRICTUS', 'TRACHYPENEUS SIMILIS')), spp:='TRACHYPENEU
 # = Aggregate =
 # =============
 setkey(gmex, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth, btemp, stemp)
-gmex2 <- gmex[j=lapply(list(wtcpue=wtcpue, cntcpue=cntcpue), FUN=sumna), by=key(gmex)]
+# gmex2 <- gmex[j=lapply(list(wtcpue=wtcpue, cntcpue=cntcpue), FUN=sumna), by=key(gmex)]
+gmex2 <- gmex[j=lapply(list(wtcpue=wtcpue, cntcpue=cntcpue), FUN=meanna), by=key(gmex)] # I think cpue should be avgd
 
 
 

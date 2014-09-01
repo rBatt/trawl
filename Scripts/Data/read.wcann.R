@@ -109,7 +109,8 @@ wcann[.(c('Bathyrajaabyssicola', 'Bathyrajaaleutica', 'Bathyrajwcannnterrupta', 
 # =============
 wcann[,stemp:=as.numeric(NA)]
 setkey(wcann, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth, btemp, stemp)
-wcann2 <- wcann[j=lapply(list(wtcpue=wtcpue, cntcpue=cntcpue), FUN=sumna), by=key(wcann)]
+# wcann2 <- wcann[j=lapply(list(wtcpue=wtcpue, cntcpue=cntcpue), FUN=sumna), by=key(wcann)]
+wcann2 <- wcann[j=lapply(list(wtcpue=wtcpue, cntcpue=cntcpue), FUN=sumna), by=key(wcann)] # I think cpue should be avgd
 
 
 # ==============

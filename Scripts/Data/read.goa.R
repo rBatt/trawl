@@ -98,7 +98,8 @@ goa[.(c('Bathyrajaabyssicola', 'Bathyrajaaleutica', 'Bathyrajgoanterrupta', 'Bat
 # = Aggregate =
 # =============
 setkey(goa, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth, btemp, stemp)
-goa2 <- goa[j=lapply(list(wtcpue=wtcpue, cntcpue=NUMCPUE), FUN=sumna), by=key(goa)]
+# goa2 <- goa[j=lapply(list(wtcpue=wtcpue, cntcpue=NUMCPUE), FUN=sumna), by=key(goa)]
+goa2 <- goa[j=lapply(list(wtcpue=wtcpue, cntcpue=NUMCPUE), FUN=meanna), by=key(goa)] # I think cpue should be avgg
 
 
 # ==============
