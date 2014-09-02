@@ -87,10 +87,6 @@ ebs[.(c('Myoxocephalusjaok', 'Myoxocephalusniger', 'Myoxocephaluspolyacanthoceph
 ebs[.(c('Bathyrajaabyssicola', 'Bathyrajaaleutica', 'Bathyrajebsnterrupta', 'Bathyrajalindbergi', 'Bathyrajamaculata', 'Bathyrajamariposa', 'Bathyrajaminispinosa', 'Bathyrajaparmifera', 'Bathyrajasmirnovi', 'Bathyrajasp.cf.parmifera(Orretal.)', 'Bathyrajaspinosissima', 'Bathyrajataranetzi', 'Bathyrajatrachura', 'Bathyrajaviolacea')), spp:='Bathyrajasp.']; setkey(ebs, spp)
 
 
-
-
-
-
 # =============
 # = Aggregate =
 # =============
@@ -101,11 +97,13 @@ ebs[.(c('Bathyrajaabyssicola', 'Bathyrajaaleutica', 'Bathyrajebsnterrupta', 'Bat
 setkey(ebs, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth)
 ebs2 <- ebs[j=lapply(list(stemp=stemp, btemp=btemp, wtcpue=wtcpue, cntcpue=NUMCPUE), FUN=meanna), by=key(ebs)]
 
+
 # ==============
 # = Add region =
 # ==============
 ebs2[,region:="AFSC_EBS"]
 ebs2[,s.reg:="ebs"]
+
 
 # ========
 # = Save =
