@@ -87,6 +87,8 @@ shelf.raw000[,SDATE:=gsub("-", "/", SDATE)]
 shelf.raw000[,datetime:=as.POSIXct(SDATE, format="%y/%m/%d", tz="GMT")]
 shelf.raw000[,month:=as.numeric(format.Date(datetime, format="%m"))]
 shelf.raw000[,year:=as.numeric(format.Date(datetime, format="%Y"))]
+# need to set datetime back to character so it doesn't conflict with other regions in combine.trawl.R
+shelf.raw000[,datetime:=as.character(datetime)]
 
 # Add Haul to raw000
 shelf.raw000[,haulid:=paste(MISSION, formatC(SETNO, width=3, flag=0))]
