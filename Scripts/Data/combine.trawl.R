@@ -417,15 +417,24 @@ setkey(trawl.newSpp, spp)
 setkey(trawl00, spp)
 trawl0 <- merge(trawl00, trawl.newSpp, all.x=TRUE, by="spp") #trawl[trawl.newSpp]
 
-setkey(trawl0, spp)
 trawl0[!is.na(sppCorr),spp:=sppCorr]
 trawl0[,correctSpp:=!is.na(sppCorr)]
+
+setkey(trawl0, sppCorr)
+# taxLvl1[,sum(is.na(sppCorr))] # this needs to be 0
+if(taxLvl1[,sum(is.na(sppCorr))]==0){
+	trawl0 <- merge(trawl0, taxLvl1, all.x=TRUE)
+}else{
+	print("NA's in sppCorr in taxLvl1 !!")
+}
+
+
 
 # ===========================
 # = Trim trawl columns down =
 # ===========================
-trawl0 <- trawl0[,list(region, s.reg, spp, common, year, datetime, stratum, lat, lon, depth, stemp, btemp, wtcpue, cntcpue, isSpecies, correctSpp)]
-setkey(trawl0, s.reg, spp, year, stratum)
+trawl <- trawl0[,list(region, s.reg, spp, taxLvl, common, year, datetime, stratum, lat, lon, depth, stemp, btemp, wtcpue, cntcpue, correctSpp)]
+setkey(trawl, s.reg, taxLvl, spp, year, stratum)
 
 
 # ====================
@@ -436,17 +445,17 @@ pat2y <- "^(\\d{1,2})(?:\\/)(\\d{1,2})(?:\\/)(\\d{2})(?=\\s)" # for dates like 6
 pat4y <- "^(\\d{1,2})(?:\\/)(\\d{1,2})(?:\\/)(\\d{4})(?=\\s)" # for dates like 6/23/2007, or 06/23/2007, etc
 pat4y.only <- "^(\\d{4})$" # for dates that are just the year, e.g., 2007
 
-trawl0[,datetime:=gsub(pat2y, "20\\3-\\1-\\2", datetime, perl=TRUE)] # e.g., switch out 6/23/07 for 2007-6-23
+trawl[,datetime:=gsub(pat2y, "20\\3-\\1-\\2", datetime, perl=TRUE)] # e.g., switch out 6/23/07 for 2007-6-23
 
-trawl0[,datetime:=gsub(pat4y, "\\3-\\1-\\2", datetime, perl=TRUE)] # e.g., switch out 6/23/2007 for 2007-6-23
+trawl[,datetime:=gsub(pat4y, "\\3-\\1-\\2", datetime, perl=TRUE)] # e.g., switch out 6/23/2007 for 2007-6-23
 
-trawl0[,datetime:=gsub(pat4y.only, "\\1-01-01", datetime, perl=TRUE)] # e.g., switch out 2007 for 2007-01-01
+trawl[,datetime:=gsub(pat4y.only, "\\1-01-01", datetime, perl=TRUE)] # e.g., switch out 2007 for 2007-01-01
 
-trawl0[,datetime:=as.POSIXct(datetime, tz="GMT")] # note that the times get truncated
+trawl[,datetime:=as.POSIXct(datetime, tz="GMT")] # note that the times get truncated
 
 
 # ========
 # = Save =
 # ========
-setkey(trawl, s.reg, region, year, datetime, spp, stratum, haulid)
+setkey(trawl, s.reg, taxLvl, spp, year, stratum)
 save(trawl, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/trawl.RData")
