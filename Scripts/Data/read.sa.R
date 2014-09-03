@@ -112,7 +112,7 @@ sa.raw0[,wtcpue:=wt/effort]
 # = Trim columns =
 # ================
 # Note: might want to consider saving the common names here, and compare them to those grabbed by taxize
-sa.raw0 <- sa.raw0[,list(year, datetime, spp, stratum, stratumarea, lat, lon, depth, stemp, btemp, cntcpue, wtcpue)]
+sa.raw0 <- sa.raw0[,list(year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth, stemp, btemp, cntcpue, wtcpue)]
 
 
 # ===============
@@ -150,12 +150,19 @@ sa.raw <- sa.raw0[stratum%in%sa.YS.pick,] # vector scan instead of binary search
 sa <- sa.raw[spp!="MISCELLANEOUS INVERTEBRATES",]
 
 
+# =============
+# = Aggregate =
+# =============
+setkey(sa, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth)
+sa2 <- sa[j=lapply(list(stemp=stemp, btemp=btemp, wtcpue=wtcpue, cntcpue=cntcpue), FUN=meanna), by=key(sa)]
+
+
 # ==============
-# = Add region =
+# = Add Region =
 # ==============
-sa2 <- sa
 sa2[,region:="SEAMAP_SA"]
 sa2[,s.reg:="sa"]
+
 
 # ========
 # = Save =
