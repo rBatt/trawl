@@ -33,7 +33,7 @@ sgulf.catch0 <- sgulf.catch00[!((is.na(catch)|catch==0) & (is.na(biomass)|biomas
 
 sgulf.catch0[,haulid:=paste(vessel, cruise, set, sep="-")]
 sgulf.catch0[,datetime:=paste(paste(year, month, day, sep="-"), gsub("(?<=\\d)([\\d]{2})(?=$)", ":\\1", time, perl=TRUE))]
-sgulf.catch0[,datetime:=as.POSIXct(datetime)]
+# sgulf.catch0[,datetime:=as.POSIXct(datetime)]
 
 setnames(sgulf.catch0, c("catch", "biomass", "latitude", "longitude", "latin_name", "name", "strat"), c("cntcpue", "wtcpue", "lat", "lon", "spp", "common", "stratum"))
 
@@ -47,7 +47,7 @@ sgulf.set0 <- fread(paste(sgulf.start, "sGSL_RV Survey sets_1971_2009_ryan.csv",
 
 sgulf.set0[,haulid:=paste(vessel, cruise, set, sep="-")]
 sgulf.set0[,datetime:=paste(paste(year, month, day, sep="-"), gsub("(?<=\\d)([\\d]{2})(?=$)", ":\\1", time, perl=TRUE))]
-sgulf.set0[,datetime:=as.POSIXct(datetime)]
+# sgulf.set0[,datetime:=as.POSIXct(datetime)]
 
 setnames(sgulf.set0, c("t_surface", "t_bottom", "strat"), c("stemp", "btemp", "stratum"))
 
