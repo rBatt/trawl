@@ -170,6 +170,8 @@ newf.raw[newf.raw$year<1950, year:=year+100]
 newf.raw[,datetime:=as.POSIXct(paste(year, monthl, dayl, sep="-"), tz="Canada/Newfoundland")]
 # newf.raw[,datetime:=format.Date(datetime, tz="GMT")]
 newf.raw[,julian:=as.integer(format.Date(datetime, format="%j"))]
+# change back to character so doesn't cause conflict in combine.trawl.R
+newf.raw[,datetime:=as.character(datetime)]
 
 
 # ==================
