@@ -120,7 +120,7 @@ shelf.raw0 <- shelf.raw00[stratum%in%shelf.YS.pick,] # vector scan instead of bi
 # ===============
 # malin line 119 & 120
 shelf.raw0[,lat:=as.numeric(substr(SLAT,1,2))+as.numeric(substr(SLAT,3,4))/60]
-shelf.raw0[,lon:=as.numeric(substr(SLONG,1,2))-as.numeric(substr(SLONG,3,4))/60]
+shelf.raw0[,lon:= -as.numeric(substr(SLONG,1,2))-as.numeric(substr(SLONG,3,4))/60]
 
 
 # =========================
