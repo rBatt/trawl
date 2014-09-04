@@ -346,7 +346,7 @@ trawl.newSpp <- unique(trawl.newSpp)
 # classification("Abisa", db="itis")
 sppCorr2 <- trawl.newSpp[,sppCorr]
 # formals(get_tsn)$ask <- FALSE
-if(!"taxLvl.RData"%in%tax.files){
+if(!"taxLvl1.RData"%in%tax.files){
 	print("File of taxonomic levels not found, searching for all")
 	flush.console()
 	tlvl.pb <- txtProgressBar(min=1, max=length(sppCorr2), style=3)
@@ -381,7 +381,7 @@ if(!"taxLvl.RData"%in%tax.files){
 	setkey(taxLvl1, sppCorr)
 	new.sppCorr0 <- !u.sppCorr%in%taxLvl1[,sppCorr] & !is.na(u.sppCorr)
 	if(any(new.sppCorr0 )){
-		print(paste("Looking up common names for ", sum(new.sppCorr0), " new spp", sep=""))
+		print(paste("Looking up taxonomic level for ", sum(new.sppCorr0), " new spp", sep=""))
 		flush.console()
 		new.sppCorr <- u.sppCorr[new.sppCorr0]
 		tlvl.pb <- txtProgressBar(min=1, max=length(new.sppCorr), style=3) # initialize the progress bar
@@ -393,7 +393,7 @@ if(!"taxLvl.RData"%in%tax.files){
 				},
 					error=function(cond){as.character(NA)}
 			)
-			t.taxLvl2 <- data.table(sppCorr=new.sppCorr[i], taxLevel=t.taxLvl0)
+			t.taxLvl2 <- data.table(sppCorr=new.sppCorr[i], taxLvl=t.taxLvl0)
 			if(i==1){
 				taxLvl2 <- t.taxLvl2
 			}else{
@@ -409,6 +409,8 @@ if(!"taxLvl.RData"%in%tax.files){
 	}
 }
 
+
+# taxLvl1[,sum(!is.na(taxLvl)&(taxLvl%in%c("Species")|(grepl("\\s", sppCorr)&taxLvl=="Genus")))]
 
 # ======================================
 # = Update species names in trawl data =
@@ -441,9 +443,14 @@ setkey(trawl, s.reg, taxLvl, spp, year, stratum)
 # = Fix date formats =
 # ====================
 # regular expression patterns
-pat2y <- "^(\\d{1,2})(?:\\/)(\\d{1,2})(?:\\/)(\\d{2})(?=\\s)" # for dates like 6/23/07 or 06/5/07 or 06/05/07
-pat4y <- "^(\\d{1,2})(?:\\/)(\\d{1,2})(?:\\/)(\\d{4})(?=\\s)" # for dates like 6/23/2007, or 06/23/2007, etc
+pat2y <- "^(\\d{1,2})(?:[\\/-])(\\d{1,2})(?:[\\/-])(\\d{2})(?=\\s|$)" # for dates like 6/23/07 or 06/5/07 or 06/05/07
+pat4y <- "^(\\d{1,2})(?:[\\/-])(\\d{1,2})(?:[\\/-])(\\d{4})(?=\\s|$)" # for dates like 6/23/2007, or 06/23/2007, etc
 pat4y.only <- "^(\\d{4})$" # for dates that are just the year, e.g., 2007
+
+test <- c("7/15/10 17:59", "08/03/1997 17:58", "09/01/1987 18:00", "07-17-1991")
+gsub(pat2y, "20\\3-\\1-\\2", test, perl=TRUE)
+gsub(pat4y, "\\3-\\1-\\2", test, perl=TRUE)
+# pat.mdy <- "^(\\d{1,2})(?:[\\/-])(\\d{1,2})(?:[\\/-])"
 
 trawl[,datetime:=gsub(pat2y, "20\\3-\\1-\\2", datetime, perl=TRUE)] # e.g., switch out 6/23/07 for 2007-6-23
 
@@ -451,7 +458,17 @@ trawl[,datetime:=gsub(pat4y, "\\3-\\1-\\2", datetime, perl=TRUE)] # e.g., switch
 
 trawl[,datetime:=gsub(pat4y.only, "\\1-01-01", datetime, perl=TRUE)] # e.g., switch out 2007 for 2007-01-01
 
-trawl[,datetime:=as.POSIXct(datetime, tz="GMT")] # note that the times get truncated
+# trawl[,datetime:=as.POSIXct(datetime, tz="GMT")] # note that the times get truncated # too slow, see below for better solution
+
+# ======================
+# = Add POSIX to trawl =
+# ======================
+trawl.posix <- data.table(datetime=trawl[,unique(datetime)], datetimeP=as.POSIXct(trawl[,unique(datetime)], tz="GMT"))
+setkey(trawl.posix, datetime)
+setkey(trawl, datetime)
+trawl <- merge(trawl, trawl.posix, all.x=TRUE)
+trawl[,datetime:=datetimeP]
+trawl <- trawl[,j=names(trawl)[names(trawl)!="datetimeP"], with=FALSE]
 
 
 # ========
