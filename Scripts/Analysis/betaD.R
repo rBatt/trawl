@@ -1,4 +1,5 @@
 
+library(maps)
 library(data.table)
 library(vegan)
 library(reshape2)
@@ -144,11 +145,11 @@ beta.turn.yr[,turn.yr.col:=heat.cols[cut(rank(-turn.yr, na.last="keep"), 256)]]
 # beta.turn.yr[,turn.yr.col:=heat.cols[cut(exp(pmin(turn.yr,0)), 256)]]
 
 
-dev.new(height=5, width=beta.turn.yr[,map.w(lat,lon,5)])
-par(mar=c(1.5,1.5,0.5,0.5), mgp=c(1,0.5,0), tcl=-0.15, ps=8, family="Times", cex=1, bg="lightgray")
+dev.new(height=4, width=beta.turn.yr[,map.w(lat,lon,4)])
+par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1, bg="lightgray")
 # par(mfrow=c(4,3))
 
-beta.turn.yr[,plot(lon, lat, col=turn.yr.col, pch=21, cex=1)]
+beta.turn.yr[,plot(lon, lat, col=turn.yr.col, pch=21, cex=1, type="n")]
 
 # beta.turn.yr[,map(xlim=range(lon, na.rm=TRUE), ylim=range(lat, na.rm=TRUE),add=FALSE, type="n")]
 beta.turn.yr[,map(add=TRUE, fill=FALSE, col="black")]
@@ -162,10 +163,59 @@ beta.turn.yr[,segments(x0=-165, x1=-160, y0=key.lat, col=turn.yr.col)]
 beta.turn.yr[,segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")] # tick marks
 beta.turn.yr[,text(-167, y=seq(30,40, length.out=4), round(quantile(-turn.yr, na.rm=TRUE, probs=seq(0,1,length.out=4)),2), adj=1, cex=1, col="black")]
 
+beta.turn.yr[,text(-162.5, 42.5, bquote(over({log[e](Dissimilarity)},{Year})))]
 
 
 
 
+
+# =============================================
+# = Beta variance across strata within a year =
+# =============================================
+beta.var.strat.expr <- bquote({
+	castExp <- acast(melt(.SD, id.vars=c("stratum","spp"), measure.vars=c("wtcpue")), stratum~spp, fill=0)[,-1]
+
+	mat.stand <- decostand(castExp, method="log", logbase=2)
+	mat.stand2 <- decostand(castExp, method="log", logbase=Inf)
+	# Note:
+	# Will throw warning: non-integer data: divided by smallest positive value
+	# This is because it expects counts of species, but units are in biomass per effort
+	# So the function is dividing all values in that row by smallest positive value so that it's 1
+
+	c(mean(vegdist(mat.stand, method="altGower"), na.rm=TRUE), mean(vegdist(mat.stand2, method="altGower"), na.rm=TRUE))
+})
+
+beta.var.strat <- trawl3[,
+	j={
+		var.strat0 <- eval(beta.var.strat.expr)
+		list(
+			var.strat.ID.abun=var.strat0[1],
+			var.strat.ID.only=var.strat0[2]
+		)
+	}, 
+	by=c("s.reg","year")
+]
+
+setkey(beta.var.strat, s.reg, year)
+
+
+dev.new()
+par(mfrow=c(4,3), mar=c(1.75,1.5,1,1), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
+beta.var.strat[,
+	{
+		plot(year, var.strat.ID.abun, type="l", main=s.reg, xlab="", ylab="")
+		# par(new=TRUE)
+		# plot(year, var.strat.ID.only, type="l", xaxt="n", xlab="", yaxt="n", ylab="", col="red")
+		# axis(side=4, col="red")
+		},
+	by="s.reg"
+]
+
+# look at cod again
+# dev.new()
+# par(mfrow=c(2,2))
+# setkey(trawl3, s.reg, spp, year)
+# trawl3[spp=="Gadus morhua", {plot(aggregate(wtcpue, list(year=year), mean), ylab=s.reg, type="l"); abline(v=1986)}, by="s.reg"]
 
 
 
