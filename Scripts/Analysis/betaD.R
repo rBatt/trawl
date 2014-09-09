@@ -1,4 +1,6 @@
 
+
+
 library(maps)
 library(data.table)
 library(vegan)
@@ -34,7 +36,9 @@ trawl[s.reg=="wctri",s.reg:="wc"]
 # = Begin trimming =
 # ==================
 # Trim to Genus or Spp
-trawl1 <- trawl[taxLvl%in%c("Genus","Species")]
+# trawl1 <- trawl[taxLvl%in%c("Genus","Species")]
+trawl1 <- trawl[taxLvl%in%c("Species")]
+# trawl1 <- trawl
 
 # Drop rows w/ no wtcpue
 trawl1 <- trawl1[is.finite(wtcpue)&wtcpue>0,]
@@ -98,13 +102,39 @@ rm(list=c("trawl","trawl1"))
 # ====================
 # = Calculate a Beta =
 # ====================
-# # trawl3[s.reg=="neus", sum(wtcpue>0), by=c("stratum","year")][V1==max(V1), list(stratum, year, V1)]
+# shelf.space <- c("447", "449", "450", "455", "472", "482", "451", "480", "490", "491", "492", "493", "494", "485", "495", "441", "442", "444", "458", "459", "460", "461", "462", "470", "471", "476", "477", "481", "483", "484", "445", "466", "448", "440", "443", "446", "452", "453", "454", "456", "457", "463", "464", "465", "473", "475", "478")
+# slopes <- c()
+# vars <- c()
+# for(i in 1:length(shelf.space)){
+# 	test <- trawl3[s.reg=="shelf"&stratum==shelf.space[i]]
+# 	test2 <- acast(melt(test, id.vars=c("year","spp"), measure.vars=c("wtcpue")), year~spp)[,-1]
+# 	test3 <- vegdist(decostand(test2, method="log", logbase=5), method="altGower")
+# 	t3.yr <- as.numeric(attributes(test3)$Labels)
+# 	t3.delX <- dist(t3.yr, method="manhattan")
+# 	plot(c(t3.delX), log(c(test3)), ylab=bquote((1-Delta*y[J])), xlab=bquote(Delta*x~(years))) # This is a scatter plot of the relationship that needs to be modeled for spatial/temporal turnover
+# 	t3.mod <- lm(log(c(test3))~c(t3.delX))
+# 	abline(t3.mod)
+# 	summary(t3.mod)
+# 	t3.beta <- t3.mod$coef[2]
+# 	slopes[i] <- t3.beta
+# 	vars[i] <- mean(test3)
+# }
+
+
+### trawl3[s.reg=="neus", sum(wtcpue>0), by=c("stratum","year")][V1==max(V1), list(stratum, year, V1)]
 # test <- trawl3[s.reg=="neus"&stratum=="1100"]
-# test2 <- acast(melt(test, id.vars=c("year","spp"), measure.vars=c("wtcpue")), year~spp)[,-1]
-# test3 <- vegdist(test2, method="jaccard")
+# test2 <- acast(melt(test, id.vars=c("year","spp"), measure.vars=c("wtcpue")), year~spp)[,-1] # This is a community matrix, Y
+#
+# blah <- beta.div(test2, nperm=0, save.D=TRUE)
+# sort(blah$SCBD)
+# sort(blah$LCBD)
+
+
+# test3 <- vegdist(decostand(test2, method="log", logbase=5), method="altGower")
 # t3.yr <- as.numeric(attributes(test3)$Labels)
 # t3.delX <- dist(t3.yr, method="manhattan")
-# plot(c(t3.delX), log(1-c(test3)), ylab=bquote((1-Delta*y[J])), xlab=bquote(Delta*x~(years))) # This is a scatter plot of the relationship that needs to be modeled for spatial/temporal turnover
+
+# plot(c(t3.delX), log(c(test3)), ylab=bquote((1-Delta*y[J])), xlab=bquote(Delta*x~(years))) # This is a scatter plot of the relationship that needs to be modeled for spatial/temporal turnover
 # t3.mod <- lm(log(1-c(test3))~c(t3.delX))
 # abline(t3.mod)
 # summary(t3.mod)
@@ -121,11 +151,12 @@ beta.turn.time.expr <- bquote({
 	if(lu(year)>3){
 		castExp <- acast(melt(.SD, id.vars=c("year","spp"), measure.vars=c("wtcpue")), year~spp)[,-1]
 		# d.jac <- vegdist(castExp, method="jaccard")
-		d.jac <- vegdist(decostand(castExp, method="log", logbase=Inf), method="jaccard")
+		d.jac <- vegdist(decostand(castExp, method="log", logbase=5), method="jaccard")
 		# print(paste(s.reg, stratum, sum((1-d.jac)<=0|!is.finite(1-d.jac))))
-		dX.yr <- dist(as.numeric(attributes(d.jac)$Labels), method="manhattan")
+		dX.yr <- dist(as.numeric(attributes(d.jac)$Labels), method="euclidean")
 		# d.jac1 <- 1-c(d.jac) # change the distance matrix into the (1-DeltaY) vector
 		# good.y1 <- d.jac1>0 # figure out which indices would throw error if took log
+		
 		d.jac1 <- c(d.jac) # change the distance matrix into the (1-DeltaY) vector
 		good.y1 <- d.jac1>0 # figure out which indices would throw error if took log
 		dy1 <- log(d.jac1[good.y1])
@@ -178,14 +209,16 @@ beta.turn.time[,text(-162.5, 41.5, bquote(Temporal~Turnover))]
 beta.var.time.expr <- bquote({
 	castExp <- acast(melt(.SD, id.vars=c("year","spp"), measure.vars=c("wtcpue")), year~spp, fill=0)[,-1]
 
-	mat.stand <- decostand(castExp, method="log", logbase=2)
-	mat.stand2 <- decostand(castExp, method="log", logbase=Inf)
+	# mat.stand <- decostand(castExp, method="log", logbase=5)
+# 	mat.stand2 <- decostand(castExp, method="log", logbase=Inf)
 	# Note:
 	# Will throw warning: non-integer data: divided by smallest positive value
 	# This is because it expects counts of species, but units are in biomass per effort
 	# So the function is dividing all values in that row by smallest positive value so that it's 1
 
-	c(mean(vegdist(mat.stand, method="altGower"), na.rm=TRUE), mean(vegdist(mat.stand2, method="altGower"), na.rm=TRUE))
+	# c(mean(vegdist(mat.stand, method="altGower"), na.rm=TRUE), mean(vegdist(mat.stand2, method="altGower"), na.rm=TRUE))
+	
+	beta.div(castExp, nperm=0)[[1]][1]
 })
 
 beta.var.time <- trawl3[,
@@ -240,7 +273,7 @@ beta.var.time[,text(-162.5, 41.5, bquote(Temporal~Variance))]
 # =========================
 # = Beta spatial turnover =
 # =========================
-beta.turn.strat.expr <- bquote({
+beta.turn.space.expr <- bquote({
 	castExp <- acast(melt(.SD, id.vars=c("stratum","spp"), measure.vars=c("wtcpue")), stratum~spp, fill=0)[,-1]
 	d.jac <- vegdist(decostand(castExp, method="log", logbase=Inf), method="jaccard")
 	
@@ -248,7 +281,7 @@ beta.turn.strat.expr <- bquote({
 	# dX.ll <- dist(matrix(c(lon,lat),ncol=2), method="manhattan")
 	mu.ll <- .SD[,list(lon.mu=mean(lon), lat.mu=mean(lat)), by="stratum"]
 	# print(mu.ll)
-	dX.ll <- mu.ll[,dist(matrix(c(lon.mu,lat.mu),ncol=2), method="manhattan")]
+	dX.ll <- mu.ll[,dist(matrix(c(lon.mu,lat.mu),ncol=2), method="euclidean")]
 	# print(dX.ll)
 	
 	d.jac1 <- c(d.jac) # change the distance matrix into the (1-DeltaY) vector
@@ -260,17 +293,16 @@ beta.turn.strat.expr <- bquote({
 	decay.slope
 })
 
-beta.turn.strat <- trawl3[,list(lon=mean(lon), lat=mean(lat), turn.strat=eval(beta.turn.strat.expr)), by=c("s.reg","year")]
-beta.turn.strat <- beta.turn.yr[!is.na(turn.yr),]
-setkey(beta.turn.strat, s.reg, year)
+beta.turn.space <- trawl3[,list(lon=mean(lon), lat=mean(lat), turn.space=eval(beta.turn.space.expr)), by=c("s.reg","year")]
+setkey(beta.turn.space, s.reg, year)
 
 dev.new()
 par(mfrow=c(4,3), mar=c(1.75,1.5,1,1), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
-beta.turn.strat[,
+beta.turn.space[,
 	{
-		plot(year, turn.strat, type="l", main=s.reg, xlab="", ylab="")
+		plot(year, turn.space, type="l", main=s.reg, xlab="", ylab="")
 		# par(new=TRUE)
-		# plot(year, var.strat.ID.only, type="l", xaxt="n", xlab="", yaxt="n", ylab="", col="red")
+		# plot(year, var.space.ID.only, type="l", xaxt="n", xlab="", yaxt="n", ylab="", col="red")
 		# axis(side=4, col="red")
 		},
 	by="s.reg"
@@ -283,7 +315,7 @@ beta.turn.strat[,
 # =========================
 # = Beta spatial variance =
 # =========================
-beta.var.strat.expr <- bquote({
+beta.var.space.expr <- bquote({
 	castExp <- acast(melt(.SD, id.vars=c("stratum","spp"), measure.vars=c("wtcpue")), stratum~spp, fill=0)[,-1]
 
 	mat.stand <- decostand(castExp, method="log", logbase=2)
@@ -292,31 +324,35 @@ beta.var.strat.expr <- bquote({
 	# Will throw warning: non-integer data: divided by smallest positive value
 	# This is because it expects counts of species, but units are in biomass per effort
 	# So the function is dividing all values in that row by smallest positive value so that it's 1
+	
+	d1 <- vegdist(mat.stand, method="altGower")
+	d2 <- vegdist(mat.stand2, method="altGower")
 
-	c(mean(vegdist(mat.stand, method="altGower"), na.rm=TRUE), mean(vegdist(mat.stand2, method="altGower"), na.rm=TRUE))
+	# c(mean(vegdist(mat.stand, method="altGower"), na.rm=TRUE), mean(vegdist(mat.stand2, method="altGower"), na.rm=TRUE))
+	c("")
 })
 
-beta.var.strat <- trawl3[,
+beta.var.space <- trawl3[,
 	j={
-		var.strat0 <- eval(beta.var.strat.expr)
+		var.space0 <- eval(beta.var.space.expr)
 		list(
-			var.strat.ID.abun=var.strat0[1],
-			var.strat.ID.only=var.strat0[2]
+			var.space.ID.abun=var.space0[1],
+			var.space.ID.only=var.space0[2]
 		)
 	}, 
 	by=c("s.reg","year")
 ]
 
-setkey(beta.var.strat, s.reg, year)
+setkey(beta.var.space, s.reg, year)
 
 
 dev.new()
 par(mfrow=c(4,3), mar=c(1.75,1.5,1,1), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
-beta.var.strat[,
+beta.var.space[,
 	{
-		plot(year, var.strat.ID.abun, type="l", main=s.reg, xlab="", ylab="")
+		plot(year, var.space.ID.abun, type="l", main=s.reg, xlab="", ylab="")
 		# par(new=TRUE)
-		# plot(year, var.strat.ID.only, type="l", xaxt="n", xlab="", yaxt="n", ylab="", col="red")
+		# plot(year, var.space.ID.only, type="l", xaxt="n", xlab="", yaxt="n", ylab="", col="red")
 		# axis(side=4, col="red")
 		},
 	by="s.reg"
@@ -325,16 +361,33 @@ beta.var.strat[,
 
 
 
-# look at cod again
+# # look at cod again
 # dev.new()
 # par(mfrow=c(2,2))
 # setkey(trawl3, s.reg, spp, year)
 # trawl3[spp=="Gadus morhua", {plot(aggregate(wtcpue, list(year=year), mean), ylab=s.reg, type="l"); abline(v=1986)}, by="s.reg"]
 
 
+# ====================================
+# = Compare Spatial/Temporal Indices =
+# ====================================
+# See Mellin et al. Proc R. Soc. B "Strong but opposing β-diversity–stability relationships in coral reef fish communities"
+#
+temporal.var <- beta.var.time[,list(var.time=mean(var.time.ID.abun)), by="s.reg"]
+spatial.var <- beta.var.space[,list(var.space=mean(var.space.ID.abun)), by="s.reg"]
+
+temporal.turn <- beta.turn.time[,list(turn.time=mean(turn.time)), by="s.reg"]
+spatial.turn <- beta.turn.space[, list(turn.space=mean(turn.space)), by="s.reg"]
+
+plot(spatial.turn[,turn.space], temporal.turn[,turn.time])
+
+plot(spatial.var[,var.space], temporal.var[,var.time])
 
 
+beta.temporal <- merge(beta.var.time[,list(s.reg,stratum,lon,lat,var.time.ID.abun)], beta.turn.time[,list(s.reg,stratum,lon,lat,turn.time)], by=c("s.reg","stratum","lon","lat"))
+beta.temporal[,plot((var.time.ID.abun), (turn.time))]
 
+beta.spatial <- merge(beta.var.space)
 
 
 
