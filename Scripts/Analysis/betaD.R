@@ -98,31 +98,35 @@ rm(list=c("trawl","trawl1"))
 # ====================
 # = Calculate a Beta =
 # ====================
-# trawl3[s.reg=="neus", sum(wtcpue>0), by=c("stratum","year")][V1==max(V1), list(stratum, year, V1)]
-test <- trawl3[s.reg=="neus"&stratum=="1100"]
-test2 <- acast(melt(test, id.vars=c("year","spp"), measure.vars=c("wtcpue")), year~spp)[,-1]
-test3 <- vegdist(test2, method="jaccard")
-t3.yr <- as.numeric(attributes(test3)$Labels)
-t3.delX <- dist(t3.yr, method="manhattan")
-plot(c(t3.delX), log(1-c(test3)), ylab=bquote((1-Delta*y[J])), xlab=bquote(Delta*x~(years))) # This is a scatter plot of the relationship that needs to be modeled for spatial/temporal turnover
-t3.mod <- lm(log(1-c(test3))~c(t3.delX))
-abline(t3.mod)
-summary(t3.mod)
-t3.beta <- t3.mod$coef[2]
+# # trawl3[s.reg=="neus", sum(wtcpue>0), by=c("stratum","year")][V1==max(V1), list(stratum, year, V1)]
+# test <- trawl3[s.reg=="neus"&stratum=="1100"]
+# test2 <- acast(melt(test, id.vars=c("year","spp"), measure.vars=c("wtcpue")), year~spp)[,-1]
+# test3 <- vegdist(test2, method="jaccard")
+# t3.yr <- as.numeric(attributes(test3)$Labels)
+# t3.delX <- dist(t3.yr, method="manhattan")
+# plot(c(t3.delX), log(1-c(test3)), ylab=bquote((1-Delta*y[J])), xlab=bquote(Delta*x~(years))) # This is a scatter plot of the relationship that needs to be modeled for spatial/temporal turnover
+# t3.mod <- lm(log(1-c(test3))~c(t3.delX))
+# abline(t3.mod)
+# summary(t3.mod)
+# t3.beta <- t3.mod$coef[2]
 
 
-# ======================================================================
-# = Beta turnover across years w/in stratum (temporal autocorrelation) =
-# ======================================================================
-beta.turn.yr.expr <- bquote({
+
+# ==========================
+# = Beta temporal turnover =
+# ==========================
+beta.turn.time.expr <- bquote({
 	# print(paste(s.reg, stratum))
 	# print(.SD)
-	if(lu(year)>10){
+	if(lu(year)>3){
 		castExp <- acast(melt(.SD, id.vars=c("year","spp"), measure.vars=c("wtcpue")), year~spp)[,-1]
-		d.jac <- vegdist(castExp, method="jaccard")
+		# d.jac <- vegdist(castExp, method="jaccard")
+		d.jac <- vegdist(decostand(castExp, method="log", logbase=Inf), method="jaccard")
 		# print(paste(s.reg, stratum, sum((1-d.jac)<=0|!is.finite(1-d.jac))))
 		dX.yr <- dist(as.numeric(attributes(d.jac)$Labels), method="manhattan")
-		d.jac1 <- 1-c(d.jac) # change the distance matrix into the (1-DeltaY) vector
+		# d.jac1 <- 1-c(d.jac) # change the distance matrix into the (1-DeltaY) vector
+		# good.y1 <- d.jac1>0 # figure out which indices would throw error if took log
+		d.jac1 <- c(d.jac) # change the distance matrix into the (1-DeltaY) vector
 		good.y1 <- d.jac1>0 # figure out which indices would throw error if took log
 		dy1 <- log(d.jac1[good.y1])
 		dX <- c(dX.yr)[good.y1]
@@ -134,44 +138,151 @@ beta.turn.yr.expr <- bquote({
 
 })
 
-
-beta.turn.yr <- trawl3[,list(lon=mean(lon), lat=mean(lat), turn.yr=eval(beta.turn.yr.expr)), by=c("s.reg","stratum")]
-beta.turn.yr <- beta.turn.yr[!is.na(turn.yr),]
+beta.turn.time <- trawl3[,list(lon=mean(lon), lat=mean(lat), turn.time=eval(beta.turn.time.expr)), by=c("s.reg","stratum")]
+beta.turn.time <- beta.turn.time[!is.na(turn.time),]
 
 
 heat.cols <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(256)
 
-beta.turn.yr[,turn.yr.col:=heat.cols[cut(rank(-turn.yr, na.last="keep"), 256)]]
-# beta.turn.yr[,turn.yr.col:=heat.cols[cut(exp(pmin(turn.yr,0)), 256)]]
+beta.turn.time[,turn.time.col:=heat.cols[cut(rank(turn.time, na.last="keep"), 256)]]
+# beta.turn.time[,turn.time.col:=heat.cols[cut(exp(pmin(turn.time,0)), 256)]]
 
 
-dev.new(height=4, width=beta.turn.yr[,map.w(lat,lon,4)])
+dev.new(height=4, width=beta.turn.time[,map.w(lat,lon,4)])
 par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1, bg="lightgray")
 # par(mfrow=c(4,3))
 
-beta.turn.yr[,plot(lon, lat, col=turn.yr.col, pch=21, cex=1, type="n")]
+beta.turn.time[,plot(lon, lat, col=turn.time.col, pch=21, cex=1, type="n")]
 
-# beta.turn.yr[,map(xlim=range(lon, na.rm=TRUE), ylim=range(lat, na.rm=TRUE),add=FALSE, type="n")]
-beta.turn.yr[,map(add=TRUE, fill=FALSE, col="black")]
+# beta.turn.time[,map(xlim=range(lon, na.rm=TRUE), ylim=range(lat, na.rm=TRUE),add=FALSE, type="n")]
+beta.turn.time[,map(add=TRUE, fill=FALSE, col="black")]
 # map.axes()
 
-beta.turn.yr[,points(lon, lat, col=turn.yr.col, pch=21, cex=1)]
+beta.turn.time[,points(lon, lat, col=turn.time.col, pch=21, cex=1)]
 
-beta.turn.yr[,key.lat:=seq(30,40,length.out=256)[cut(rank(-turn.yr, na.last="keep"), 256)]]
-beta.turn.yr[,segments(x0=-165, x1=-160, y0=key.lat, col=turn.yr.col)]
+beta.turn.time[,key.lat:=seq(30,40,length.out=256)[cut(rank(turn.time, na.last="keep"), 256)]]
+beta.turn.time[,segments(x0=-165, x1=-160, y0=key.lat, col=turn.time.col)]
 
-beta.turn.yr[,segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")] # tick marks
-beta.turn.yr[,text(-167, y=seq(30,40, length.out=4), round(quantile(-turn.yr, na.rm=TRUE, probs=seq(0,1,length.out=4)),2), adj=1, cex=1, col="black")]
+beta.turn.time[,segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")] # tick marks
+beta.turn.time[,text(-167, y=seq(30,40, length.out=4), round(quantile(turn.time, na.rm=TRUE, probs=seq(0,1,length.out=4)),2), adj=1, cex=1, col="black")]
 
-beta.turn.yr[,text(-162.5, 42.5, bquote(over({log[e](Dissimilarity)},{Year})))]
-
-
-
+# beta.turn.time[,text(-162.5, 42.5, bquote(over({log[e](Dissimilarity)},{Year})))]
+beta.turn.time[,text(-162.5, 41.5, bquote(Temporal~Turnover))]
 
 
-# =============================================
-# = Beta variance across strata within a year =
-# =============================================
+
+
+# ==========================
+# = Beta temporal variance =
+# ==========================
+beta.var.time.expr <- bquote({
+	castExp <- acast(melt(.SD, id.vars=c("year","spp"), measure.vars=c("wtcpue")), year~spp, fill=0)[,-1]
+
+	mat.stand <- decostand(castExp, method="log", logbase=2)
+	mat.stand2 <- decostand(castExp, method="log", logbase=Inf)
+	# Note:
+	# Will throw warning: non-integer data: divided by smallest positive value
+	# This is because it expects counts of species, but units are in biomass per effort
+	# So the function is dividing all values in that row by smallest positive value so that it's 1
+
+	c(mean(vegdist(mat.stand, method="altGower"), na.rm=TRUE), mean(vegdist(mat.stand2, method="altGower"), na.rm=TRUE))
+})
+
+beta.var.time <- trawl3[,
+	j={
+		var.time0 <- eval(beta.var.time.expr)
+		list(
+			lat=mean(lat),
+			lon=mean(lon),
+			var.time.ID.abun=var.time0[1],
+			var.time.ID.only=var.time0[2]
+		)
+	}, 
+	by=c("s.reg","stratum")
+]
+setkey(beta.var.time, s.reg, stratum)
+
+
+
+heat.cols <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(256)
+
+beta.var.time[,var.time.col:=heat.cols[cut(rank(var.time.ID.abun, na.last="keep"), 256)]]
+# beta.var.time[,var.time.col:=heat.cols[cut(exp(pmin(var.time,0)), 256)]]
+
+
+dev.new(height=4, width=beta.var.time[,map.w(lat,lon,4)])
+par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1, bg="lightgray")
+# par(mfrow=c(4,3))
+
+beta.var.time[,plot(lon, lat, col=var.time.col, pch=21, cex=1, type="n")]
+
+# beta.var.time[,map(xlim=range(lon, na.rm=TRUE), ylim=range(lat, na.rm=TRUE),add=FALSE, type="n")]
+beta.var.time[,map(add=TRUE, fill=FALSE, col="black")]
+# map.axes()
+
+beta.var.time[,points(lon, lat, col=var.time.col, pch=21, cex=1)]
+
+beta.var.time[,key.lat:=seq(30,40,length.out=256)[cut(rank(var.time.ID.abun, na.last="keep"), 256)]]
+beta.var.time[,segments(x0=-165, x1=-160, y0=key.lat, col=var.time.col)]
+
+beta.var.time[,segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")] # tick marks
+beta.var.time[,text(-167, y=seq(30,40, length.out=4), round(quantile(var.time.ID.abun, na.rm=TRUE, probs=seq(0,1,length.out=4)),2), adj=1, cex=1, col="black")]
+
+beta.var.time[,text(-162.5, 41.5, bquote(Temporal~Variance))]
+
+
+
+
+
+
+
+
+# =========================
+# = Beta spatial turnover =
+# =========================
+beta.turn.strat.expr <- bquote({
+	castExp <- acast(melt(.SD, id.vars=c("stratum","spp"), measure.vars=c("wtcpue")), stratum~spp, fill=0)[,-1]
+	d.jac <- vegdist(decostand(castExp, method="log", logbase=Inf), method="jaccard")
+	
+	# lonlat <- merge(.SD[,list(stratum)], .SD[,list(stratum,lon,lat)], all.x=TRUE, by="stratum")
+	# dX.ll <- dist(matrix(c(lon,lat),ncol=2), method="manhattan")
+	mu.ll <- .SD[,list(lon.mu=mean(lon), lat.mu=mean(lat)), by="stratum"]
+	# print(mu.ll)
+	dX.ll <- mu.ll[,dist(matrix(c(lon.mu,lat.mu),ncol=2), method="manhattan")]
+	# print(dX.ll)
+	
+	d.jac1 <- c(d.jac) # change the distance matrix into the (1-DeltaY) vector
+	good.y1 <- d.jac1>0 # figure out which indices would throw error if took log
+	dy1 <- log(d.jac1[good.y1])
+	dX <- c(dX.ll)[good.y1]
+	
+	decay.slope <- lm(dy1~dX)$coef[2]
+	decay.slope
+})
+
+beta.turn.strat <- trawl3[,list(lon=mean(lon), lat=mean(lat), turn.strat=eval(beta.turn.strat.expr)), by=c("s.reg","year")]
+beta.turn.strat <- beta.turn.yr[!is.na(turn.yr),]
+setkey(beta.turn.strat, s.reg, year)
+
+dev.new()
+par(mfrow=c(4,3), mar=c(1.75,1.5,1,1), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
+beta.turn.strat[,
+	{
+		plot(year, turn.strat, type="l", main=s.reg, xlab="", ylab="")
+		# par(new=TRUE)
+		# plot(year, var.strat.ID.only, type="l", xaxt="n", xlab="", yaxt="n", ylab="", col="red")
+		# axis(side=4, col="red")
+		},
+	by="s.reg"
+]
+
+
+
+
+
+# =========================
+# = Beta spatial variance =
+# =========================
 beta.var.strat.expr <- bquote({
 	castExp <- acast(melt(.SD, id.vars=c("stratum","spp"), measure.vars=c("wtcpue")), stratum~spp, fill=0)[,-1]
 
@@ -211,11 +322,17 @@ beta.var.strat[,
 	by="s.reg"
 ]
 
+
+
+
 # look at cod again
 # dev.new()
 # par(mfrow=c(2,2))
 # setkey(trawl3, s.reg, spp, year)
 # trawl3[spp=="Gadus morhua", {plot(aggregate(wtcpue, list(year=year), mean), ylab=s.reg, type="l"); abline(v=1986)}, by="s.reg"]
+
+
+
 
 
 
