@@ -10,6 +10,7 @@ library(reshape2)
 load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/trawl.RData")
 source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/sumna.R")
 source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/meanna.R")
+source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/StatFunctions/beta.div.R")
 
 # Map Width: Calculate appropriate figure width given height and coordinates
 map.w <- function(ydat, xdat, height){
@@ -150,16 +151,14 @@ beta.turn.time.expr <- bquote({
 	# print(.SD)
 	if(lu(year)>3){
 		castExp <- acast(melt(.SD, id.vars=c("year","spp"), measure.vars=c("wtcpue")), year~spp)[,-1]
-		# d.jac <- vegdist(castExp, method="jaccard")
-		d.jac <- vegdist(decostand(castExp, method="log", logbase=5), method="jaccard")
-		# print(paste(s.reg, stratum, sum((1-d.jac)<=0|!is.finite(1-d.jac))))
-		dX.yr <- dist(as.numeric(attributes(d.jac)$Labels), method="euclidean")
-		# d.jac1 <- 1-c(d.jac) # change the distance matrix into the (1-DeltaY) vector
-		# good.y1 <- d.jac1>0 # figure out which indices would throw error if took log
+		d.helli0 <- beta.div(castExp, nperm=0, save.D=TRUE)$D
+		d.helli <- c(d.helli0)
+
 		
-		d.jac1 <- c(d.jac) # change the distance matrix into the (1-DeltaY) vector
-		good.y1 <- d.jac1>0 # figure out which indices would throw error if took log
-		dy1 <- log(d.jac1[good.y1])
+		dX.yr <- dist(as.numeric(attributes(d.helli0)$Labels), method="euclidean")
+		
+		good.y1 <- d.helli>0 # figure out which indices would throw error if took log
+		dy1 <- log(d.helli[good.y1])
 		dX <- c(dX.yr)[good.y1]
 		decay.slope <- lm(dy1~dX)$coef[2]
 		decay.slope
@@ -169,36 +168,44 @@ beta.turn.time.expr <- bquote({
 
 })
 
-beta.turn.time <- trawl3[,list(lon=mean(lon), lat=mean(lat), turn.time=eval(beta.turn.time.expr)), by=c("s.reg","stratum")]
-beta.turn.time <- beta.turn.time[!is.na(turn.time),]
 
+
+# beta.turn.time <- trawl3[,list(lon=mean(lon), lat=mean(lat), turn.time=eval(beta.turn.time.expr)), by=c("s.reg","stratum")]
+beta.turn.time <- trawl3[,
+	j={
+		list(lon=mean(lon), lat=mean(lat), turn.time=eval(beta.turn.time.expr)), by=c("s.reg","stratum")
+	}
+	
+]
+beta.turn.time <- beta.turn.time[!is.na(turn.time)&turn.time>0,]
+beta.turn.time[,turn.time:=log(turn.time)]
+
+setkey(beta.turn.time, s.reg, stratum)
 
 heat.cols <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(256)
 
-beta.turn.time[,turn.time.col:=heat.cols[cut(rank(turn.time, na.last="keep"), 256)]]
-# beta.turn.time[,turn.time.col:=heat.cols[cut(exp(pmin(turn.time,0)), 256)]]
+beta.turn.time[,turn.time.col:=heat.cols[cut(turn.time, 256)]]
 
 
 dev.new(height=4, width=beta.turn.time[,map.w(lat,lon,4)])
 par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1, bg="lightgray")
-# par(mfrow=c(4,3))
 
 beta.turn.time[,plot(lon, lat, col=turn.time.col, pch=21, cex=1, type="n")]
-
-# beta.turn.time[,map(xlim=range(lon, na.rm=TRUE), ylim=range(lat, na.rm=TRUE),add=FALSE, type="n")]
-beta.turn.time[,map(add=TRUE, fill=FALSE, col="black")]
-# map.axes()
+invisible(beta.turn.time[,map(add=TRUE, fill=FALSE, col="black")])
 
 beta.turn.time[,points(lon, lat, col=turn.time.col, pch=21, cex=1)]
 
-beta.turn.time[,key.lat:=seq(30,40,length.out=256)[cut(rank(turn.time, na.last="keep"), 256)]]
-beta.turn.time[,segments(x0=-165, x1=-160, y0=key.lat, col=turn.time.col)]
+beta.turn.time[,segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)]
 
 beta.turn.time[,segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")] # tick marks
-beta.turn.time[,text(-167, y=seq(30,40, length.out=4), round(quantile(turn.time, na.rm=TRUE, probs=seq(0,1,length.out=4)),2), adj=1, cex=1, col="black")]
+beta.turn.time[,text(-167, y=seq(30,40, length.out=4), round(exp(seq(min(turn.time), max(turn.time), length.out=4)),4), adj=1, cex=1, col="black")]
 
-# beta.turn.time[,text(-162.5, 42.5, bquote(over({log[e](Dissimilarity)},{Year})))]
-beta.turn.time[,text(-162.5, 41.5, bquote(Temporal~Turnover))]
+#checking to make sure I get colors right
+# dev.new(); beta.turn.time[,plot(turn.time, col=turn.time.col)] # a plot of all the variances, with their colors
+# beta.turn.time[,quantile(1:256, probs=seq(0,1,length.out=4))] # this gives the indices of heat.cols where tick marks are located
+# beta.turn.time[,abline(h=round(seq(min(turn.time), max(turn.time), length.out=4),2), col=heat.cols[c(1,86,171,256)])] # these lines should match the colors through which they're drawn
+
+beta.turn.time[,text(-162.5, 41.5, bquote(Temporal~Turnover~(log[e]~scale)))]
 
 
 
@@ -208,17 +215,7 @@ beta.turn.time[,text(-162.5, 41.5, bquote(Temporal~Turnover))]
 # ==========================
 beta.var.time.expr <- bquote({
 	castExp <- acast(melt(.SD, id.vars=c("year","spp"), measure.vars=c("wtcpue")), year~spp, fill=0)[,-1]
-
-	# mat.stand <- decostand(castExp, method="log", logbase=5)
-# 	mat.stand2 <- decostand(castExp, method="log", logbase=Inf)
-	# Note:
-	# Will throw warning: non-integer data: divided by smallest positive value
-	# This is because it expects counts of species, but units are in biomass per effort
-	# So the function is dividing all values in that row by smallest positive value so that it's 1
-
-	# c(mean(vegdist(mat.stand, method="altGower"), na.rm=TRUE), mean(vegdist(mat.stand2, method="altGower"), na.rm=TRUE))
-	
-	beta.div(castExp, nperm=0)[[1]][1]
+	beta.div(castExp, nperm=0)[[1]][2]
 })
 
 beta.var.time <- trawl3[,
@@ -227,39 +224,37 @@ beta.var.time <- trawl3[,
 		list(
 			lat=mean(lat),
 			lon=mean(lon),
-			var.time.ID.abun=var.time0[1],
-			var.time.ID.only=var.time0[2]
+			var.time = var.time0
 		)
 	}, 
 	by=c("s.reg","stratum")
 ]
+beta.var.time <- beta.var.time[!is.na(var.time),]
 setkey(beta.var.time, s.reg, stratum)
 
-
-
+# Plot
 heat.cols <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(256)
 
-beta.var.time[,var.time.col:=heat.cols[cut(rank(var.time.ID.abun, na.last="keep"), 256)]]
-# beta.var.time[,var.time.col:=heat.cols[cut(exp(pmin(var.time,0)), 256)]]
-
+beta.var.time[,var.time.col:=heat.cols[cut(var.time, 256)]]
 
 dev.new(height=4, width=beta.var.time[,map.w(lat,lon,4)])
 par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1, bg="lightgray")
-# par(mfrow=c(4,3))
 
 beta.var.time[,plot(lon, lat, col=var.time.col, pch=21, cex=1, type="n")]
 
-# beta.var.time[,map(xlim=range(lon, na.rm=TRUE), ylim=range(lat, na.rm=TRUE),add=FALSE, type="n")]
-beta.var.time[,map(add=TRUE, fill=FALSE, col="black")]
-# map.axes()
+invisible(beta.var.time[,map(add=TRUE, fill=FALSE, col="black")])
 
 beta.var.time[,points(lon, lat, col=var.time.col, pch=21, cex=1)]
 
-beta.var.time[,key.lat:=seq(30,40,length.out=256)[cut(rank(var.time.ID.abun, na.last="keep"), 256)]]
-beta.var.time[,segments(x0=-165, x1=-160, y0=key.lat, col=var.time.col)]
-
+beta.var.time[,segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)]
 beta.var.time[,segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")] # tick marks
-beta.var.time[,text(-167, y=seq(30,40, length.out=4), round(quantile(var.time.ID.abun, na.rm=TRUE, probs=seq(0,1,length.out=4)),2), adj=1, cex=1, col="black")]
+
+beta.var.time[,text(-167, y=seq(30,40, length.out=4), round(seq(min(var.time), max(var.time), length.out=4),2), adj=1, cex=1, col="black")]
+
+#checking to make sure I get colors right
+# dev.new(); beta.var.time[,plot(var.time, col=var.time.col)] # a plot of all the variances, with their colors
+# beta.var.time[,quantile(1:256, probs=seq(0,1,length.out=4))] # this gives the indices of heat.cols where tick marks are located
+# beta.var.time[,abline(h=round(seq(min(var.time), max(var.time), length.out=4),2), col=heat.cols[c(1,86,171,256)])] # these lines should match the colors through which they're drawn
 
 beta.var.time[,text(-162.5, 41.5, bquote(Temporal~Variance))]
 
@@ -273,37 +268,33 @@ beta.var.time[,text(-162.5, 41.5, bquote(Temporal~Variance))]
 # =========================
 # = Beta spatial turnover =
 # =========================
-beta.turn.space.expr <- bquote({
-	castExp <- acast(melt(.SD, id.vars=c("stratum","spp"), measure.vars=c("wtcpue")), stratum~spp, fill=0)[,-1]
-	d.jac <- vegdist(decostand(castExp, method="log", logbase=Inf), method="jaccard")
-	
-	# lonlat <- merge(.SD[,list(stratum)], .SD[,list(stratum,lon,lat)], all.x=TRUE, by="stratum")
-	# dX.ll <- dist(matrix(c(lon,lat),ncol=2), method="manhattan")
-	mu.ll <- .SD[,list(lon.mu=mean(lon), lat.mu=mean(lat)), by="stratum"]
-	# print(mu.ll)
-	dX.ll <- mu.ll[,dist(matrix(c(lon.mu,lat.mu),ncol=2), method="euclidean")]
-	# print(dX.ll)
-	
-	d.jac1 <- c(d.jac) # change the distance matrix into the (1-DeltaY) vector
-	good.y1 <- d.jac1>0 # figure out which indices would throw error if took log
-	dy1 <- log(d.jac1[good.y1])
-	dX <- c(dX.ll)[good.y1]
-	
-	decay.slope <- lm(dy1~dX)$coef[2]
-	decay.slope
+beta.turn.space.expr <- bquote({	
+	if(lu(stratum)>3){
+		castExp <- acast(melt(.SD, id.vars=c("stratum","spp"), measure.vars=c("wtcpue")), stratum~spp, fill=0)[,-1]
+		d.helli0 <- beta.div(castExp, nperm=0, save.D=TRUE)$D
+		d.helli <- c(d.helli0)
+
+		mu.ll <- .SD[,list(lon.mu=mean(lon), lat.mu=mean(lat)), by="stratum"]
+		dX.ll <- mu.ll[,dist(matrix(c(lon.mu,lat.mu),ncol=2), method="euclidean")]
+		
+		good.y1 <- d.helli>0 # figure out which indices would throw error if took log
+		dy1 <- log(d.helli[good.y1])
+		dX <- c(dX.ll)[good.y1]
+		decay.slope <- lm(dy1~dX)$coef[2]
+		decay.slope
+		}else{
+			as.numeric(NA)
+		}
 })
 
 beta.turn.space <- trawl3[,list(lon=mean(lon), lat=mean(lat), turn.space=eval(beta.turn.space.expr)), by=c("s.reg","year")]
 setkey(beta.turn.space, s.reg, year)
 
-dev.new()
-par(mfrow=c(4,3), mar=c(1.75,1.5,1,1), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
+dev.new(width=5, height=7)
+par(mfrow=c(5,2), mar=c(1.75,1.5,1,1), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
 beta.turn.space[,
 	{
 		plot(year, turn.space, type="l", main=s.reg, xlab="", ylab="")
-		# par(new=TRUE)
-		# plot(year, var.space.ID.only, type="l", xaxt="n", xlab="", yaxt="n", ylab="", col="red")
-		# axis(side=4, col="red")
 		},
 	by="s.reg"
 ]
@@ -317,27 +308,15 @@ beta.turn.space[,
 # =========================
 beta.var.space.expr <- bquote({
 	castExp <- acast(melt(.SD, id.vars=c("stratum","spp"), measure.vars=c("wtcpue")), stratum~spp, fill=0)[,-1]
+	beta.div(castExp, nperm=0)[[1]][2]
 
-	mat.stand <- decostand(castExp, method="log", logbase=2)
-	mat.stand2 <- decostand(castExp, method="log", logbase=Inf)
-	# Note:
-	# Will throw warning: non-integer data: divided by smallest positive value
-	# This is because it expects counts of species, but units are in biomass per effort
-	# So the function is dividing all values in that row by smallest positive value so that it's 1
-	
-	d1 <- vegdist(mat.stand, method="altGower")
-	d2 <- vegdist(mat.stand2, method="altGower")
 
-	# c(mean(vegdist(mat.stand, method="altGower"), na.rm=TRUE), mean(vegdist(mat.stand2, method="altGower"), na.rm=TRUE))
-	c("")
 })
 
 beta.var.space <- trawl3[,
 	j={
-		var.space0 <- eval(beta.var.space.expr)
 		list(
-			var.space.ID.abun=var.space0[1],
-			var.space.ID.only=var.space0[2]
+			var.space=eval(beta.var.space.expr)
 		)
 	}, 
 	by=c("s.reg","year")
@@ -346,14 +325,11 @@ beta.var.space <- trawl3[,
 setkey(beta.var.space, s.reg, year)
 
 
-dev.new()
-par(mfrow=c(4,3), mar=c(1.75,1.5,1,1), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
+dev.new(width=5, height=7)
+par(mfrow=c(5,2), mar=c(1.75,1.5,1,1), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
 beta.var.space[,
 	{
-		plot(year, var.space.ID.abun, type="l", main=s.reg, xlab="", ylab="")
-		# par(new=TRUE)
-		# plot(year, var.space.ID.only, type="l", xaxt="n", xlab="", yaxt="n", ylab="", col="red")
-		# axis(side=4, col="red")
+		plot(year, var.space, type="l", main=s.reg, xlab="", ylab="")
 		},
 	by="s.reg"
 ]
@@ -372,23 +348,89 @@ beta.var.space[,
 # = Compare Spatial/Temporal Indices =
 # ====================================
 # See Mellin et al. Proc R. Soc. B "Strong but opposing β-diversity–stability relationships in coral reef fish communities"
+
+# temporal.var <- beta.var.time[,list(var.time=mean(var.time)), by="s.reg"]
+# spatial.var <- beta.var.space[,list(var.space=mean(var.space)), by="s.reg"]
 #
-temporal.var <- beta.var.time[,list(var.time=mean(var.time.ID.abun)), by="s.reg"]
-spatial.var <- beta.var.space[,list(var.space=mean(var.space.ID.abun)), by="s.reg"]
-
-temporal.turn <- beta.turn.time[,list(turn.time=mean(turn.time)), by="s.reg"]
-spatial.turn <- beta.turn.space[, list(turn.space=mean(turn.space)), by="s.reg"]
-
-plot(spatial.turn[,turn.space], temporal.turn[,turn.time])
-
-plot(spatial.var[,var.space], temporal.var[,var.time])
-
-
-beta.temporal <- merge(beta.var.time[,list(s.reg,stratum,lon,lat,var.time.ID.abun)], beta.turn.time[,list(s.reg,stratum,lon,lat,turn.time)], by=c("s.reg","stratum","lon","lat"))
-beta.temporal[,plot((var.time.ID.abun), (turn.time))]
-
-beta.spatial <- merge(beta.var.space)
+# temporal.turn <- beta.turn.time[,list(turn.time=mean(turn.time)), by="s.reg"]
+# spatial.turn <- beta.turn.space[, list(turn.space=mean(turn.space)), by="s.reg"]
+#
+# plot(spatial.turn[,turn.space], temporal.turn[,turn.time])
+#
+# plot(spatial.var[,var.space], temporal.var[,var.time])
+#
+#
+# beta.temporal <- merge(beta.var.time[,list(s.reg,stratum,lon,lat,var.time)], beta.turn.time[,list(s.reg,stratum,lon,lat,turn.time)], by=c("s.reg","stratum","lon","lat"))
+# beta.temporal[,plot((var.time), (turn.time))]
+#
+# beta.spatial <- merge(beta.var.space, beta.turn.space, by=c("s.reg", "year"))
+# beta.spatial[,plot((var.space), (turn.space))]
 
 
 
 
+# ===========================================================
+# = How much did each year contribute to temporal variance? =
+# ===========================================================
+# beta.var.time.lcbd.expr <- bquote({
+# 	castExp <- acast(melt(.SD, id.vars=c("year","spp"), measure.vars=c("wtcpue")), year~spp, fill=0)[,-1]
+# 	beta.div(castExp, nperm=0)$LCBD
+# })
+#
+# beta.var.time.lcbd <- trawl3[,
+# 	j={
+# 		lcbd <- eval(beta.var.time.lcbd.expr)
+# 		list(
+# 			year=names(lcbd),
+# 			year.lcbd=lcbd
+#
+# 		)
+# 	},
+# 	by=c("s.reg","stratum")
+# ]
+# # beta.var.time.lcbd <- beta.var.time.lcbd[!is.na(var.time),]
+# setkey(beta.var.time.lcbd, s.reg, stratum, year)
+#
+# dev.new(width=5, height=7)
+# par(mfrow=c(5,2), mar=c(1.75,1.5,1,1), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
+# beta.var.time.lcbd[,
+# 	{
+# 		plot(aggregate(year.lcbd, list(year=year), mean), type="l", main=s.reg, xlab="", ylab="")
+# 		# par(new=TRUE)
+# 		# plot(year, var.space.ID.only, type="l", xaxt="n", xlab="", yaxt="n", ylab="", col="red")
+# 		# axis(side=4, col="red")
+# 		},
+# 	by="s.reg"
+# ]
+
+
+
+
+# ===========================================================
+# = Which fish contributed the most to changes in beta div? =
+# ===========================================================
+# beta.var.time.scbd.expr <- bquote({
+# 	castExp <- acast(melt(.SD, id.vars=c("year","spp"), measure.vars=c("wtcpue")), year~spp, fill=0)[,-1]
+# 	beta.div(castExp, nperm=0)$SCBD
+# })
+#
+# beta.var.time.scbd <- trawl3[,
+# 	j={
+# 		scbd <- rev(sort(eval(beta.var.time.scbd.expr)))
+# 		list(
+# 			taxon=names(scbd)[1:4],
+# 			taxon.scbd=scbd[1:4]
+#
+# 		)
+# 	},
+# 	by=c("s.reg","stratum")
+# ]
+# # beta.var.time.lcbd <- beta.var.time.lcbd[!is.na(var.time),]
+# setkey(beta.var.time.scbd, s.reg, stratum, taxon)
+#
+#
+#
+# beta.var.time.scbd2 <- beta.var.time.scbd[,mean(taxon.scbd), by=c("s.reg","taxon")]
+
+
+save(beta.var.space, beta.var.time, beta.turn.space, beta.turn.time, file="~/Documents/School&Work/pinskyPost/trawl/Results/trawl.betaD.RData")
