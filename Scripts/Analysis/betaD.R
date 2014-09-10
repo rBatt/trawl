@@ -1,7 +1,7 @@
 
 
 
-library(maps)
+# library(maps)
 library(data.table)
 library(vegan)
 library(reshape2)
@@ -36,10 +36,8 @@ trawl[s.reg=="wctri",s.reg:="wc"]
 # ==================
 # = Begin trimming =
 # ==================
-# Trim to Genus or Spp
-# trawl1 <- trawl[taxLvl%in%c("Genus","Species")]
+# Trim to taxa identified to species level
 trawl1 <- trawl[taxLvl%in%c("Species")]
-# trawl1 <- trawl
 
 # Drop rows w/ no wtcpue
 trawl1 <- trawl1[is.finite(wtcpue)&wtcpue>0,]
@@ -96,8 +94,7 @@ trawl3[, c("stemp","btemp"):=list(fill.mean(stemp), fill.mean(btemp)), by=c("s.r
 # = Free up some memory =
 # =======================
 rm(list=c("trawl","trawl1"))
-
-
+# save(trawl3, "~/Documents/School&Work/pinskyPost/trawl/Data/trawl3.RData")
 
 
 # ====================
@@ -173,39 +170,16 @@ beta.turn.time.expr <- bquote({
 # beta.turn.time <- trawl3[,list(lon=mean(lon), lat=mean(lat), turn.time=eval(beta.turn.time.expr)), by=c("s.reg","stratum")]
 beta.turn.time <- trawl3[,
 	j={
-		list(lon=mean(lon), lat=mean(lat), turn.time=eval(beta.turn.time.expr)), by=c("s.reg","stratum")
-	}
+		list(lon=mean(lon), lat=mean(lat), turn.time=eval(beta.turn.time.expr))
+	}, 
 	
+	by=c("s.reg","stratum")
 ]
 beta.turn.time <- beta.turn.time[!is.na(turn.time)&turn.time>0,]
 beta.turn.time[,turn.time:=log(turn.time)]
 
 setkey(beta.turn.time, s.reg, stratum)
 
-heat.cols <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(256)
-
-beta.turn.time[,turn.time.col:=heat.cols[cut(turn.time, 256)]]
-
-
-dev.new(height=4, width=beta.turn.time[,map.w(lat,lon,4)])
-par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1, bg="lightgray")
-
-beta.turn.time[,plot(lon, lat, col=turn.time.col, pch=21, cex=1, type="n")]
-invisible(beta.turn.time[,map(add=TRUE, fill=FALSE, col="black")])
-
-beta.turn.time[,points(lon, lat, col=turn.time.col, pch=21, cex=1)]
-
-beta.turn.time[,segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)]
-
-beta.turn.time[,segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")] # tick marks
-beta.turn.time[,text(-167, y=seq(30,40, length.out=4), round(exp(seq(min(turn.time), max(turn.time), length.out=4)),4), adj=1, cex=1, col="black")]
-
-#checking to make sure I get colors right
-# dev.new(); beta.turn.time[,plot(turn.time, col=turn.time.col)] # a plot of all the variances, with their colors
-# beta.turn.time[,quantile(1:256, probs=seq(0,1,length.out=4))] # this gives the indices of heat.cols where tick marks are located
-# beta.turn.time[,abline(h=round(seq(min(turn.time), max(turn.time), length.out=4),2), col=heat.cols[c(1,86,171,256)])] # these lines should match the colors through which they're drawn
-
-beta.turn.time[,text(-162.5, 41.5, bquote(Temporal~Turnover~(log[e]~scale)))]
 
 
 
@@ -232,31 +206,6 @@ beta.var.time <- trawl3[,
 beta.var.time <- beta.var.time[!is.na(var.time),]
 setkey(beta.var.time, s.reg, stratum)
 
-# Plot
-heat.cols <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(256)
-
-beta.var.time[,var.time.col:=heat.cols[cut(var.time, 256)]]
-
-dev.new(height=4, width=beta.var.time[,map.w(lat,lon,4)])
-par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1, bg="lightgray")
-
-beta.var.time[,plot(lon, lat, col=var.time.col, pch=21, cex=1, type="n")]
-
-invisible(beta.var.time[,map(add=TRUE, fill=FALSE, col="black")])
-
-beta.var.time[,points(lon, lat, col=var.time.col, pch=21, cex=1)]
-
-beta.var.time[,segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)]
-beta.var.time[,segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")] # tick marks
-
-beta.var.time[,text(-167, y=seq(30,40, length.out=4), round(seq(min(var.time), max(var.time), length.out=4),2), adj=1, cex=1, col="black")]
-
-#checking to make sure I get colors right
-# dev.new(); beta.var.time[,plot(var.time, col=var.time.col)] # a plot of all the variances, with their colors
-# beta.var.time[,quantile(1:256, probs=seq(0,1,length.out=4))] # this gives the indices of heat.cols where tick marks are located
-# beta.var.time[,abline(h=round(seq(min(var.time), max(var.time), length.out=4),2), col=heat.cols[c(1,86,171,256)])] # these lines should match the colors through which they're drawn
-
-beta.var.time[,text(-162.5, 41.5, bquote(Temporal~Variance))]
 
 
 
@@ -290,14 +239,6 @@ beta.turn.space.expr <- bquote({
 beta.turn.space <- trawl3[,list(lon=mean(lon), lat=mean(lat), turn.space=eval(beta.turn.space.expr)), by=c("s.reg","year")]
 setkey(beta.turn.space, s.reg, year)
 
-dev.new(width=5, height=7)
-par(mfrow=c(5,2), mar=c(1.75,1.5,1,1), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
-beta.turn.space[,
-	{
-		plot(year, turn.space, type="l", main=s.reg, xlab="", ylab="")
-		},
-	by="s.reg"
-]
 
 
 
@@ -306,6 +247,7 @@ beta.turn.space[,
 # =========================
 # = Beta spatial variance =
 # =========================
+# Create expression
 beta.var.space.expr <- bquote({
 	castExp <- acast(melt(.SD, id.vars=c("stratum","spp"), measure.vars=c("wtcpue")), stratum~spp, fill=0)[,-1]
 	beta.div(castExp, nperm=0)[[1]][2]
@@ -313,6 +255,7 @@ beta.var.space.expr <- bquote({
 
 })
 
+# Call expression and do spatial variance beta D analysis
 beta.var.space <- trawl3[,
 	j={
 		list(
@@ -323,17 +266,6 @@ beta.var.space <- trawl3[,
 ]
 
 setkey(beta.var.space, s.reg, year)
-
-
-dev.new(width=5, height=7)
-par(mfrow=c(5,2), mar=c(1.75,1.5,1,1), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
-beta.var.space[,
-	{
-		plot(year, var.space, type="l", main=s.reg, xlab="", ylab="")
-		},
-	by="s.reg"
-]
-
 
 
 
@@ -434,3 +366,10 @@ beta.var.space[,
 
 
 save(beta.var.space, beta.var.time, beta.turn.space, beta.turn.time, file="~/Documents/School&Work/pinskyPost/trawl/Results/trawl.betaD.RData")
+
+
+
+# ====================================================
+# = Calculate temporal variability for whole regions =
+# ====================================================
+
