@@ -4,6 +4,7 @@ library(data.table)
 library(maps)
 
 load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/trawl.RData")
+source("~/Documents/School&Work/pinskyPost/trawl/Scripts/PlotFunctions/splineHull.R")
 
 # ================================
 # = Combine 2 West Coast surveys =
@@ -37,7 +38,8 @@ plot.ll <- bquote(points(lon, lat, pch=20, cex=0.5, col=col))
 # For 1 panel full map figure
 map.full <- bquote(map(regions=c("USA","Canada", "Mexico"), xlim=range(lon), ylim=range(lat), fill=TRUE, col="gray", mar=c(0.25,0.25,0.25,0.25), lwd=0.5))
 ll.full <- bquote(points(lon, lat, pch=21, cex=0.25, bg=col))
-reg.hull <- bquote(trawl[,polygon(cbind(lon, lat)[chull(lon, lat),]), by="s.reg"])
+# reg.hull <- bquote(trawl[,polygon(cbind(lon, lat)[chull(lon, lat),]), by="s.reg"])
+# reg.hull <- bquote(trawl[,splineHull(list(x=x, y=y)), by="s.reg"])
 
 
 
@@ -48,7 +50,7 @@ reg.hull <- bquote(trawl[,polygon(cbind(lon, lat)[chull(lon, lat),]), by="s.reg"
 cy <- function(x){
 	lux <- length(unique(x))
 	if(lux>1){
-		as.character(cut(as.numeric(x), breaks=min(9,lux)))
+		as.character(cut(as.numeric(x), breaks=min(2,lux)))
 	}else{
 		unique(x)	
 	}
@@ -93,7 +95,8 @@ lu <- function(x) length(unique(x))
 # ==============================
 # = Plot each stratum, and all =
 # ==============================
-dev.new(width=8, height=6)
+# dev.new(width=8, height=6)
+pdf(width=8, height=6, file="~/Documents/School&Work/pinskyPost/trawl/Figures/stratHauls_byRegion.pdf")
 par(mfrow=c(4,3), mar=c(1,1,0.5,0.5), ps=8, cex=1, family="Times", mgp=c(1, 0.25, 0), tcl=-0.15)
 
 # Each stratum
@@ -107,6 +110,7 @@ unique(trawl, by=c("lat", "lon"))[,j={
 	eval(map.reg)
 	eval(plot.ll)
 }]
+dev.off()
 
 # ===============================
 # = Whole figure for all strata =
@@ -116,20 +120,25 @@ unique(trawl, by=c("lat", "lon"))[,j={
 # aspect <- c(cos((mean(yrange) * pi)/180), 1)
 # d <- c(diff(xrange), diff(yrange)) * (1 + 2 * 0.01) * aspect
 
-dev.new(height=3, width=trawl[,map.w(lat,lon,3)])
+# dev.new(height=3, width=trawl[,map.w(lat,lon,3)])
+pdf(height=3, width=trawl[,map.w(lat,lon,3)], file="~/Documents/School&Work/pinskyPost/trawl/Figures/stratHauls_full.pdf")
 par(mar=c(1,1,0.5,0.5), ps=8, cex=1, family="Times", mgp=c(1, 0.25, 0), tcl=-0.15)
 unique(trawl, by=c("lat", "lon"))[,j={
 	eval(map.full)
 	eval(plot.ll)
-	eval(reg.hull)
 }]
 
+# Add region outlines
+uni.trawl.points <- unique(trawl, by=c("lat", "lon"))
+setnames(uni.trawl.points, c("lat","lon"), c("y","x"))
+uni.trawl.points[,splineHull(list(x=x, y=y), aval=ifelse(unique(s.reg)%in%c("ai","sa","wc"),10,1)), by="s.reg"]
+dev.off()
 
 # ==================================================
 # = Trim data for plotting spatial catch over time =
 # ==================================================
 # Trim data
-long.spp <- trawl[taxLvl=="Species"&is.finite(wtcpue)&wtcpue>0,][,n.yrs:=lu(year), by=c("spp","s.reg")][n.yrs>=18,]
+long.spp <- trawl[taxLvl=="Species"&is.finite(wtcpue)&wtcpue>0,][,n.yrs:=lu(year), by=c("spp","s.reg")][n.yrs>=4,]
 long.spp[,cut.yrs:=cy(year), by=c("spp","s.reg")]
 long.space.spp <- long.spp[,min.locs.yr:=min(colSums(table(paste(lat,lon),year)>0)),by=c("spp","s.reg")][min.locs.yr>=2 & is.finite(wtcpue),]
 
@@ -139,6 +148,7 @@ s.reg.key <- c(
 	"gmex"="Gulf of Mexico", 
 	"goa"="Gulf of Alaska",
 	"neus"="Northeast US",
+	"newf"="Newfoundland",
 	"ngulf"="Northern Gulf of St. Lawrence",
 	"sa"="South Atlantic US",
 	"sgulf"="Southern Gulf of St. Lawrence",
@@ -152,7 +162,7 @@ s.reg.key <- c(
 # = Spp in Space & Time: Expression =
 # ===================================
 spp.plot <- bquote({ # Create a back-quoted expression
-	par(mfrow=c(3,3), mar=c(1.1,1.1,1.1,1.1), oma=c(1,1,3,1), mgp=c(1.5,0.05,0), tcl=-0.15, ps=8, cex=1, family="Times") # graphical parameters
+	par(mfrow=c(2,1), mar=c(1.1,1.1,1.1,1.1), oma=c(1,1,3,1), mgp=c(1.5,0.05,0), tcl=-0.15, ps=8, cex=1, family="Times") # graphical parameters
 	.SD[, # .SD is the data.table created for each group of "by" – i.e., it's the data.table in the current scope
 		j={ # within the current scope's data.table (operating on a data.table that is a subset of a data table)
 			print(paste("min locs per year =", min(colSums(table(paste(lat,lon),year)>0)), "for", unique(cut.yrs), spp, s.reg)) # give some progress info
@@ -173,8 +183,9 @@ spp.plot <- bquote({ # Create a back-quoted expression
 			# create the short time series plot
 			# have to set the ylim so that min/max wtcpue's are same across all panels
 			par(new=TRUE) # next plot will be on its own x-y scale
-			t.ts <- aggregate(wtcpue,list(year),sum, na.rm=TRUE)
-			plot(t.ts, col="aliceblue", type="l", ylim=wt.yl, xaxt="n", yaxt="n", xlab="", ylab="", lwd=3)
+			t.ts0 <- aggregate(list(wtcpue2=wtcpue),list(stratum2=stratum,year2=year),mean, na.rm=TRUE)
+			t.ts <- aggregate(t.ts0[,"wtcpue2"], list(t.ts0[,"year2"]), sum, na.rm=TRUE)
+			plot(t.ts, col="aliceblue", type="l", ylim=wt.yl2, xaxt="n", yaxt="n", xlab="", ylab="", lwd=3)
 			lines(t.ts, col="red", type="l")
 			axis(side=3, col.ticks="red", col="red")
 			axis(side=4, col.ticks="red", col="red")
@@ -196,11 +207,10 @@ spp.plot <- bquote({ # Create a back-quoted expression
 	mtext(t.reg, outer=TRUE, line=1, side=3) # put the region name in the top outer margin, but a little lower than spp names	
 })
 
-
 # ============================
 # = Actually do the spp plot =
 # ============================
-pdf("~/Documents/School&Work/pinskyPost/trawl/Figures/catch.SpaceTime.pdf", width=7, height=7)
+pdf("~/Documents/School&Work/pinskyPost/trawl/Figures/catch.SpaceTime.pdf", width=4, height=7)
 long.space.spp[, 
 	j={
 		xl <- .SD[, range(lon)]
@@ -213,6 +223,14 @@ long.space.spp[,
 		map.xl <- mean(xl) + c(-max.ll, max.ll)/2
 		
 		wt.yl <- .SD[,range(aggregate(wtcpue,list(year),sum, na.rm=TRUE)[[2]])]
+		
+		wt.yl2 <- .SD[,
+			{
+				t.ts0.yl <- aggregate(list(wtcpue2=wtcpue),list(stratum2=stratum,year2=year),mean, na.rm=TRUE)
+				range(aggregate(t.ts0.yl[,"wtcpue2"], list(t.ts0.yl[,"year2"]), sum, na.rm=TRUE)[[2]])
+			}
+		]
+		
 		
 		eval(spp.plot)
 	},
