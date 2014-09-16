@@ -248,17 +248,26 @@ if(!"spp.cmmn1.RData"%in%tax.files){
 	flush.console()
 	cmmn.pb <- txtProgressBar(min=1, max=length(u.sppCorr), style=3)
 	for(i in 1:length(u.sppCorr)){
-		t.spp.cmmn00 <- tryCatch( # first try finding the common name in itis
+		t.spp.cmmn00 <- tryCatch(
 			{
-				sci2comm(u.sppCorr[i], db="itis", ask=FALSE, verbose=FALSE)[[1]]#[1] # sometimes this throws an error
-			},
-				error=function(cond){
-					tryCatch( # if itis throws an error, look in eol
-						sci2comm(u.sppCorr[i], db="eol", ask=FALSE, verbose=FALSE)[[1]],#[1], # if can't find in eol or error...
-						error=function(cond){NA} # ... return NA
+				ncbi.check <- sci2comm(u.sppCorr[i], db="ncbi", ask=FALSE, verbose=FALSE)[[1]][1][[1]]
+				stopifnot(!is.null(ncbi.check))
+				ncbi.check
+			}, # first try looking in ncbi b/c gives english
+			error=function(cond){
+				tryCatch( # next try finding the common name in itis
+					{sci2comm(u.sppCorr[i], db="itis", ask=FALSE, verbose=FALSE)[[1]]},
+					error=function(cond){
+						tryCatch( # if itis throws an error, look in eol
+							{sci2comm(u.sppCorr[i], db="eol", ask=FALSE, verbose=FALSE)[[1]]},
+							error=function(cond){NA} # ... return NA
 						)
-				}
-		)
+					} # end 2nd error function
+				) # end 2nd try catch
+			} # end 1st error function 
+		) # end 1st try catch
+		
+
 		t.spp.cmmn0 <- t.spp.cmmn00[grepl("[a-zA-Z]", t.spp.cmmn00)][1] # only match common names with english chars
 		
 		t.spp.cmmn1 <- data.table(sppCorr=u.sppCorr[i], common=t.spp.cmmn0) # turn the common match into a data table w/ sppCorr
