@@ -1,30 +1,30 @@
 
 
-
+# ==================
+# = Load Libraries =
+# ==================
 # library(maps)
 library(data.table)
 library(vegan)
 library(reshape2)
 
-
+# =========================
+# = Load Data and Scripts =
+# =========================
+# Load trawl data
 load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/trawl.RData")
-source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/sumna.R")
-source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/meanna.R")
+
+# Load Legendre beta diversity functions
 source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/StatFunctions/beta.div.R")
 
-# Map Width: Calculate appropriate figure width given height and coordinates
-map.w <- function(ydat, xdat, height){
-	# ydat = lat
-	# xdat = lon
-	# height = figure height (inches, e.g.)
-	yrange <- range(ydat, na.rm=TRUE)
-	xrange <- range(xdat, na.rm=TRUE)
-	aspect <- c(cos((mean(yrange) * pi)/180), 1)
-	d <- c(diff(xrange), diff(yrange)) * (1 + 2 * 0.01) * aspect
-	w2l <- d[1]/d[2] # width to length ratio
-	width <- height*w2l
-	return(width)
-}
+# Load Data functions
+dat.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions"
+invisible(sapply(paste(dat.location, list.files(dat.location), sep="/"), source, .GlobalEnv))
+
+# Load plottign functions
+plot.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/PlotFunctions"
+invisible(sapply(paste(plot.location, list.files(plot.location), sep="/"), source, .GlobalEnv))
+
 
 
 # ================================
@@ -51,20 +51,23 @@ trawl1[,sumWtStrat:=sum(wtcpue), by=c("spp","year","stratum","s.reg")]
 
 
 
-# =====================================
-# = Aggregate within stratum-year-spp =
-# =====================================
-# Avg by wtcpue
-wtAvg <- function(x,y){
-	# x is something like temperature (the value to be averaged)
-	# y is something like wtcpue (the value to be used for weighting)
-	totW <- sum(y[is.finite(x)])
-	propW <- y/totW
-	sumna(x*propW)
-}
 
 setkey(trawl1, s.reg, spp, common, year, stratum)
 trawl2 <- trawl1[,list(lat=wtAvg(as.numeric(lat), wtcpue), lon=wtAvg(as.numeric(lon), wtcpue), depth=wtAvg(as.numeric(depth), wtcpue), stemp=wtAvg(stemp, wtcpue), btemp=wtAvg(btemp, wtcpue), wtcpue=mean(wtcpue)), by=key(trawl1)]
+
+good.strat.id <- c()
+n.year.strat <- trawl2[,
+	{
+	nys <- rowSums(table(stratum, year)>1)
+	nys.strat <- names(nys)
+	nys.n <- as.numeric(nys)
+	good.strat.id <<- c(good.strat.id, paste(unique(s.reg), nys.strat[nys.n==max(nys.n)]))
+	},
+	by=c("s.reg")
+]
+trawl2.1 <- trawl2[paste(s.reg,stratum)%in%good.strat.id,] # there were 35,259 strata that weren't there every year
+
+
 
 
 # =========================================
@@ -73,18 +76,11 @@ trawl2 <- trawl1[,list(lat=wtAvg(as.numeric(lat), wtcpue), lon=wtAvg(as.numeric(
 # Pad so that all unique spp in a stratum have a row each year for that stratum
 # Added rows are 0's for wtcpue (0 wt per effort)
 # Does not include adding NA's for missing years (i.e., if no sampling occurred that year)
-allSpp <- trawl2[,CJ(spp=unique(spp), year=unique(year)), by=c("s.reg","stratum")]
+allSpp <- trawl2.1[,CJ(spp=unique(spp), year=unique(year)), by=c("s.reg","stratum")]
 setkey(allSpp)
 
 
-# Fill the NA values of a vector with the mean of the non-NA portion
-fill.mean <- function(x){
-	nai <- is.na(x)
-	x[nai] <- meanna(x)
-	x
-}
-
-trawl3 <- merge(allSpp, trawl2, all=TRUE)
+trawl3 <- merge(allSpp, trawl2.1, all=TRUE)
 trawl3[is.na(wtcpue), wtcpue:=0]
 trawl3[, c("lat","lon","depth"):=list(fill.mean(lat), fill.mean(lon), fill.mean(depth)), by=c("s.reg","stratum")]
 trawl3[, c("stemp","btemp"):=list(fill.mean(stemp), fill.mean(btemp)), by=c("s.reg","stratum","year")]
@@ -95,48 +91,6 @@ trawl3[, c("stemp","btemp"):=list(fill.mean(stemp), fill.mean(btemp)), by=c("s.r
 # =======================
 rm(list=c("trawl","trawl1"))
 # save(trawl3, "~/Documents/School&Work/pinskyPost/trawl/Data/trawl3.RData")
-
-
-# ====================
-# = Calculate a Beta =
-# ====================
-# shelf.space <- c("447", "449", "450", "455", "472", "482", "451", "480", "490", "491", "492", "493", "494", "485", "495", "441", "442", "444", "458", "459", "460", "461", "462", "470", "471", "476", "477", "481", "483", "484", "445", "466", "448", "440", "443", "446", "452", "453", "454", "456", "457", "463", "464", "465", "473", "475", "478")
-# slopes <- c()
-# vars <- c()
-# for(i in 1:length(shelf.space)){
-# 	test <- trawl3[s.reg=="shelf"&stratum==shelf.space[i]]
-# 	test2 <- acast(melt(test, id.vars=c("year","spp"), measure.vars=c("wtcpue")), year~spp)[,-1]
-# 	test3 <- vegdist(decostand(test2, method="log", logbase=5), method="altGower")
-# 	t3.yr <- as.numeric(attributes(test3)$Labels)
-# 	t3.delX <- dist(t3.yr, method="manhattan")
-# 	plot(c(t3.delX), log(c(test3)), ylab=bquote((1-Delta*y[J])), xlab=bquote(Delta*x~(years))) # This is a scatter plot of the relationship that needs to be modeled for spatial/temporal turnover
-# 	t3.mod <- lm(log(c(test3))~c(t3.delX))
-# 	abline(t3.mod)
-# 	summary(t3.mod)
-# 	t3.beta <- t3.mod$coef[2]
-# 	slopes[i] <- t3.beta
-# 	vars[i] <- mean(test3)
-# }
-
-
-### trawl3[s.reg=="neus", sum(wtcpue>0), by=c("stratum","year")][V1==max(V1), list(stratum, year, V1)]
-# test <- trawl3[s.reg=="neus"&stratum=="1100"]
-# test2 <- acast(melt(test, id.vars=c("year","spp"), measure.vars=c("wtcpue")), year~spp)[,-1] # This is a community matrix, Y
-#
-# blah <- beta.div(test2, nperm=0, save.D=TRUE)
-# sort(blah$SCBD)
-# sort(blah$LCBD)
-
-
-# test3 <- vegdist(decostand(test2, method="log", logbase=5), method="altGower")
-# t3.yr <- as.numeric(attributes(test3)$Labels)
-# t3.delX <- dist(t3.yr, method="manhattan")
-
-# plot(c(t3.delX), log(c(test3)), ylab=bquote((1-Delta*y[J])), xlab=bquote(Delta*x~(years))) # This is a scatter plot of the relationship that needs to be modeled for spatial/temporal turnover
-# t3.mod <- lm(log(1-c(test3))~c(t3.delX))
-# abline(t3.mod)
-# summary(t3.mod)
-# t3.beta <- t3.mod$coef[2]
 
 
 
@@ -183,7 +137,6 @@ setkey(beta.turn.time, s.reg, stratum)
 
 
 
-
 # ==========================
 # = Beta temporal variance =
 # ==========================
@@ -205,13 +158,6 @@ beta.var.time <- trawl3[,
 ]
 beta.var.time <- beta.var.time[!is.na(var.time),]
 setkey(beta.var.time, s.reg, stratum)
-
-
-
-
-
-
-
 
 
 # =========================
@@ -238,10 +184,6 @@ beta.turn.space.expr <- bquote({
 
 beta.turn.space <- trawl3[,list(lon=mean(lon), lat=mean(lat), turn.space=eval(beta.turn.space.expr)), by=c("s.reg","year")]
 setkey(beta.turn.space, s.reg, year)
-
-
-
-
 
 
 # =========================
@@ -369,7 +311,7 @@ save(beta.var.space, beta.var.time, beta.turn.space, beta.turn.time, file="~/Doc
 
 
 
-# ====================================================
-# = Calculate temporal variability for whole regions =
-# ====================================================
+
+
+
 
