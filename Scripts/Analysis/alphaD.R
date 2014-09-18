@@ -21,7 +21,7 @@ alpha.turn.time.expr <- bquote({
 		good.y1 <- d.helli>0 # figure out which indices would throw error if took log
 		dy1 <- d.helli[good.y1] #log(d.helli[good.y1])
 		dX <- c(dX.yr)[good.y1]
-		plot(dX,dy1, type="o")
+		# plot(dX,dy1, type="o")
 		decay.slope <- lm(dy1~dX)$coef[2]
 		decay.slope
 		}else{
@@ -33,7 +33,7 @@ alpha.turn.time.expr <- bquote({
 
 
 # alpha.turn.time <- trawl3[,list(lon=mean(lon), lat=mean(lat), turn.time=eval(alpha.turn.time.expr)), by=c("s.reg","stratum")]
-alpha.turn.time <- trawl3[,
+alpha.turn.time <- divData[,
 	j={
 		list(lon=mean(lon), lat=mean(lat), turn.time=eval(alpha.turn.time.expr))
 	}, 
