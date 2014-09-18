@@ -12,7 +12,7 @@ library(reshape2)
 # = Load Data and Scripts =
 # =========================
 # Load trawl data
-load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/trawl.RData")
+load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/divData.RData")
 
 # Load Legendre beta diversity functions
 source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/StatFunctions/beta.div.R")
@@ -20,77 +20,12 @@ source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/StatFunctio
 # Load Data functions
 dat.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions"
 invisible(sapply(paste(dat.location, list.files(dat.location), sep="/"), source, .GlobalEnv))
+lu <- function(x) length(unique(x))
 
 # Load plottign functions
 plot.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/PlotFunctions"
 invisible(sapply(paste(plot.location, list.files(plot.location), sep="/"), source, .GlobalEnv))
 
-
-
-# ================================
-# = Combine 2 West Coast surveys =
-# ================================
-trawl[s.reg=="wcann",s.reg:="wc"]
-trawl[s.reg=="wctri",s.reg:="wc"]
-
-# ==================
-# = Begin trimming =
-# ==================
-# Trim to taxa identified to species level
-trawl1 <- trawl[taxLvl%in%c("Species")]
-
-# Drop rows w/ no wtcpue
-trawl1 <- trawl1[is.finite(wtcpue)&wtcpue>0,]
-
-# Add # years observed
-lu <- function(x) length(unique(x))
-trawl1[,n.yrs:=lu(year), by=c("spp","s.reg")]
-
-# Add column for total weight of a species in a stratum in a year (aggregate across multiple hauls)
-trawl1[,sumWtStrat:=sum(wtcpue), by=c("spp","year","stratum","s.reg")]
-
-
-
-
-setkey(trawl1, s.reg, spp, common, year, stratum)
-trawl2 <- trawl1[,list(lat=wtAvg(as.numeric(lat), wtcpue), lon=wtAvg(as.numeric(lon), wtcpue), depth=wtAvg(as.numeric(depth), wtcpue), stemp=wtAvg(stemp, wtcpue), btemp=wtAvg(btemp, wtcpue), wtcpue=mean(wtcpue)), by=key(trawl1)]
-
-good.strat.id <- c()
-n.year.strat <- trawl2[,
-	{
-	nys <- rowSums(table(stratum, year)>1)
-	nys.strat <- names(nys)
-	nys.n <- as.numeric(nys)
-	good.strat.id <<- c(good.strat.id, paste(unique(s.reg), nys.strat[nys.n==max(nys.n)]))
-	},
-	by=c("s.reg")
-]
-trawl2.1 <- trawl2[paste(s.reg,stratum)%in%good.strat.id,] # there were 35,259 strata that weren't there every year
-
-
-
-
-# =========================================
-# = Pad to regular ts for spp in a strata =
-# =========================================
-# Pad so that all unique spp in a stratum have a row each year for that stratum
-# Added rows are 0's for wtcpue (0 wt per effort)
-# Does not include adding NA's for missing years (i.e., if no sampling occurred that year)
-allSpp <- trawl2.1[,CJ(spp=unique(spp), year=unique(year)), by=c("s.reg","stratum")]
-setkey(allSpp)
-
-
-trawl3 <- merge(allSpp, trawl2.1, all=TRUE)
-trawl3[is.na(wtcpue), wtcpue:=0]
-trawl3[, c("lat","lon","depth"):=list(fill.mean(lat), fill.mean(lon), fill.mean(depth)), by=c("s.reg","stratum")]
-trawl3[, c("stemp","btemp"):=list(fill.mean(stemp), fill.mean(btemp)), by=c("s.reg","stratum","year")]
-
-
-# =======================
-# = Free up some memory =
-# =======================
-rm(list=c("trawl","trawl1"))
-# save(trawl3, "~/Documents/School&Work/pinskyPost/trawl/Data/trawl3.RData")
 
 
 
@@ -121,8 +56,8 @@ beta.turn.time.expr <- bquote({
 
 
 
-# beta.turn.time <- trawl3[,list(lon=mean(lon), lat=mean(lat), turn.time=eval(beta.turn.time.expr)), by=c("s.reg","stratum")]
-beta.turn.time <- trawl3[,
+# beta.turn.time <- divData[,list(lon=mean(lon), lat=mean(lat), turn.time=eval(beta.turn.time.expr)), by=c("s.reg","stratum")]
+beta.turn.time <- divData[,
 	j={
 		list(lon=mean(lon), lat=mean(lat), turn.time=eval(beta.turn.time.expr))
 	}, 
@@ -145,7 +80,7 @@ beta.var.time.expr <- bquote({
 	beta.div(castExp, nperm=0)[[1]][2]
 })
 
-beta.var.time <- trawl3[,
+beta.var.time <- divData[,
 	j={
 		var.time0 <- eval(beta.var.time.expr)
 		list(
@@ -182,8 +117,9 @@ beta.turn.space.expr <- bquote({
 		}
 })
 
-beta.turn.space <- trawl3[,list(lon=mean(lon), lat=mean(lat), turn.space=eval(beta.turn.space.expr)), by=c("s.reg","year")]
+beta.turn.space <- divData[,list(lon=mean(lon), lat=mean(lat), turn.space=eval(beta.turn.space.expr)), by=c("s.reg","year")]
 setkey(beta.turn.space, s.reg, year)
+
 
 
 # =========================
@@ -198,7 +134,7 @@ beta.var.space.expr <- bquote({
 })
 
 # Call expression and do spatial variance beta D analysis
-beta.var.space <- trawl3[,
+beta.var.space <- divData[,
 	j={
 		list(
 			var.space=eval(beta.var.space.expr)
@@ -214,8 +150,8 @@ setkey(beta.var.space, s.reg, year)
 # # look at cod again
 # dev.new()
 # par(mfrow=c(2,2))
-# setkey(trawl3, s.reg, spp, year)
-# trawl3[spp=="Gadus morhua", {plot(aggregate(wtcpue, list(year=year), mean), ylab=s.reg, type="l"); abline(v=1986)}, by="s.reg"]
+# setkey(divData, s.reg, spp, year)
+# divData[spp=="Gadus morhua", {plot(aggregate(wtcpue, list(year=year), mean), ylab=s.reg, type="l"); abline(v=1986)}, by="s.reg"]
 
 
 # ====================================
@@ -251,7 +187,7 @@ setkey(beta.var.space, s.reg, year)
 # 	beta.div(castExp, nperm=0)$LCBD
 # })
 #
-# beta.var.time.lcbd <- trawl3[,
+# beta.var.time.lcbd <- divData[,
 # 	j={
 # 		lcbd <- eval(beta.var.time.lcbd.expr)
 # 		list(
@@ -288,7 +224,7 @@ setkey(beta.var.space, s.reg, year)
 # 	beta.div(castExp, nperm=0)$SCBD
 # })
 #
-# beta.var.time.scbd <- trawl3[,
+# beta.var.time.scbd <- divData[,
 # 	j={
 # 		scbd <- rev(sort(eval(beta.var.time.scbd.expr)))
 # 		list(

@@ -117,4 +117,4 @@ ptax <- c("UROPHYCIS CHUSS","PLACOPECTEN MAGELLANICUS","PLACOPECTEN MAGELLANICUS
 neus.pat <- neus[SCINAME%in%ptax,]
 
 
-save(neus.pat, file="~/Desktop/neus.pat.RData")
+save(neus.pat, file="~/Desktop/neus.pat.RData"
