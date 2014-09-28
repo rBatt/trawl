@@ -92,8 +92,20 @@ is.species <- function(x){
 # =============================
 # = Clean and reaggregate spp =
 # =============================
-trawl00[,spp:=cullParen(cullSp(fixCase(cullExSpace(spp))))]
+trawl00[,raw.spp:=spp]
+trawl00[,spp:=cullParen(cullSp(fixCase(cullExSpace(raw.spp))))]
 setkey(trawl00, spp, year, s.reg)
+
+
+# ================================================
+# = Save a file containing key back to raw names =
+# ================================================
+# for use with matching to malin's spptaxonomy_2014-09-19.csv
+raw.and.spp <- trawl00[,list(raw.spp, spp)]
+setkey(raw.and.spp, raw.spp, spp)
+raw.and.spp <- unique(raw.and.spp)
+save(raw.and.spp, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/raw.and.spp.RData")
+
 
 trawl00[,isSpecies:=is.species(spp)] # infer whether the taxa are identified to species or to genus (1 or 2 words)
 
@@ -354,22 +366,65 @@ trawl.newSpp <- unique(trawl.newSpp)
 # tail(classification("Cetacea", db="itis")[[1]][,2], 1)
 # classification("Abisa", db="itis")
 sppCorr2 <- trawl.newSpp[,sppCorr]
+class.names <- c("species", "genus", "family", "order", "class", "superclass", "subphylum", "phylum", "kingdom")
+
 # formals(get_tsn)$ask <- FALSE
-if(!"taxLvl1.RData"%in%tax.files){
+
+
+
+
+if("taxLvl1.RData"%in%tax.files){
+	print("File of common names found")
+	flush.console()
+	load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/taxLvl1.RData")
+	setkey(taxLvl1, sppCorr)
+	new.sppCorr0 <- !sppCorr2%in%taxLvl1[,sppCorr] & !is.na(sppCorr2)
+	if(any(new.sppCorr0)){
+		print(paste("Looking up taxonomic level for ", sum(new.sppCorr0), " new spp", sep=""))
+		flush.console()
+		sppCorr3 <- u.sppCorr[new.sppCorr0]
+	}
+}else{
+	sppCorr3 <- sppCorr2
+	
 	print("File of taxonomic levels not found, searching for all")
 	flush.console()
-	tlvl.pb <- txtProgressBar(min=1, max=length(sppCorr2), style=3)
-	for(i in 1:length(sppCorr2)){
-		t.taxLvl0 <- tryCatch( # first try finding the common name in itis
+	tlvl.pb <- txtProgressBar(min=1, max=length(sppCorr3), style=3)
+	for(i in 1:length(sppCorr3)){
+		t.classification <- tryCatch( # first try finding the common name in itis
 			{
-				tail(classification(get_tsn(sppCorr2[i], ask=FALSE, verbose=FALSE), verbose=FALSE)[[1]][,2], 1)
+				classification(get_tsn(sppCorr3[i], ask=FALSE, verbose=FALSE), verbose=FALSE)[[1]]
 			},
 				error=function(cond){as.character(NA)}
 		)
 		# t.taxLvl0 <- t.taxLvl00[grepl("[a-zA-Z]", t.taxLvl00)][1] # only match common names with english chars
 		
-		t.taxLvl1 <- data.table(sppCorr=sppCorr2[i], taxLvl=t.taxLvl0) # turn the common match into a data table w/ sppCorr
-		if(i==1){
+		# t.class <- as.data.frame(matrix(NA, ncol=length(class.names), dimnames=list(NULL,class.names)))
+		#
+		# t.class
+		
+		if(!is.na(t.classification)){
+			t.taxLvl0 <- tail(t.classification[,2], 1) # 2nd column contains level of classification, tail(,1) to get most specific
+			
+			t.c1 <- tolower(t.classification[,2]) # column 1 of classification, in lower case
+			t.c2 <- t.classification[,1] # column 2 of classification, which is class. level
+			t.c1.ind <- t.c1%in%class.names # index of which levels of classification should be extracted
+		
+			t.taxLvl1 <- data.table(sppCorr=sppCorr2[i], taxLvl=t.taxLvl0) # create a data table
+			t.taxLvl1[,(class.names):=NA] # create empty columns for classification
+			t.taxLvl1[,t.c1[t.c1.ind]:=as.list(t.classification[t.c1.ind,1])] # fill in empty classification columns where found
+		
+			
+		}else{ # else, if the call to classification() or get_tsn() failed, then
+			t.taxLvl0 <- NA # leave taxLvl as NA
+			t.taxLvl1 <- data.table(sppCorr=sppCorr3[i], taxLvl=t.taxLvl0) # record corrected spp name, and NA tax lvl
+			t.taxLvl1[,(class.names):=NA] # and the classification will be left as NA
+		}
+		
+		
+		# t.taxLvl1 <- data.table(sppCorr=sppCorr2[i], taxLvl=t.taxLvl0) # turn the common match into a data table w/ sppCorr
+		# if(i==1){
+		if(!exists("taxLvl1")){
 			taxLvl1 <- t.taxLvl1 # create the spp.cmmn1 data.table
 		}else{
 			taxLvl1 <- rbind(taxLvl1, t.taxLvl1) # or accumulate the spp.cmmn1 entries
@@ -380,43 +435,94 @@ if(!"taxLvl1.RData"%in%tax.files){
 	setkey(taxLvl1, sppCorr)
 	save(taxLvl1, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/taxLvl1.RData")
 	
-	# ==========================================================
-	# = If taxLvl.RData does exist, only search for new common =
-	# ==========================================================
-}else{
-	print("File of common names found")
-	flush.console()
-	load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/taxLvl1.RData")
-	setkey(taxLvl1, sppCorr)
-	new.sppCorr0 <- !u.sppCorr%in%taxLvl1[,sppCorr] & !is.na(u.sppCorr)
-	if(any(new.sppCorr0 )){
-		print(paste("Looking up taxonomic level for ", sum(new.sppCorr0), " new spp", sep=""))
-		flush.console()
-		new.sppCorr <- u.sppCorr[new.sppCorr0]
-		tlvl.pb <- txtProgressBar(min=1, max=length(new.sppCorr), style=3) # initialize the progress bar
-		for(i in 1:length(new.sppCorr)){
-			t.taxLvl0 <- tryCatch( # first try finding the common name in itis
-				{
-					# tail(classification(sppCorr2[i], db="itis", verbose=FALSE)[[1]][,2], 1)
-					tail(classification(get_tsn(sppCorr2[i], ask=FALSE, verbose=FALSE), verbose=FALSE)[[1]][,2], 1)
-				},
-					error=function(cond){as.character(NA)}
-			)
-			t.taxLvl2 <- data.table(sppCorr=new.sppCorr[i], taxLvl=t.taxLvl0)
-			if(i==1){
-				taxLvl2 <- t.taxLvl2
-			}else{
-				taxLvl2 <- rbind(taxLvl2, t.taxLvl2)
-			}
-			
-			setTxtProgressBar(tlvl.pb, i) # update progress bar
-		}
-		close(tlvl.pb) # close progress bar
-		setkey(taxLvl2, sppCorr) # set key for new common names
-		taxLvl1 <- rbind(taxLvl1, taxLvl2) # bind new and old common names
-		save(taxLvl1, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/taxLvl1.RData")
-	}
 }
+	
+	#
+#
+# 	print("File of taxonomic levels not found, searching for all")
+# 	flush.console()
+# 	tlvl.pb <- txtProgressBar(min=1, max=length(sppCorr2), style=3)
+# 	for(i in 1:length(sppCorr2)){
+# 		t.classification <- tryCatch( # first try finding the common name in itis
+# 			{
+# 				classification(get_tsn(sppCorr2[i], ask=FALSE, verbose=FALSE), verbose=FALSE)[[1]]
+# 			},
+# 				error=function(cond){as.character(NA)}
+# 		)
+# 		# t.taxLvl0 <- t.taxLvl00[grepl("[a-zA-Z]", t.taxLvl00)][1] # only match common names with english chars
+#
+# 		# t.class <- as.data.frame(matrix(NA, ncol=length(class.names), dimnames=list(NULL,class.names)))
+# 		#
+# 		# t.class
+#
+# 		if(!is.na(t.classification)){
+# 			t.taxLvl0 <- tail(t.classification[,2], 1) # 2nd column contains level of classification, tail(,1) to get most specific
+#
+# 			t.c1 <- tolower(t.classification[,2]) # column 1 of classification, in lower case
+# 			t.c2 <- t.classification[,1] # column 2 of classification, which is class. level
+# 			t.c1.ind <- t.c1%in%class.names # index of which levels of classification should be extracted
+#
+# 			t.taxLvl1 <- data.table(sppCorr=sppCorr2[i], taxLvl=t.taxLvl0) # create a data table
+# 			t.taxLvl1[,(class.names):=NA] # create empty columns for classification
+# 			t.taxLvl1[,t.c1[t.c1.ind]:=as.list(t.classification[t.c1.ind,1])] # fill in empty classification columns where found
+#
+#
+# 		}else{ # else, if the call to classification() or get_tsn() failed, then
+# 			t.taxLvl0 <- NA # leave taxLvl as NA
+# 			t.taxLvl1 <- data.table(sppCorr=sppCorr2[i], taxLvl=t.taxLvl0) # record corrected spp name, and NA tax lvl
+# 			t.taxLvl1[,(class.names):=NA] # and the classification will be left as NA
+# 		}
+#
+#
+# 		# t.taxLvl1 <- data.table(sppCorr=sppCorr2[i], taxLvl=t.taxLvl0) # turn the common match into a data table w/ sppCorr
+# 		if(i==1){
+# 			taxLvl1 <- t.taxLvl1 # create the spp.cmmn1 data.table
+# 		}else{
+# 			taxLvl1 <- rbind(taxLvl1, t.taxLvl1) # or accumulate the spp.cmmn1 entries
+# 		}
+# 		setTxtProgressBar(tlvl.pb, i)
+# 	}
+# 	close(tlvl.pb)
+# 	setkey(taxLvl1, sppCorr)
+# 	save(taxLvl1, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/taxLvl1.RData")
+#
+# 	# ==========================================================
+# 	# = If taxLvl.RData does exist, only search for new common =
+# 	# ==========================================================
+# }else{
+# 	print("File of common names found")
+# 	flush.console()
+# 	load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/taxLvl1.RData")
+# 	setkey(taxLvl1, sppCorr)
+# 	new.sppCorr0 <- !u.sppCorr%in%taxLvl1[,sppCorr] & !is.na(u.sppCorr)
+# 	if(any(new.sppCorr0)){
+# 		print(paste("Looking up taxonomic level for ", sum(new.sppCorr0), " new spp", sep=""))
+# 		flush.console()
+# 		new.sppCorr <- u.sppCorr[new.sppCorr0]
+# 		tlvl.pb <- txtProgressBar(min=1, max=length(new.sppCorr), style=3) # initialize the progress bar
+# 		for(i in 1:length(new.sppCorr)){
+# 			t.taxLvl0 <- tryCatch( # first try finding the common name in itis
+# 				{
+# 					# tail(classification(sppCorr2[i], db="itis", verbose=FALSE)[[1]][,2], 1)
+# 					tail(classification(get_tsn(new.sppCorr[i], ask=FALSE, verbose=FALSE), verbose=FALSE)[[1]][,2], 1)
+# 				},
+# 					error=function(cond){as.character(NA)}
+# 			)
+# 			t.taxLvl2 <- data.table(sppCorr=new.sppCorr[i], taxLvl=t.taxLvl0)
+# 			if(i==1){
+# 				taxLvl2 <- t.taxLvl2
+# 			}else{
+# 				taxLvl2 <- rbind(taxLvl2, t.taxLvl2)
+# 			}
+#
+# 			setTxtProgressBar(tlvl.pb, i) # update progress bar
+# 		}
+# 		close(tlvl.pb) # close progress bar
+# 		setkey(taxLvl2, sppCorr) # set key for new common names
+# 		taxLvl1 <- rbind(taxLvl1, taxLvl2) # bind new and old common names
+# 		save(taxLvl1, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/taxLvl1.RData")
+# 	}
+# }
 
 
 # taxLvl1[,sum(!is.na(taxLvl)&(taxLvl%in%c("Species")|(grepl("\\s", sppCorr)&taxLvl=="Genus")))]
