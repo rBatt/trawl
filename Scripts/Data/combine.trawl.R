@@ -239,10 +239,28 @@ if(!"spp.corr1.RData"%in%tax.files){
 		# spp.corr1 <- spp.corr1[spp.corr2] # do a join ... maybe this should just be an rbind()
 		spp.corr1 <- rbind(spp.corr1, spp.corr2)
 		
+			# ===========================
+			# = Some manual corrections =
+			# ===========================
+			# spp.corr1[is.na(sppCorr)]
+			spp.corr1[spp=="Antipatharian", sppCorr:="Antipatharia"]
+			spp.corr1[spp=="Gorgonian", sppCorr:="Gorgonacea"]
+			spp.corr1[spp=="Gymothorax igromargiatus", sppCorr:="Gymnothorax nigromargiatus"]
+			spp.corr1[spp=="Micropaope uttigii", sppCorr:="Micropanope nuttingi"]
+			spp.corr1[spp=="Neptheid", sppCorr:="Neptheidae"]
+			spp.corr1[spp=="Ogocephalidae", sppCorr:="Ogcocephalidae"]
+			spp.corr1[spp=="Raioides", sppCorr:="Raioidea"]
+			spp.corr1[spp=="Seapen", sppCorr:="Pennatulacea"]
+			spp.corr1 <- spp.corr1[!is.na(sppCorr),]
+		
 		# Save the new spp.corr1 file, which has been updated with new species
 		save(spp.corr1, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.corr1.RData")
 	}
 }
+
+
+
+
 
 # setkey(spp.corr1, spp, sppCorr)
 # dim(unique(spp.corr1))
@@ -303,7 +321,7 @@ if(!"spp.cmmn1.RData"%in%tax.files){
 	load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.cmmn1.RData")
 	setkey(spp.cmmn1, sppCorr)
 	new.sppCorr0 <- !u.sppCorr%in%spp.cmmn1[,sppCorr] & !is.na(u.sppCorr)
-	if(any(new.sppCorr0 )){
+	if(any(new.sppCorr0)){
 		print(paste("Looking up common names for ", sum(new.sppCorr0), " new spp", sep=""))
 		flush.console()
 		new.sppCorr <- u.sppCorr[new.sppCorr0]
@@ -311,15 +329,23 @@ if(!"spp.cmmn1.RData"%in%tax.files){
 		for(i in 1:length(new.sppCorr)){
 			t.spp.cmmn00 <- tryCatch(
 				{
-					sci2comm(new.sppCorr[i], db="itis", ask=FALSE, verbose=FALSE)[[1]]#[1]
-				},
-					error=function(cond){
-						tryCatch(
-							sci2comm(new.sppCorr[i], db="eol", ask=FALSE, verbose=FALSE)[[1]],#[1], 
-							error=function(cond){NA}
+					ncbi.check <- sci2comm(new.sppCorr[i], db="ncbi", ask=FALSE, verbose=FALSE)[[1]][1][[1]]
+					stopifnot(!is.null(ncbi.check))
+					ncbi.check
+				}, # first try looking in ncbi b/c gives english
+				error=function(cond){
+					tryCatch( # next try finding the common name in itis
+						{sci2comm(new.sppCorr[i], db="itis", ask=FALSE, verbose=FALSE)[[1]]},
+						error=function(cond){
+							tryCatch( # if itis throws an error, look in eol
+								{sci2comm(new.sppCorr[i], db="eol", ask=FALSE, verbose=FALSE)[[1]]},
+								error=function(cond){NA} # ... return NA
 							)
-					}
-			)
+						} # end 2nd error function
+					) # end 2nd try catch
+				} # end 1st error function 
+			) # end 1st try catch
+			
 			t.spp.cmmn0 <- t.spp.cmmn00[grepl("[a-zA-Z]", t.spp.cmmn00)][1] # only match common names with english chars
 			t.spp.cmmn2 <- data.table(sppCorr=new.sppCorr[i], common=t.spp.cmmn0)
 			if(i==1){
@@ -333,6 +359,12 @@ if(!"spp.cmmn1.RData"%in%tax.files){
 		close(cmmn.pb) # close progress bar
 		setkey(spp.cmmn2, sppCorr) # set key for new common names
 		spp.cmmn1 <- rbind(spp.cmmn1, spp.cmmn2) # bind new and old common names
+		
+			# ============================
+			# = Some mannual corrections =
+			# ============================
+			
+		
 		save(spp.cmmn1, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.cmmn1.RData")
 	}
 }
@@ -344,7 +376,7 @@ if(!"spp.cmmn1.RData"%in%tax.files){
 setkey(spp.cmmn1, sppCorr)
 setkey(spp.corr1, sppCorr)
 trawl.newSpp <- spp.corr1[unique(spp.cmmn1)]
-# trawl.newSpp[,sum(is.na(sppCorr)&!is.na(spp))] # I get 0
+# trawl.newSpp[,sum(is.na(sppCorr)&!is.na(spp))] # I get 0 ... not anymore, now I get 24
 trawl.newSpp[!grepl("[a-zA-Z]", common)|common=="", common:=as.character(NA)] # remove any common names that don't contain english chars
 
 # check for duplicates (arising because of different original "spp" value, but resolved to be same sppCorr & common values)
@@ -410,7 +442,7 @@ if("taxLvl1.RData"%in%tax.files){
 			t.c2 <- t.classification[,1] # column 2 of classification, which is class. level
 			t.c1.ind <- t.c1%in%class.names # index of which levels of classification should be extracted
 		
-			t.taxLvl1 <- data.table(sppCorr=sppCorr2[i], taxLvl=t.taxLvl0) # create a data table
+			t.taxLvl1 <- data.table(sppCorr=sppCorr3[i], taxLvl=t.taxLvl0) # create a data table
 			t.taxLvl1[,(class.names):=NA] # create empty columns for classification
 			t.taxLvl1[,t.c1[t.c1.ind]:=as.list(t.classification[t.c1.ind,1])] # fill in empty classification columns where found
 		
