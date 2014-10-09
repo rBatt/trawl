@@ -26,7 +26,7 @@ lu <- function(x) length(unique(x))
 plot.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/PlotFunctions"
 invisible(sapply(paste(plot.location, list.files(plot.location), sep="/"), source, .GlobalEnv))
 
-
+# divData2 <- divData[,list(stemp=meanna(stemp), btemp=meanna(btemp), depth=meanna(depth), wtcpue=meanna(wtcpue)), by=c("s.reg","stratum","spp","year","common")]
 
 
 # ==========================
@@ -36,18 +36,46 @@ beta.turn.time.expr <- bquote({
 	# print(paste(s.reg, stratum))
 	# print(.SD)
 	if(lu(year)>3){
-		castExp <- acast(melt(.SD, id.vars=c("year","spp"), measure.vars=c("wtcpue")), year~spp)[,-1]
-		d.helli0 <- beta.div(castExp, nperm=0, save.D=TRUE)$D
+		castExp <- acast(melt(.SD, id.vars=c("year","spp"), measure.vars=c("wtcpue")), year~spp, fill=0)[,-1]
+		d.helli00 <- beta.div(castExp, nperm=0, save.D=TRUE)
+		d.helli0 <- d.helli00$D
 		d.helli <- c(d.helli0)
-
 		
+
 		dX.yr <- dist(as.numeric(attributes(d.helli0)$Labels), method="euclidean")
 		
 		good.y1 <- d.helli>0 # figure out which indices would throw error if took log
-		dy1 <- log(d.helli[good.y1])
+		dy1 <- log(sqrt(2)-d.helli[good.y1])
 		dX <- c(dX.yr)[good.y1]
 		decay.slope <- lm(dy1~dX)$coef[2]
-		decay.slope
+		
+
+		# par(mfrow=c(2,1), mar=c(1.75,1.75,0.5,0.5), oma=c(0.1,0.1,1.5,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
+		# mod <- lm(dy1~dX)
+		# mod.coef <- as.numeric(mod$coef)
+		# add.lines <- list(x=dX, y=as.numeric(predict(mod)))
+		#
+		# unX.mod <- -exp(as.numeric(predict(mod))) + sqrt(2)
+		# add.lines2 <- list(x=dX[order(dX)], y=unX.mod[order(dX)])
+		#
+		# betaDvar <- d.helli00[[1]][2]
+		# meanDist <- mean(d.helli[good.y1])
+		#
+		# plot(dX, d.helli[good.y1], main=paste(s.reg, stratum), ylim=c(0, sqrt(2)), xlab="", ylab=bquote(Hellinger~Distance~(Delta*y)))
+		# lines(add.lines2, col="red")
+		#
+		# plot(dX, dy1, ylim=c(log(0.1), log(sqrt(2))), xlab=bquote(Delta*x~(years)), ylab=bquote(log[e](sqrt(2)~-~Delta*y)))
+		# lines(add.lines, col="red")
+		#
+		# mtext(paste("intercept =", round(mod.coef[1],2), "  ", "slope =", round(mod.coef[2],2)), outer=TRUE, adj=0, line=0.25)
+		# mtext(paste("meanDist =", round(meanDist,2), "  ", "betaDvar =", round(betaDvar,2)), outer=TRUE, adj=0, line=0.75)
+		#
+		
+		
+		
+		
+		-decay.slope
+		
 		}else{
 			as.numeric(NA)
 		}
@@ -55,7 +83,7 @@ beta.turn.time.expr <- bquote({
 })
 
 
-
+# pdf("~/Desktop/test.pdf", width=3.5, height=6)
 # beta.turn.time <- divData[,list(lon=mean(lon), lat=mean(lat), turn.time=eval(beta.turn.time.expr)), by=c("s.reg","stratum")]
 beta.turn.time <- divData[,
 	j={
@@ -64,10 +92,13 @@ beta.turn.time <- divData[,
 	
 	by=c("s.reg","stratum")
 ]
-beta.turn.time <- beta.turn.time[!is.na(turn.time)&turn.time>0,]
-beta.turn.time[,turn.time:=log(turn.time)]
+# dev.off()
+beta.turn.time <- beta.turn.time[!is.na(turn.time),]
+# beta.turn.time[,turn.time:=log(turn.time)]
+beta.turn.time[,turn.time:=turn.time]
 
 setkey(beta.turn.time, s.reg, stratum)
+
 
 
 
