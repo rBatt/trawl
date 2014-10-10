@@ -44,10 +44,10 @@ trawl1[,sumWtStrat:=sum(wtcpue), by=c("spp","year","stratum","s.reg")]
 # =====================================
 
 setkey(trawl1, s.reg, spp, common, year, stratum)
-trawl2 <- trawl1[,list(lat=wtAvg(as.numeric(lat), wtcpue), lon=wtAvg(as.numeric(lon), wtcpue), depth=wtAvg(as.numeric(depth), wtcpue), stemp=wtAvg(stemp, wtcpue), btemp=wtAvg(btemp, wtcpue), wtcpue=mean(wtcpue)), by=key(trawl1)]
+trawl2 <- trawl1[,list(lat=wtAvg(as.numeric(lat), wtcpue), lon=wtAvg(as.numeric(lon), wtcpue), depth=wtAvg(as.numeric(depth), wtcpue), stemp=wtAvg(stemp, wtcpue), btemp=wtAvg(btemp, wtcpue), wtcpue=mean(wtcpue)), by=key(trawl1)] # this is important to remember: the lat and lon temperature and depth are all wtcpue-weighted averages.
 
 good.strat.id <- c()
-n.year.strat <- trawl2[,
+n.year.strat <- trawl2[, # subsetting to strata that are observed in max(x) years, where x is the number of years each strata was observed. So if some strata were observed for a minimum of 12 years, and for a maximum of 30 years, only use strata observed for 30 years (even if only 1 was observed in 30 years, but 20 others were observed in 29 years, e.g.). So this is a pretty blunt and harsh tool.
 	{
 	nys <- rowSums(table(stratum, year)>1)
 	nys.strat <- names(nys)
