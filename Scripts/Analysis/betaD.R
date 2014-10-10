@@ -44,7 +44,7 @@ beta.turn.time.expr <- bquote({
 
 		dX.yr <- dist(as.numeric(attributes(d.helli0)$Labels), method="euclidean")
 		
-		good.y1 <- d.helli>0 # figure out which indices would throw error if took log
+		good.y1 <- (sqrt(2)-d.helli)>0 # figure out which indices would throw error if took log
 		dy1 <- log(sqrt(2)-d.helli[good.y1])
 		dX <- c(dX.yr)[good.y1]
 		decay.slope <- lm(dy1~dX)$coef[2]
@@ -82,10 +82,11 @@ beta.turn.time.expr <- bquote({
 
 })
 
+save.image("~/Documents/School&Work/pinskyPost/trawl/Results/forPlotGutsTurnover.RData")
 
 # pdf("~/Desktop/test.pdf", width=3.5, height=6)
 # beta.turn.time <- divData[,list(lon=mean(lon), lat=mean(lat), turn.time=eval(beta.turn.time.expr)), by=c("s.reg","stratum")]
-beta.turn.time <- divData[,
+beta.turn.time0 <- divData[,
 	j={
 		list(lon=mean(lon), lat=mean(lat), turn.time=eval(beta.turn.time.expr))
 	}, 
@@ -93,9 +94,9 @@ beta.turn.time <- divData[,
 	by=c("s.reg","stratum")
 ]
 # dev.off()
-beta.turn.time <- beta.turn.time[!is.na(turn.time),]
-# beta.turn.time[,turn.time:=log(turn.time)]
-beta.turn.time[,turn.time:=turn.time]
+beta.turn.time <- beta.turn.time0[!is.na(turn.time)&turn.time>0,]
+beta.turn.time[,turn.time:=log(turn.time)]
+# beta.turn.time[,turn.time:=turn.time]
 
 setkey(beta.turn.time, s.reg, stratum)
 
@@ -132,17 +133,20 @@ setkey(beta.var.time, s.reg, stratum)
 beta.turn.space.expr <- bquote({	
 	if(lu(stratum)>3){
 		castExp <- acast(melt(.SD, id.vars=c("stratum","spp"), measure.vars=c("wtcpue")), stratum~spp, fill=0)[,-1]
-		d.helli0 <- beta.div(castExp, nperm=0, save.D=TRUE)$D
+		d.helli00 <- beta.div(castExp, nperm=0, save.D=TRUE)
+		d.helli0 <- d.helli00$D
 		d.helli <- c(d.helli0)
 
 		mu.ll <- .SD[,list(lon.mu=mean(lon), lat.mu=mean(lat)), by="stratum"]
 		dX.ll <- mu.ll[,dist(matrix(c(lon.mu,lat.mu),ncol=2), method="euclidean")]
 		
-		good.y1 <- d.helli>0 # figure out which indices would throw error if took log
-		dy1 <- log(d.helli[good.y1])
+		good.y1 <- (sqrt(2)-d.helli)>0 # figure out which indices would throw error if took log
+		dy1 <- log(sqrt(2)-d.helli[good.y1])
 		dX <- c(dX.ll)[good.y1]
 		decay.slope <- lm(dy1~dX)$coef[2]
-		decay.slope
+		-decay.slope
+		
+		
 		}else{
 			as.numeric(NA)
 		}
@@ -244,6 +248,10 @@ setkey(beta.var.space, s.reg, year)
 # 	by="s.reg"
 # ]
 
+# beta.var.time.lcbd.max <- beta.var.time.lcbd[, list(year=year[which.max(year.lcbd)]), by=c("s.reg","stratum")]
+# dev.new(width=3, height=6)
+# par(mfrow=c(5,2), mar=c(1.5,1.25,0.5,0.5), oma=c(0.5,0.5,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
+# beta.var.time.lcbd.max[,plot(table(year)), by="s.reg"]
 
 
 
