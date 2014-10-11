@@ -1,4 +1,7 @@
 
+# TODO need to change all the lookup code into functions
+# TODO need to incorporate the manually-found species info
+
 
 library(data.table)
 library(rfishbase)
@@ -345,7 +348,7 @@ sppCorr2 <- trawl.newSpp[,sppCorr]
 class.names <- c("species", "genus", "family", "order", "class", "superclass", "subphylum", "phylum", "kingdom")
 
 if("taxLvl1.RData"%in%tax.files){
-	print("File of common names found")
+	print("File of taxonomic levels found")
 	flush.console()
 	load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/taxLvl1.RData")
 	setkey(taxLvl1, sppCorr)
@@ -354,6 +357,7 @@ if("taxLvl1.RData"%in%tax.files){
 		print(paste("Looking up taxonomic level for ", sum(new.sppCorr0), " new spp", sep=""))
 		flush.console()
 		sppCorr3 <- u.sppCorr[new.sppCorr0]
+		# TODO I need to actually look up the taxonomic level for this situation, because currently I don't
 	}
 }else{
 	sppCorr3 <- sppCorr2
