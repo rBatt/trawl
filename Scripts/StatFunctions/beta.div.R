@@ -1,4 +1,4 @@
-beta.div <- function(Y, method="hellinger", sqrt.D=FALSE, samp=TRUE, nperm=999, save.D=FALSE, clock=FALSE)
+beta.div <- function(Y, method="hellinger", sqrt.D=FALSE, samp=TRUE, nperm=999, save.D=FALSE, clock=FALSE, saveDiag=FALSE)
 # This version includes direct calculation of the Jaccard, Sorensen and Ochiai 
 # coefficients for presence-absence data.
 #
@@ -46,7 +46,7 @@ BD.group1 <- function(Y, method, save.D, per)
 	LCBD <- apply(s, 1, sum)/SStotal  # eqs. 5a and 5b
 	#
 	D <- NA
-	if(!per & save.D)   D <- dist(Y)
+	if(!per & save.D)   D <- dist(Y, diag=saveDiag)
 	#
 	out <- list(SStotal_BDtotal=c(SStotal,BDtotal), SCBD=SCBD, LCBD=LCBD, 
 	method=method, D=D)
