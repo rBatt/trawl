@@ -1,5 +1,7 @@
 library(data.table)
 library(maps)
+library(PBSmapping)
+
 source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/PlotFunctions/map.w.R")
 # =========================
 # = Load Data and Scripts =
@@ -9,7 +11,6 @@ load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/divData.RData")
 
 
 tempData0 <- divData[,list(s.reg, stratum, year, lat, lon, depth, stemp, btemp)]
-
 tempData <- tempData0[,c("stemp","btemp"):=list(mean(stemp, na.rm=TRUE), mean(btemp, na.rm=TRUE)), by=c("stratum","year","lat","lon","depth")]
 setkey(tempData, s.reg, stratum, year, lat, lon, depth, stemp, btemp)
 tempData <- unique(tempData)
