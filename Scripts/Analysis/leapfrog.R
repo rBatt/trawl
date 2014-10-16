@@ -100,8 +100,7 @@ frogData0[, c("stemp","btemp"):=list(fill.mean(stemp), fill.mean(btemp)), by=c("
 frogData0[,c("lat.km", "lon.km"):=ll2km(lon,lat)]
 frogData <- frogData0
 
-test <- frogData[s.reg=="neus",]
-i=1
+
 
 
 # ===================
@@ -233,8 +232,9 @@ shifts <- frogData[,
 				# if in the first iteration, just consider the default movement to be to remain stationary
 				last.stempMatch0 <- 1:n.str # length(diag(dStemp.t))
 			}
-			stempMatch0 <- apply(dStemp.t, 1, function(x){if(all(is.na(x))){0}else{which.min(x)}}) # calculate which.min, but if all na, replace index with a 0
-			stempMatch0[stempMatch0==0L] <- last.stempMatch0[stempMatch0==0L] # replace all 0 with the index from last time (the temperature location just doesn't move)
+			stempMatch00 <- apply(dStemp.t, 1, function(x){if(all(is.na(x))){0}else{which.min(x)}}) # calculate which.min, but if all na, replace index with a 0
+			stempMatch0 <- stempMatch00
+			stempMatch0[stempMatch00==0L] <- last.stempMatch0[stempMatch00==0L] # replace all 0 with the index from last time (the temperature location just doesn't move)
 			last.stempMatch0 <- stempMatch0 # then update the last set of temperature matches
 			# End dealing with case where missign temperature
 			
@@ -253,8 +253,9 @@ shifts <- frogData[,
 				# if in the first iteration, just consider the default movement to be to remain stationary
 				last.btempMatch0 <- 1:n.str # length(diag(dBtemp.t))
 			}
-			btempMatch0 <- apply(dBtemp.t, 1, function(x){if(all(is.na(x))){0}else{which.min(x)}}) # calculate which.min, but if all na, replace index with a 0
-			btempMatch0[btempMatch0==0L] <- last.btempMatch0[btempMatch0==0L] # replace all 0 with the index from last time (the temperature location just doesn't move)
+			btempMatch00 <- apply(dBtemp.t, 1, function(x){if(all(is.na(x))){0}else{which.min(x)}}) # calculate which.min, but if all na, replace index with a 0
+			btempMatch0 <- btempMatch00
+			btempMatch0[btempMatch00==0L] <- last.btempMatch0[btempMatch00==0L] # replace all 0 with the index from last time (the temperature location just doesn't move)
 			last.btempMatch0 <- btempMatch0 # then update the last set of temperature matches
 			# End dealing with case where missign temperature
 			
@@ -413,7 +414,19 @@ shifts <- frogData[,
 			t.btemp.lon.t <- info.0[btempMatch0, "com.lon.t"]
 			t.btemp.lat.km.t <- info.0[btempMatch0, "com.lat.km.t"]
 			t.btemp.lon.km.t <- info.0[btempMatch0, "com.lon.km.t"]
-		   
+			
+			# ==========================
+			# = Clean up temps w/ NA's =
+			# ==========================
+			bs.stemp <- as.integer(stempMatch00)==0L
+			st2na <- seq_along(stempMatch00)
+			st2na[bs.stemp] <- NA
+			
+			bs.btemp <- as.integer(btempMatch00)==0L
+			bt2na <- seq_along(btempMatch00)
+			bt2na[bs.btemp] <- NA
+			
+			
 
 			# n.stat <- sum((comMatch.arr[,1] - comMatch.arr[,2])==0) # number that didn't move this time
 			# stemp.n.stat <- sum((stempMatch.arr[,1] - stempMatch.arr[,2])==0) # number that didn't move this time
@@ -424,39 +437,38 @@ shifts <- frogData[,
 				stratum=strata, 
 				strat.lat.0=t.lat.0,
 				strat.lon.0=t.lon.0,
-				
+
 				comStrat.t=strata[comMatch0],
 				com.lat.t=t.com.lat.t,
 				com.lon.t=t.com.lon.t,
+				stempStrat.t=strata[stempMatch0][st2na],
+				stemp.lat.t=t.stemp.lat.t[st2na],
+				stemp.lon.t=t.stemp.lon.t[st2na],
+				btempStrat.t=strata[btempMatch0][bt2na],
+				btemp.lat.t=t.btemp.lat.t[bt2na],
+				btemp.lon.t=t.btemp.lon.t[bt2na],
 				
-				stempStrat.t=strata[stempMatch0],
-				stemp.lat.t=t.stemp.lat.t,
-				stemp.lon.t=t.stemp.lon.t,
-				btempStrat.t=strata[btempMatch0],
-				btemp.lat.t=t.btemp.lat.t,
-				btemp.lon.t=t.btemp.lon.t,
-				
-				com.dll.0.net=com.dll.0.net , # distance from origin
+				com.dll.0.net=com.dll.0.net, # distance from origin
 				com.dll.0.tot=com.dll.0.tot,
 				com.dll.t=com.dll.t, # distance moved this time step
-				stemp.dll.0.net=stemp.dll.0.net , # distance from origin
-				stemp.dll.t=stemp.dll.t, # distance moved this time step
-				btemp.dll.0.net=btemp.dll.0.net , # distance from origin
-				btemp.dll.t=btemp.dll.t, # distance moved this time step
+				stemp.dll.0.net=stemp.dll.0.net[st2na], # distance from origin
+				stemp.dll.t=stemp.dll.t[st2na], # distance moved this time step
+				btemp.dll.0.net=btemp.dll.0.net[bt2na], # distance from origin
+				btemp.dll.t=btemp.dll.t[bt2na], # distance moved this time step
 				
 				dComp.net=t.dComp.0.net,
 				dComp.t=t.dComp.t,
-				dStemp.net=t.dStemp.0.net,
-				dStemp.t=t.dStemp.t, 
-				dBtemp.net=t.dBtemp.0.net,
-				dBtemp.t=t.dBtemp.t, 
+				dStemp.net=t.dStemp.0.net[st2na],
+				dStemp.t=t.dStemp.t[st2na], 
+				dBtemp.net=t.dBtemp.0.net[bt2na],
+				dBtemp.t=t.dBtemp.t[bt2na], 
 				
 				com.dll.t.angle=stemp.dll.t.angle,
 				com.dll.0.net.angle=stemp.dll.0.net.angle,
-				stemp.dll.t.angle=stemp.dll.t.angle,
-				stemp.dll.0.net.angle=stemp.dll.0.net.angle,
-				btemp.dll.t.angle=btemp.dll.t.angle,
-				btemp.dll.0.net.angle=btemp.dll.0.net.angle
+				stemp.dll.t.angle=stemp.dll.t.angle[st2na],
+				stemp.dll.0.net.angle=stemp.dll.0.net.angle[st2na],
+				btemp.dll.t.angle=btemp.dll.t.angle[bt2na],
+				btemp.dll.0.net.angle=btemp.dll.0.net.angle[bt2na]
 				
 				
 			)
@@ -492,169 +504,6 @@ shifts <- frogData[,
 	
 	by=c("s.reg")
 ]
-
-
-# ==============================================
-# = Begin plotting everything you can think of =
-# ==============================================
-
-# ==============
-# = Trajectory =
-# ==============
-comMatch[,stratum:=factor(stratum, levels=unique(stratum)[order(strat.lat.0[!duplicated(stratum)])])]
-setkey(comMatch, s.reg, stratum)
-dev.new()
-par(mfrow=c(1,1), mar=c(1.5,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.75,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
-comMatch[,
-	j={
-
-		
-		strat.cols1 <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(lu(stratum))
-		strat.cols1.5 <- rgb(t(col2rgb(strat.cols1)), alpha=100, maxColorValue=255)
-		strat.cols2 <- rgb(t(col2rgb(strat.cols1)), alpha=45, maxColorValue=255)
-		strat.chars <- as.character(as.numeric(unique(stratum)))
-		names(strat.cols1) <- unique(stratum)
-		names(strat.cols2) <- unique(stratum)
-		names(strat.chars) <- unique(stratum)
-		
-		# ==================================
-		# = Plot 1: Community Trajectories =
-		# ==================================
-		
-		plot(com.lon.t, com.lat.t, type="n")
-		.SD[,
-			j={
-				lines(com.lon.t, com.lat.t, type="l", col=strat.cols2[stratum])
-				
-			},
-			by=c("stratum")	
-		]
-		.SD[,
-			points(jitter(rev(com.lon.t)[1], factor=0.15), jitter(rev(com.lat.t)[1], factor=0.15), col="black", bg=strat.cols1.5[stratum], pch=21, cex=2),
-			by=c("stratum")
-		]
-		
-		points(unique(strat.lon.0), unique(strat.lat.0), col=strat.cols1, bg=strat.cols2, cex=3, pch=21)
-		text(unique(strat.lon.0), unique(strat.lat.0), col="black", cex=1, labels=strat.chars, font=1)
-		
-		
-	},
-	
-	by=c("s.reg")
-]
-
-
-
-
-
-# ===============================
-# = Community Lat vs. Stemp Lat =
-# ===============================
-shifts[,stratum:=factor(stratum, levels=unique(stratum)[order(strat.lat.0[!duplicated(stratum)])])]
-setkey(shifts, s.reg, stratum)
-# dev.new(width=4, height=6)
-png("~/Desktop/communityShift_vs_surfTempShift.png", width=4, height=6, res=300, units="in")
-par(mfrow=c(5,2), mar=c(1.5,1.5,0.75,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.75,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
-shifts[,
-	j={
-
-		
-		strat.cols1 <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(lu(stratum))
-		strat.cols1.5 <- rgb(t(col2rgb(strat.cols1)), alpha=100, maxColorValue=255)
-		strat.cols2 <- rgb(t(col2rgb(strat.cols1)), alpha=45, maxColorValue=255)
-		gray2 <- rgb(t(col2rgb("gray")), alpha=85, maxColorValue=255)
-		strat.chars <- as.character(as.numeric(unique(stratum)))
-		names(strat.cols1) <- unique(stratum)
-		names(strat.cols2) <- unique(stratum)
-		names(strat.chars) <- unique(stratum)
-		
-		com.lat.shift <- com.lat.t-strat.lat.0
-		stemp.lat.shift <- stemp.lat.t-strat.lat.0
-		
-		plot(com.lat.shift, stemp.lat.shift, ylab=bquote(Com~(degree*N/yr)), xlab=bquote(Stemp~(degree*N/yr)), pch=21, bg=gray2, col=NA, main=s.reg)
-		
-		pval <- tryCatch(summary(lm(com.lat.shift~stemp.lat.shift))$coef[2,4], error=function(cond)2)
-		
-		
-		
-		if(pval<0.05){
-			abline(a=0, b=1, col="red", lwd=3)
-		}else{
-			abline(a=0, b=1, col="red")
-		}
-		if(pval<0.005){
-			abline(a=0, b=1, col="red", lwd=3)
-			abline(a=0, b=1, col="white", lty="dashed", lwd=1.5)
-		}
-		
-		
-		
-		
-		
-		# print(summary(lm(com.lat.shift~stemp.lat.shift)))
-		# print(summary(lm(com.lat.shift~stemp.lat.shift*strat.lat.0)))
-	
-	},
-	
-	by=c("s.reg")
-]
-dev.off()
-
-
-
-
-# ===============================
-# = Community Lat vs. Btemp Lat =
-# ===============================
-shifts[,stratum:=factor(stratum, levels=unique(stratum)[order(strat.lat.0[!duplicated(stratum)])])]
-setkey(shifts, s.reg, stratum)
-# dev.new(width=4, height=6)
-png("~/Desktop/communityShift_vs_botTempShift.png", width=4, height=6, res=300, units="in")
-par(mfrow=c(5,2), mar=c(1.5,1.5,0.75,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.75,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
-shifts[,
-	j={
-
-		
-		strat.cols1 <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(lu(stratum))
-		strat.cols1.5 <- rgb(t(col2rgb(strat.cols1)), alpha=100, maxColorValue=255)
-		strat.cols2 <- rgb(t(col2rgb(strat.cols1)), alpha=45, maxColorValue=255)
-		gray2 <- rgb(t(col2rgb("gray")), alpha=85, maxColorValue=255)
-		strat.chars <- as.character(as.numeric(unique(stratum)))
-		names(strat.cols1) <- unique(stratum)
-		names(strat.cols2) <- unique(stratum)
-		names(strat.chars) <- unique(stratum)
-		
-		com.lat.shift <- com.lat.t-strat.lat.0
-		btemp.lat.shift <- btemp.lat.t-strat.lat.0
-		
-		plot(com.lat.shift, btemp.lat.shift, ylab=bquote(Com~(degree*N/yr)), xlab=bquote(Btemp~(degree*N/yr)), pch=21, bg=gray2, col=NA, main=s.reg)
-		
-		pval <- summary(lm(com.lat.shift~btemp.lat.shift))$coef[2,4]
-		
-		
-		
-		if(pval<0.05){
-			abline(a=0, b=1, col="red", lwd=3)
-		}else{
-			abline(a=0, b=1, col="red")
-		}
-		if(pval<0.005){
-			abline(a=0, b=1, col="red", lwd=3)
-			abline(a=0, b=1, col="white", lty="dashed", lwd=1.5)
-		}
-		
-		
-		
-		
-		
-		print(summary(lm(com.lat.shift~btemp.lat.shift)))
-		print(summary(lm(com.lat.shift~btemp.lat.shift*strat.lat.0)))
-	
-	},
-	
-	by=c("s.reg")
-]
-dev.off()
 
 
 
