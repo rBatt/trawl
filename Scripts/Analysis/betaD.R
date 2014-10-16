@@ -8,15 +8,17 @@ library(data.table)
 library(vegan)
 library(reshape2)
 
-# =========================
-# = Load Data and Scripts =
-# =========================
+
+# =============
+# = Load Data =
+# =============
 # Load trawl data
 load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/divData.RData")
 
-# Load Legendre beta diversity functions
-source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/StatFunctions/beta.div.R")
 
+# ===========================
+# = Load Scripts/ Functions =
+# ===========================
 # Load Data functions
 dat.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions"
 invisible(sapply(paste(dat.location, list.files(dat.location), sep="/"), source, .GlobalEnv))
@@ -24,6 +26,10 @@ lu <- function(x) length(unique(x))
 
 # Load plottign functions
 plot.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/PlotFunctions"
+invisible(sapply(paste(plot.location, list.files(plot.location), sep="/"), source, .GlobalEnv))
+
+# Load statistics functions
+plot.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/StatFunctions"
 invisible(sapply(paste(plot.location, list.files(plot.location), sep="/"), source, .GlobalEnv))
 
 # divData2 <- divData[,list(stemp=meanna(stemp), btemp=meanna(btemp), depth=meanna(depth), wtcpue=meanna(wtcpue)), by=c("s.reg","stratum","spp","year","common")]
