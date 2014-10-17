@@ -138,4 +138,6 @@ alphaD <- divData[,
 ]
 
 
+save(alphaD, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Results/alphaD.RData")
+
 
