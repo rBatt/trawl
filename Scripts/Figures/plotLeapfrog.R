@@ -453,62 +453,286 @@ mtext(bquote(Between-Year~Btemp~Change~(degree*C)), side=1, line=-0.15, outer=TR
 
 
 
-# ===============================
-# = Community Lat vs. Btemp Lat =
-# ===============================
-shifts[,stratum:=factor(stratum, levels=unique(stratum)[order(strat.lat.0[!duplicated(stratum)])])]
-setkey(shifts, s.reg, stratum)
-# dev.new(width=4, height=6)
-png("~/Desktop/communityShift_vs_botTempShift.png", width=4, height=6, res=300, units="in")
-par(mfrow=c(5,2), mar=c(1.5,1.5,0.75,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.75,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
-shifts[,
-	j={
 
+
+# ===============================
+# = Community Lon vs. Btemp Lon =
+# ===============================
+shifts[,stratum:=factor(stratum, levels=unique(stratum)[order(strat.lon.0[!duplicated(stratum)])])]
+setkey(shifts, s.reg, stratum)
+
+# Create community / btemp velocity device
+dev.new(width=3.5, height=6.5)
+# png("~/Desktop/communityShift_vs_surfTempShift.png", width=4, height=6, res=300, units="in")
+par(mfrow=c(5,2), mar=c(0.85,0.85,0.75,0.5), oma=c(0.75,0.75,0.1,0.1), mgp=c(0.75,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
+comBtemp.vel.dev <- dev.cur()
+
+# Create com/btemp residual from 1:1 device
+dev.new(width=3.5, height=6.5)
+# png("~/Desktop/communityShift_vs_surfTempShift.png", width=4, height=6, res=300, units="in")
+par(mfrow=c(5,2), mar=c(0.85,0.85,0.75,0.5), oma=c(0.75,0.75,0.1,0.1), mgp=c(0.75,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
+comBtemp.res11.dev <- dev.cur()
+
+# Create com/btemp residual from regression line device
+dev.new(width=3.5, height=6.5)
+# png("~/Desktop/communityShift_vs_surfTempShift.png", width=4, height=6, res=300, units="in")
+par(mfrow=c(5,2), mar=c(0.85,0.85,0.75,0.5), oma=c(0.75,0.75,0.1,0.1), mgp=c(0.75,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
+comBtemp.resFit.dev <- dev.cur()
+
+# Create net change device
+dev.new(width=3.5, height=6.5)
+# png("~/Desktop/communityShift_vs_surfTempShift.png", width=4, height=6, res=300, units="in")
+par(mfrow=c(5,2), mar=c(0.85,0.85,0.75,0.5), oma=c(0.75,0.75,0.1,0.1), mgp=c(0.75,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
+netChange.dev <- dev.cur()
+
+# Create mean dt change device
+dev.new(width=3.5, height=6.5)
+# png("~/Desktop/communityShift_vs_surfTempShift.png", width=4, height=6, res=300, units="in")
+par(mfrow=c(5,2), mar=c(0.85,0.85,0.75,0.5), oma=c(0.75,0.75,0.1,0.1), mgp=c(0.75,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
+tChange.dev <- dev.cur()
+
+
+shifts[,
+	j={		
+		com.lon.shift <- .SD[,list(comShift=mean(com.lon.t-strat.lon.0, na.rm=TRUE)), by=c("stratum")][,comShift]
+		btemp.lon.shift <- .SD[,list(btempShift=mean(btemp.lon.t-strat.lon.0, na.rm=TRUE)), by=c("stratum")][,btempShift] # btemp.lon.t- strat.lon.0
+		dComp.t.strat <- .SD[,list(comShift=mean(dComp.t, na.rm=TRUE)), by=c("stratum")][,comShift] # should maybe divid this by the absolute value of dBtemp.t.strat, because the best matching community could change a lot if the best matching temperature changed a lot
+		dBtemp.t.strat <- .SD[,list(comShift=mean(dBtemp.t, na.rm=TRUE)), by=c("stratum")][,comShift]
+		t.strata <- .SD[,unique(year)]
 		
-		strat.cols1 <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(lu(stratum))
-		strat.cols1.5 <- rgb(t(col2rgb(strat.cols1)), alpha=100, maxColorValue=255)
-		strat.cols2 <- rgb(t(col2rgb(strat.cols1)), alpha=45, maxColorValue=255)
-		gray2 <- rgb(t(col2rgb("gray")), alpha=85, maxColorValue=255)
-		strat.chars <- as.character(as.numeric(unique(stratum)))
-		names(strat.cols1) <- unique(stratum)
-		names(strat.cols2) <- unique(stratum)
-		names(strat.chars) <- unique(stratum)
+		dBtemp.net.strat <- .SD[,list(netBtemp=mean(dBtemp.net, na.rm=TRUE)), by=c("stratum")][,netBtemp]
+		dComp.net.strat <- .SD[,list(netComp=mean(dComp.net, na.rm=TRUE)), by=c("stratum")][,netComp]
 		
-		com.lat.shift <- com.lat.t-strat.lat.0
-		btemp.lat.shift <- btemp.lat.t-strat.lat.0
+		dBtemp.t.strat <- .SD[,list(tBtemp=mean(dBtemp.t, na.rm=TRUE)), by=c("stratum")][,tBtemp]
+		dComp.t.strat <- .SD[,list(tComp=mean(dComp.t, na.rm=TRUE)), by=c("stratum")][,tComp]
 		
-		if(!all(is.na(btemp.lat.shift))){
-			plot(btemp.lat.shift, com.lat.shift, ylab=bquote(Com~(degree*N/yr)), xlab=bquote(Btemp~(degree*N/yr)), pch=21, bg=gray2, col=NA, main=s.reg)
+		
+		mod.mat <- matrix(c(com.lon.shift,btemp.lon.shift),ncol=2)
+		# sing.check <- det(t(mod.mat)%*%mod.mat) < 1E-9
+		na.check <- sum(complete.cases(mod.mat)) > 2
+		# Regressions
+		if(na.check){
+			t.mod <- lm(com.lon.shift~btemp.lon.shift)
+			resFit.com.lon.shift <- abs(com.lon.shift - as.numeric(predict(t.mod)))
+			res11.com.lon.shift <- abs(com.lon.shift - btemp.lon.shift)
+		}
+		
+		print(s.reg)
+		print(summary(t.mod))		
+		
+		# First Figure
+		dev.set(comBtemp.vel.dev)
+		# Plot Blank
+		if(na.check){
+			plot(btemp.lon.shift, com.lon.shift, ylab="", xlab="", pch=21, bg=gray2, col=NA, type="n", main=s.reg)
+			abline.mod(btemp.lon.shift, com.lon.shift)
+			r2 <- round(summary(t.mod)$r.squ,2)
+			legend("topleft", bty="n", legend=bquote(R^2==.(r2)), inset=c(-0.15,-0.1))
 		}else{
-			plot(1, ylab=bquote(Com~(degree*N/yr)), xlab=bquote(Btemp~(degree*N/yr)), xaxt="n",yaxt="n", pch="NA", bg=gray2, col=NA, main=s.reg)	
+			plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=s.reg)	
 		}
-				
-		pval <- summary(lm(com.lat.shift~btemp.lat.shift))$coef[2,4]
 		
+		# Plot Lines	
+		abline(a=0, b=1, col="blue", lty="dashed", lwd=1)
 		
-		
-		if(pval<0.05){
-			abline(a=0, b=1, col="red", lwd=3)
+		# Plot Real
+		if(na.check){
+			points(btemp.lon.shift, com.lon.shift, pch=21, bg=gray2, col=NA)
 		}else{
-			abline(a=0, b=1, col="red")
-		}
-		if(pval<0.005){
-			abline(a=0, b=1, col="red", lwd=3)
-			abline(a=0, b=1, col="white", lty="dashed", lwd=1.5)
+			points(1, xaxt="n",yaxt="n", pch="NA", bg=gray2, col=NA)	
 		}
 		
 		
 		
+		# Second Figure
+		dev.set(comBtemp.res11.dev)
+		if(na.check){
+			plot(res11.com.lon.shift, dComp.t.strat, ylab="",xlab="", main=s.reg, lwd=1, pch=21, bg=gray2, col=NA)
+			abline.mod(res11.com.lon.shift, dComp.t.strat)
+			
+		}else{
+			plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=s.reg)	
+		}
 		
 		
-		print(summary(lm(com.lat.shift~btemp.lat.shift)))
-		print(summary(lm(com.lat.shift~btemp.lat.shift*strat.lat.0)))
+		
+		# Third Figure
+		dev.set(comBtemp.resFit.dev)
+		if(na.check){
+			plot(resFit.com.lon.shift, dComp.t.strat, ylab="",xlab="", main=s.reg, lwd=1, pch=21, bg=gray2, col=NA)
+			abline.mod(resFit.com.lon.shift, dComp.t.strat)
+			
+		}else{
+			plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=s.reg)	
+		}
+		
+
+		# Fourth Figure
+		dev.set(netChange.dev)
+		if(na.check){
+			plot(dBtemp.net.strat, dComp.net.strat, ylab="",xlab="", main=s.reg, lwd=1, pch=21, bg=gray2, col=NA)
+			abline.mod(dBtemp.net.strat, dComp.net.strat)
+			
+		}else{
+			plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=s.reg)	
+		}
+		
+		# Fifth Figure
+		dev.set(tChange.dev)
+		if(na.check){
+			plot(dBtemp.t.strat, dComp.t.strat, ylab="",xlab="", main=s.reg, lwd=1, pch=21, bg=gray2, col=NA)
+			abline.mod(dBtemp.t.strat, dComp.t.strat)
+			
+		}else{
+			plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=s.reg)	
+		}
+		
+		
+		
+		# print(summary(lm(com.lon.shift~btemp.lon.shift)))
+		# print(summary(lm(com.lon.shift~btemp.lon.shift*strat.lon.0)))
 	
 	},
 	
 	by=c("s.reg")
 ]
-dev.off()
+
+# First Figure
+dev.set(comBtemp.vel.dev)
+mtext(bquote(Com~(degree*E/yr)), side=2, line=-0.15, outer=TRUE)
+mtext(bquote(Btemp~(degree*E/yr)), side=1, line=-0.15, outer=TRUE)
+# dev.off(comBtemp.vel.dev)
+
+
+# Second Figure
+dev.set(comBtemp.res11.dev)
+mtext(bquote(Community~Change), side=2, line=-0.15, outer=TRUE)
+mtext(bquote(Deviation~from~Btemp~Velocity~(degree*E/yr)), side=1, line=-0.15, outer=TRUE)
+# dev.off(comBtemp.res11.dev)
+
+
+# Third Figure
+dev.set(comBtemp.resFit.dev)
+mtext(bquote(Community~Change), side=2, line=-0.15, outer=TRUE)
+mtext(bquote(Deviation~from~Predicted~Velocity~~(degree*E/yr)), side=1, line=-0.15, outer=TRUE)
+# dev.off(comBtemp.resFit.dev)
+
+# Fourth Figure
+dev.set(netChange.dev)
+mtext(bquote(Net~Community~Change), side=2, line=-0.15, outer=TRUE)
+mtext(bquote(Net~Btemp~Change~(degree*C)), side=1, line=-0.15, outer=TRUE)
+# dev.off(netChange.dev)
+
+# Fifth Figure
+dev.set(tChange.dev)
+mtext(bquote(Between-Year~Community~Change), side=2, line=-0.15, outer=TRUE)
+mtext(bquote(Between-Year~Btemp~Change~(degree*C)), side=1, line=-0.15, outer=TRUE)
+# dev.off(tChange.dev)
+
+
+
+
+
+
+
+# =============================================================
+# = Community velocity as scalar projection of Btemp velocity =
+# =============================================================
+# Create device for scalar projection of community velocity in direction of btemp velocity
+dev.new.lf("sProj.dev")
+
+
+shifts[,
+	j={		
+		com.lon.shift <- .SD[,list(comShift.lon=mean(com.lon.t-strat.lon.0, na.rm=TRUE)), by=c("stratum")][,comShift.lon]
+		btemp.lon.shift <- .SD[,list(btempShift.lon=mean(btemp.lon.t-strat.lon.0, na.rm=TRUE)), by=c("stratum")][,btempShift.lon] # btemp.lon.t- strat.lon.0
+		com.lat.shift <- .SD[,list(comShift.lat=mean(com.lat.t-strat.lat.0, na.rm=TRUE)), by=c("stratum")][,comShift.lat]
+		btemp.lat.shift <- .SD[,list(btempShift.lat=mean(btemp.lat.t-strat.lat.0, na.rm=TRUE)), by=c("stratum")][,btempShift.lat] # btemp.lat.t- strat.lat.0		
+		com.dll.shift <- .SD[,list(com.dll.shift=mean(com.dll.t, na.rm=TRUE)), by=c("stratum")][,com.dll.shift]
+		btemp.dll.shift <- .SD[,list(btemp.dll.shift=mean(btemp.dll.t, na.rm=TRUE)), by=c("stratum")][,btemp.dll.shift]
+		
+		# t.a <- as.matrix(.SD[,list(strat.lon.0, strat.lat.0, com.lon.t, com.lat.t)])
+		# t.b <- as.matrix(.SD[,list(strat.lon.0, strat.lat.0, btemp.lon.t, btemp.lat.t)])
+		# t.lenA <- as.matrix(.SD[,com.dll.shift])
+		# print(t.a)
+		# print(t.b)
+		# print(t.lenA)
+		# t.dt <- data.table(stratum=.SD[,stratum], com.proj2.btemp=sProj(t.a, t.b, t.lenA))
+		
+		
+		com.proj2.btemp <- .SD[,
+			{
+				t.a <- as.matrix(.SD[,list(strat.lon.0, strat.lat.0, com.lon.t, com.lat.t)])
+				t.b <- as.matrix(.SD[,list(strat.lon.0, strat.lat.0, btemp.lon.t, btemp.lat.t)])
+				t.lenA <- as.matrix(.SD[,list(com.dll.t)])
+				list(com.proj2.btemp=mean(sProj(t.a, t.b, t.lenA), na.rm=TRUE))
+			},
+			by=c("stratum")
+		][,com.proj2.btemp]
+
+		# Calculate the scalar projection of the community shift in the direction of the bottom temperature shfit		
+		# com.proj2.btemp <- sProj(a=matrix(c(com.lon.shift,com.lat.shift),ncol=2), b=matrix(c(btemp.lon.shift,btemp.lat.shift),ncol=2), lenA=matrix(com.dll.shift, ncol=1))
+		# com.proj2.btemp <- t.dt[,list(com.proj2.btemp=mean(com.proj2.btemp, na.rm=TRUE)), by=c("stratum")][,com.proj2.btemp]
+
+		
+		dComp.t.strat <- .SD[,list(comShift=mean(dComp.t, na.rm=TRUE)), by=c("stratum")][,comShift] # should maybe divid this by the absolute value of dBtemp.t.strat, because the best matching community could change a lot if the best matching temperature changed a lot
+		dBtemp.t.strat <- .SD[,list(comShift=mean(dBtemp.t, na.rm=TRUE)), by=c("stratum")][,comShift]
+		t.strata <- .SD[,unique(year)]
+		
+		dBtemp.net.strat <- .SD[,list(netBtemp=mean(dBtemp.net, na.rm=TRUE)), by=c("stratum")][,netBtemp]
+		dComp.net.strat <- .SD[,list(netComp=mean(dComp.net, na.rm=TRUE)), by=c("stratum")][,netComp]
+		
+		dBtemp.t.strat <- .SD[,list(tBtemp=mean(dBtemp.t, na.rm=TRUE)), by=c("stratum")][,tBtemp]
+		dComp.t.strat <- .SD[,list(tComp=mean(dComp.t, na.rm=TRUE)), by=c("stratum")][,tComp]
+		
+		
+		mod.mat <- matrix(c(com.proj2.btemp,btemp.dll.shift),ncol=2)
+		# sing.check <- det(t(mod.mat)%*%mod.mat) < 1E-9
+		na.check <- sum(complete.cases(mod.mat)) > 2
+		# Regressions
+		if(na.check){
+			t.mod <- lm(com.proj2.btemp~btemp.dll.shift)
+			resFit.com.shift <- abs(com.proj2.btemp - as.numeric(predict(t.mod)))
+			res11.com.shift <- abs(com.proj2.btemp - btemp.dll.shift)
+		}
+		
+		print(s.reg)
+		print(summary(t.mod))		
+		
+		
+		# Sixth Figure
+		dev.set(sProj.dev)
+		# Plot Blank
+		if(na.check){
+			plot(btemp.dll.shift, com.proj2.btemp, ylab="", xlab="", pch=21, bg=gray2, col=NA, type="n", main=s.reg)
+			abline.mod(btemp.dll.shift, com.proj2.btemp)
+			r2 <- round(summary(t.mod)$r.squ,2)
+			legend("topleft", bty="n", legend=bquote(R^2==.(r2)), inset=c(-0.15,-0.1))
+		}else{
+			plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=s.reg)	
+		}
+		
+		# Plot Lines	
+		abline(a=0, b=1, col="blue", lty="dashed", lwd=1)
+		
+		# Plot Real
+		if(na.check){
+			points(btemp.dll.shift, com.proj2.btemp, pch=21, bg=gray2, col=NA)
+		}else{
+			points(1, xaxt="n",yaxt="n", pch="NA", bg=gray2, col=NA)	
+		}
+	
+	},
+	
+	by=c("s.reg")
+]
+
+# Sixth Figure
+dev.set(sProj.dev)
+mtext(bquote(Scalar~Projection~of~Community~Shift~"in"~the~Direction~of~Btemp~Shift), side=2, line=-0.15, outer=TRUE)
+mtext(bquote(Btemp~Shift), side=1, line=-0.15, outer=TRUE)
+# dev.off(tChange.dev)
+
 
 
 
@@ -567,6 +791,10 @@ shifts[,
 	by=c("s.reg")
 ]
 dev.off()
+
+
+
+
 
 
 
