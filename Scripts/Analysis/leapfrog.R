@@ -101,6 +101,8 @@ frogData0[,c("lat.km", "lon.km"):=ll2km(lon,lat)]
 frogData <- frogData0
 
 
+# test <- frogData[s.reg=="neus",]
+# i=1
 
 
 # ===================
@@ -200,6 +202,10 @@ shifts <- frogData[,
 		stemp.dll.0.tot <- numeric(n.str)
 		btemp.dll.0.tot <- numeric(n.str)
 		
+		comArrive.net <- numeric(n.str)
+		stempArrive.net <- numeric(n.str)
+		btempArrive.net <- numeric(n.str)
+		
 		# Enter the rabbit hole
 		for(i in 1:(n.yrs-1)){ # start at 1st year, end a year early (one step ahead prediction)
 			t.yr <- years[i]
@@ -216,7 +222,7 @@ shifts <- frogData[,
 			
 			# dComp.t <- as.matrix(beta.div(rbind(castExp.t, castExp.t1), nperm=0, save.D=TRUE)$D)[1:n.str,(n.str+1):(n.str*2)]
 			dComp.t <- dist2(castExp.t, castExp.t1)
-			comMatch0 <- apply(dComp.t, 1, which.min) # should probably weight the comp distances by geographic distance; if 2 communities are nearly identical, but one is really far away and the other close, should probably assume the close one is the same community.
+			comMatch0 <- apply(dComp.t, 1, which.min)
 			comMatch.arr <- matrix(c(1:length(comMatch0), as.integer(comMatch0)), ncol=2)
 			
 			
@@ -427,38 +433,68 @@ shifts <- frogData[,
 			bt2na[bs.btemp] <- NA
 			
 			
+			# ===================================================
+			# = Compute com/stemp/btemp arrivals and departures =
+			# ===================================================
+			# Community
+			comArrive0 <- table(strata[comMatch0])
+			comArrive.tot <- sum(comArrive0, na.rm=TRUE)
+			comArrive.t <- numeric(n.str)
+			comArrive.t[strata%in%names(comArrive0)] <- as.numeric(comArrive0) #/comArrive.tot
+			comArrive.net <- comArrive.net + comArrive.t + -1#/comArrive.tot
+			
+			# Stemp
+			stempArrive0 <- table(strata[stempMatch0])
+			stempArrive.tot <- sum(stempArrive0, na.rm=TRUE)
+			stempArrive.t <- numeric(n.str)
+			if(sum(!bs.btemp)>0){
+				stempArrive.t[strata%in%names(stempArrive0)] <- as.numeric(stempArrive0)#/stempArrive.tot
+			}
+			stempArrive.net <- stempArrive.net + stempArrive.t + -1#/stempArrive.tot
+			
+			# Btemp
+			btempArrive0 <- table(strata[btempMatch0])
+			btempArrive.tot <- sum(btempArrive0, na.rm=TRUE)
+			btempArrive.t <- numeric(n.str)
+			if(sum(!bs.btemp)>0){
+				btempArrive.t[strata%in%names(btempArrive0)] <- as.numeric(btempArrive0)#/btempArrive.tot
+			}
+			btempArrive.net <- btempArrive.net + btempArrive.t + -1#/btempArrive.tot
+			
+			
 
 			# n.stat <- sum((comMatch.arr[,1] - comMatch.arr[,2])==0) # number that didn't move this time
 			# stemp.n.stat <- sum((stempMatch.arr[,1] - stempMatch.arr[,2])==0) # number that didn't move this time
 			
 			comMatch0 <- data.table(
-				s.reg=s.reg,
-				year=t.yr,
-				stratum=strata, 
-				strat.lat.0=t.lat.0,
-				strat.lon.0=t.lon.0,
+				s.reg=s.reg, # region name
+				year=t.yr, # "origin" year
+				stratum=strata, # this is the "origin" stratum (even if leapfrogging), not the "destination" stratum
+				strat.lat.0=t.lat.0, # origin latitude
+				strat.lon.0=t.lon.0, # origin longitude
 
-				comStrat.t=strata[comMatch0],
-				com.lat.t=t.com.lat.t,
-				com.lon.t=t.com.lon.t,
-				stempStrat.t=strata[stempMatch0][st2na],
-				stemp.lat.t=t.stemp.lat.t[st2na],
-				stemp.lon.t=t.stemp.lon.t[st2na],
-				btempStrat.t=strata[btempMatch0][bt2na],
-				btemp.lat.t=t.btemp.lat.t[bt2na],
-				btemp.lon.t=t.btemp.lon.t[bt2na],
+				comStrat.t=strata[comMatch0], # destination stratum for the community (next year's best match)
+				com.lat.t=t.com.lat.t, # destination latitude for the community
+				com.lon.t=t.com.lon.t, # destination longitude for the community
+				stempStrat.t=strata[stempMatch0][st2na], # destination stratum for surface temperature
+				stemp.lat.t=t.stemp.lat.t[st2na], # destination latitude for surface temperature
+				stemp.lon.t=t.stemp.lon.t[st2na], # destination longitude for surface temperature
+				btempStrat.t=strata[btempMatch0][bt2na], # destination stratum for bottom temperature
+				btemp.lat.t=t.btemp.lat.t[bt2na], # destination latitude for bottom temperature
+				btemp.lon.t=t.btemp.lon.t[bt2na], # destination longitude for bottom temperature
 				
-				com.dll.0.net=com.dll.0.net, # distance from origin
-				com.dll.0.tot=com.dll.0.tot,
-				com.dll.t=com.dll.t, # distance moved this time step
-				stemp.dll.0.net=stemp.dll.0.net[st2na], # distance from origin
-				stemp.dll.t=stemp.dll.t[st2na], # distance moved this time step
-				btemp.dll.0.net=btemp.dll.0.net[bt2na], # distance from origin
-				btemp.dll.t=btemp.dll.t[bt2na], # distance moved this time step
+				com.dll.0.net=com.dll.0.net, # distance from community origin (year t0) to destination (year t+1) position in ll
+				com.dll.0.tot=com.dll.0.tot, # sum of all community current-to-destination distances up to this point, in lat-lon
+				com.dll.t=com.dll.t, # distance (lat-lon) community moved from current (year t) to destination (year t+1)
+				stemp.dll.0.net=stemp.dll.0.net[st2na], # surface temperature distance from origin to current (ll)
+				stemp.dll.t=stemp.dll.t[st2na], # distance (ll) surface temperature moved this time step
+				btemp.dll.0.net=btemp.dll.0.net[bt2na], # distance (ll) between bottom tempearture origin and destination
+				btemp.dll.t=btemp.dll.t[bt2na], # distance (ll) between bottom temperature current position and destination
 				
-				dComp.net=t.dComp.0.net,
-				dComp.t=t.dComp.t,
-				dStemp.net=t.dStemp.0.net[st2na],
+				# These are sort of like the residuals from the match – the "degree of mismatch" in the "best match", if you will
+				dComp.net=t.dComp.0.net, # community distance (betaD) between original (t0) and destination (t+1) communities
+				dComp.t=t.dComp.t, # community distance (betaD) between current (t) and destination (t+1) communities
+				dStemp.net=t.dStemp.0.net[st2na], # change in temperature between 
 				dStemp.t=t.dStemp.t[st2na], 
 				dBtemp.net=t.dBtemp.0.net[bt2na],
 				dBtemp.t=t.dBtemp.t[bt2na], 
@@ -468,9 +504,14 @@ shifts <- frogData[,
 				stemp.dll.t.angle=stemp.dll.t.angle[st2na],
 				stemp.dll.0.net.angle=stemp.dll.0.net.angle[st2na],
 				btemp.dll.t.angle=btemp.dll.t.angle[bt2na],
-				btemp.dll.0.net.angle=btemp.dll.0.net.angle[bt2na]
+				btemp.dll.0.net.angle=btemp.dll.0.net.angle[bt2na],
 				
-				
+				comArrive.t=comArrive.t,
+				comArrive.net=comArrive.net,
+				stempArrive.t=stempArrive.t,
+				stempArrive.net=stempArrive.net,
+				btempArrive.t=btempArrive.t,
+				btempArrive.net=btempArrive.net
 			)
 			
 			# ===============================================
