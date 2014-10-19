@@ -27,6 +27,28 @@ dev.new.lf <- function(devName="default", fileName=NULL){
 
 
 
+abline.mod <- function(x,y){
+	abmod <- lm(y~x)
+	# Plot Lines
+	if(!is.na(abmod$coef[2])){
+		pval <- summary(abmod)$coef[2,4]
+		if(pval<0.05){
+			abline(abmod, col="red", lwd=2)
+		}else{
+			abline(abmod, col="red", lwd=0.5)
+		
+		}
+		if(pval<0.005){
+			abline(abmod, col="red", lwd=2)
+			abline(abmod, col="white", lty="dashed", lwd=1)
+		}
+	}
+}
+
+
+
+
+
 
 
 
