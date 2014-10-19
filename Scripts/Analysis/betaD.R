@@ -22,9 +22,8 @@ load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/divData.RData")
 # Load Data functions
 dat.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions"
 invisible(sapply(paste(dat.location, list.files(dat.location), sep="/"), source, .GlobalEnv))
-lu <- function(x) length(unique(x))
 
-# Load plottign functions
+# Load plotting functions
 plot.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/PlotFunctions"
 invisible(sapply(paste(plot.location, list.files(plot.location), sep="/"), source, .GlobalEnv))
 
