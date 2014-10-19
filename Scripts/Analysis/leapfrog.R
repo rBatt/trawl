@@ -36,55 +36,33 @@ library(PBSmapping)
 # Load trawl data
 load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/divData.RData")
 
-# Load Legendre beta diversity functions
-source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/StatFunctions/beta.div.R")
-
 # Load Data functions
 dat.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions"
 invisible(sapply(paste(dat.location, list.files(dat.location), sep="/"), source, .GlobalEnv))
-lu <- function(x) length(unique(x))
 
-# convert lon-lat to km
-ll2km <- function(x,y){
-	# x should be longitude
-	# y should be latitude
-	blah <- data.frame(X=x, Y=y) 
-	attr(blah, "projection")="LL"
-	blah2 <- convUL(blah)
-	list(lat.km=blah2[,"Y"], lon.km=blah2[,"X"]) # returning a named list format is handy for use with data.table :=
-}
+# Load plotting functions
+plot.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/PlotFunctions"
+invisible(sapply(paste(plot.location, list.files(plot.location), sep="/"), source, .GlobalEnv))
 
+# Load statistics functions
+plot.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/StatFunctions"
+invisible(sapply(paste(plot.location, list.files(plot.location), sep="/"), source, .GlobalEnv))
 
-# Distances between communities x & y
-dist2 <- function(x,y, ...){
-	
-	nullDim.x <- is.null(dim(x))
-	nullDim.y <- is.null(dim(y))
-	stopifnot(nullDim.x==nullDim.y)
-	nullDim <- nullDim.y & nullDim.x
-
-	# Distance from each sampling unit in community x to each sampling unit in community y
-	
-	# x and y *must* have the same number of columns, and must be in same order (or have column names)
-	
-	# Assumes that x and y have same number of sampling units (although, see below)
-	# That number of sampling units is n.str
-	# if you had n.str.x and n.str.y,
-	# change: [1:n.str,(n.str+1):(n.str*2)]
-	# to: [1:n.str.x, (n.str.x+1):(n.str.x + n.str.y)]
-	
-	# add following lines to be general use, I think
-	n.str.x <- ifelse(!nullDim.x, nrow(x), length(x))
-	n.str.y <- ifelse(!nullDim.y, nrow(y), length(y))
-	# then make the aforementioned change to [] subsetting
-	
-	# as.matrix(beta.div(rbind(x, y), nperm=0, save.D=TRUE)$D)[1:n.str,(n.str+1):(n.str*2)]
-	if(nullDim){
-		as.matrix(beta.div(c(x, y), nperm=0, save.D=TRUE, ...)$D)[1:n.str.x, (n.str.x+1):(n.str.x + n.str.y)] # untested		
-	}else{
-		as.matrix(beta.div(rbind(x, y), nperm=0, save.D=TRUE, ...)$D)[1:n.str.x, (n.str.x+1):(n.str.x + n.str.y)]
-	}
-}
+s.reg.key <- c(
+	"ai"="Aleutian Islands", 
+	"ebs"="Eastern Bering Strait", 
+	"gmex"="Gulf of Mexico", 
+	"goa"="Gulf of Alaska",
+	"neus"="Northeast US",
+	"newf"="Newfoundland",
+	"ngulf"="Northern Gulf of St. Lawrence",
+	"sa"="South Atlantic US",
+	"sgulf"="Southern Gulf of St. Lawrence",
+	"shelf"="Scotian Shelf",
+	"wcann"="West Coast US (annual)",
+	"wctri"="West Coast US (triennial)",
+	"wc"= "West Coast US (combined annual & triennial)"
+)
 
 
 # ========================
@@ -146,6 +124,7 @@ shifts <- frogData[,
 		
 		# Set up origin community matrix/ temperature vector
 		castExp.0 <- acast(melt(dat.0, id.vars=c("stratum","spp"), measure.vars=c("wtcpue")), stratum~spp, fill=0)[,-1]
+		alphaD.t0 <- diversity(castExp.0) # Inital alpha diversity!
 		setkey(dat.0, stratum)
 		stemp.castExp.0 <- unique(dat.0)[,stemp]
 		btemp.castExp.0 <- unique(dat.0)[,btemp]
@@ -161,17 +140,9 @@ shifts <- frogData[,
 		setkey(info.0, stratum, year, lat, lon, depth)
 		info.0 <- unique(info.0)
 		
-		# Community Info
+		# Community Info (because these are initial conditions, same for stemp and btemp)
 		comInfo <- c("comStrat.t","com.lat.t","com.lon.t", "com.lat.km.t", "com.lon.km.t")
 		info.0 <- info.0[,(comInfo):=list(stratum, lat, lon, lat.km, lon.km)] # add in info for community
-		
-		# # Stemp Info
-		# stempInfo <- c("stempStrat.t","stemp.lat.t","stemp.lon.t", "stemp.lat.km.t", "stemp.lon.km.t")
-		# info.0 <- info.0[,(stempInfo):=list(stratum, lat, lon, lat.km, lon.km)] # add in info for Stemp
-		#
-		# # Btemp Info
-		# btempInfo <- c("btempStrat.t","btemp.lat.t","btemp.lon.t", "btemp.lat.km.t", "btemp.lon.km.t")
-		# info.0 <- info.0[,(btempInfo):=list(stratum, lat, lon, lat.km, lon.km)] # add in info for temperature
 		
 		# Subset Info
 		info.0 <- info.0[,list(s.reg, comStrat.t, com.lat.t, com.lon.t, com.lat.km.t, com.lon.km.t)] # subset
@@ -220,9 +191,8 @@ shifts <- frogData[,
 			castExp.t <- acast(melt(dat.t, id.vars=c("stratum","spp"), measure.vars=c("wtcpue")), stratum~spp, fill=0)[,-1]
 			castExp.t1 <- acast(melt(dat.t1, id.vars=c("stratum","spp"), measure.vars=c("wtcpue")), stratum~spp, fill=0)[,-1]
 			
-			# dComp.t <- as.matrix(beta.div(rbind(castExp.t, castExp.t1), nperm=0, save.D=TRUE)$D)[1:n.str,(n.str+1):(n.str*2)]
-			dComp.t <- dist2(castExp.t, castExp.t1)
-			comMatch0 <- apply(dComp.t, 1, which.min)
+			dComp.t1.t <- dist2(castExp.t, castExp.t1)
+			comMatch0 <- apply(dComp.t1.t, 1, which.min)
 			comMatch.arr <- matrix(c(1:length(comMatch0), as.integer(comMatch0)), ncol=2)
 			
 			
@@ -231,14 +201,14 @@ shifts <- frogData[,
 			stemp.castExp.t <- unique(dat.t)[,stemp]
 			stemp.castExp.t1 <- unique(dat.t1)[,stemp]
 			
-			dStemp.t <- dist2(stemp.castExp.t, stemp.castExp.t1, method="euclidean")
+			dStemp.t1.t <- dist2(stemp.castExp.t, stemp.castExp.t1, method="euclidean")
 			
 			# Begin dealing with case where missing temperature
 			if(i==1){
 				# if in the first iteration, just consider the default movement to be to remain stationary
-				last.stempMatch0 <- 1:n.str # length(diag(dStemp.t))
+				last.stempMatch0 <- 1:n.str # length(diag(dStemp.t1.t))
 			}
-			stempMatch00 <- apply(dStemp.t, 1, function(x){if(all(is.na(x))){0}else{which.min(x)}}) # calculate which.min, but if all na, replace index with a 0
+			stempMatch00 <- apply(dStemp.t1.t, 1, function(x){if(all(is.na(x))){0}else{which.min(x)}}) # calculate which.min, but if all na, replace index with a 0
 			stempMatch0 <- stempMatch00
 			stempMatch0[stempMatch00==0L] <- last.stempMatch0[stempMatch00==0L] # replace all 0 with the index from last time (the temperature location just doesn't move)
 			last.stempMatch0 <- stempMatch0 # then update the last set of temperature matches
@@ -252,14 +222,14 @@ shifts <- frogData[,
 			btemp.castExp.t <- unique(dat.t)[,btemp]
 			btemp.castExp.t1 <- unique(dat.t1)[,btemp]
 			
-			dBtemp.t <- dist2(btemp.castExp.t, btemp.castExp.t1, method="euclidean")
+			dBtemp.t1.t <- dist2(btemp.castExp.t, btemp.castExp.t1, method="euclidean")
 			
 			# Begin dealing with case where missing temperature
 			if(i==1){
 				# if in the first iteration, just consider the default movement to be to remain stationary
-				last.btempMatch0 <- 1:n.str # length(diag(dBtemp.t))
+				last.btempMatch0 <- 1:n.str # length(diag(dBtemp.t1.t))
 			}
-			btempMatch00 <- apply(dBtemp.t, 1, function(x){if(all(is.na(x))){0}else{which.min(x)}}) # calculate which.min, but if all na, replace index with a 0
+			btempMatch00 <- apply(dBtemp.t1.t, 1, function(x){if(all(is.na(x))){0}else{which.min(x)}}) # calculate which.min, but if all na, replace index with a 0
 			btempMatch0 <- btempMatch00
 			btempMatch0[btempMatch00==0L] <- last.btempMatch0[btempMatch00==0L] # replace all 0 with the index from last time (the temperature location just doesn't move)
 			last.btempMatch0 <- btempMatch0 # then update the last set of temperature matches
@@ -307,16 +277,16 @@ shifts <- frogData[,
 			# note: can get com.ll.t from t.com.lat.km.t and t.com.lon.km.t
 			
 			# Geographical distances – between time steps, and from origin to updated (net and total)
-			com.dll.t <- diag(dist2(com.ll.new, com.ll.t, method="euclidean")) # geographical distance traveled between time steps
-			com.dll.0.net <- diag(dist2(com.ll.new, ll.0, method="euclidean")) # net geographical distance from origin to updated
-			com.dll.0.tot <- com.dll.0.tot + com.dll.t # total distance traveled so far (distance covered by trajectory)
+			com.dll.t1.t <- diag(dist2(com.ll.new, com.ll.t, method="euclidean")) # geographical distance traveled between time steps
+			com.dll.t1.t0 <- diag(dist2(com.ll.new, ll.0, method="euclidean")) # net geographical distance from origin to updated
+			com.dll.0.tot <- com.dll.0.tot + com.dll.t1.t # total distance traveled so far (distance covered by trajectory)
 			
 			
 			# 1.5) Geographical angles
 			com.ll.new.del <- com.ll.new-ll.0 # new geographical location relative to origin
-			com.ll.t.del <- com.ll.new-com.ll.t # new geographical position relative to last position
-			com.dll.0.net.angle <- atan2(com.ll.new.del[,2], com.ll.new.del[,1])*180/pi # angle between new location and origin
-			com.dll.t.angle <- atan2(com.ll.t.del[,2], com.ll.t.del[,1])*180/pi # angle between new location and last position
+			com.dll.t1.t <- com.ll.new-com.ll.t # new geographical position relative to last position
+			com.dll.angle.t1.t0 <- atan2(com.ll.new.del[,2], com.ll.new.del[,1])*180/pi # angle between new location and origin
+			com.dll.angle.t1.t <- atan2(com.dll.t1.t[,2], com.dll.t1.t[,1])*180/pi # angle between new location and last position
 			
 			
 			# 2) Community distances
@@ -324,9 +294,9 @@ shifts <- frogData[,
 			castExp.t.new <- acast(melt(dat.t.new, id.vars=c("stratum","spp"), measure.vars=c("wtcpue")), stratum~spp, fill=0)[,-1]
 			
 			# Community distances – between time steps, from origin to updated
-			t.dComp.0.net <- as.numeric(diag(dist2(castExp.t.new, castExp.0)))
-			t.dComp.t <- dComp.t[comMatch.arr]
-			
+			t.dComp.t.t0 <- as.numeric(diag(dist2(castExp.t, castExp.0))) # using diag() so that comparing the same stratum to itself (between t and t0)
+			t.dComp.t1.t0 <- as.numeric(diag(dist2(castExp.t.new, castExp.0)))
+			t.dComp.t1.t <- dComp.t1.t[comMatch.arr]
 			
 			# 3) Temperature distances
 			# Set up temperature matrices (should be extremely simple b/c just scalar)
@@ -346,25 +316,27 @@ shifts <- frogData[,
 			# ll.0 <- matrix(c(t.lon.km.0, t.lat.km.0), ncol=2) # lat-lon for the original location (should move to outside for loop)
 			
 			# Geographical distances to new Stemp – between time steps, and from origin to updated (net and total)
-			stemp.dll.t <- diag(dist2(stemp.ll.new, stemp.ll.t, method="euclidean")) # geographical distance traveled between time steps
-			stemp.dll.0.net <- diag(dist2(stemp.ll.new, ll.0, method="euclidean")) # net geographical distance from origin to updated
-			stemp.dll.0.tot <- stemp.dll.0.tot + stemp.dll.t # total distance traveled so far (distance covered by trajectory)
+			# TODO Fix all of these geographical distances, because they are wrong!!! (I think)
+			stemp.dll.t1.t <- diag(dist2(stemp.ll.new, stemp.ll.t, method="euclidean")) # geographical distance traveled between time steps
+			stemp.dll.t1.t0 <- diag(dist2(stemp.ll.new, ll.0, method="euclidean")) # net geographical distance from origin to updated
+			stemp.dll.0.tot <- stemp.dll.0.tot + stemp.dll.t1.t # total distance traveled so far (distance covered by trajectory)
 		
 			
 			# 1.5) Geographical angles between current and new Stemp
 			stemp.ll.new.del <- stemp.ll.new-ll.0 # new geographical location relative to origin
-			stemp.ll.t.del <- stemp.ll.new-stemp.ll.t # new geographical position relative to last position
-			stemp.dll.0.net.angle <- atan2(stemp.ll.new.del[,2], stemp.ll.new.del[,1])*180/pi # angle between new location and origin
-			stemp.dll.t.angle <- atan2(stemp.ll.t.del[,2], stemp.ll.t.del[,1])*180/pi # angle between new location and last position
+			stemp.dll.t1.t <- stemp.ll.new-stemp.ll.t # new geographical position relative to last position
+			stemp.dll.angle.t1.t0 <- atan2(stemp.ll.new.del[,2], stemp.ll.new.del[,1])*180/pi # angle between new location and origin
+			stemp.dll.angle.t1.t <- atan2(stemp.dll.t1.t[,2], stemp.dll.t1.t[,1])*180/pi # angle between new location and last position
 			
 			
 			# 2) Stemp distances
 			# Set up Stemp matrices
 			stemp.castExp.t.new <- unique(stemp.dat.t.new)[,stemp]
 			
-			# Stemp distances – between time steps, from origin to updated
-			t.dStemp.0.net <- as.numeric(diag(dist2(stemp.castExp.t.new, stemp.castExp.0, method="euclidean")))
-			t.dStemp.t <- dStemp.t[stempMatch.arr]
+			# Stemp distances – between time steps, from origin to updated, and from current to origin
+			t.dStemp.t.t0 <- as.numeric(diag(dist2(stemp.castExp.t, stemp.castExp.0, method="euclidean")))
+			t.dStemp.t1.t0 <- as.numeric(diag(dist2(stemp.castExp.t.new, stemp.castExp.0, method="euclidean")))
+			t.dStemp.t1.t <- dStemp.t1.t[stempMatch.arr]
 			
 			
 			# =======================================
@@ -379,25 +351,26 @@ shifts <- frogData[,
 			# ll.0 <- matrix(c(t.lon.km.0, t.lat.km.0), ncol=2) # lat-lon for the original location (should move to outside for loop)
 			
 			# Geographical distances to new Btemp – between time steps, and from origin to updated (net and total)
-			btemp.dll.t <- diag(dist2(btemp.ll.new, btemp.ll.t, method="euclidean")) # geographical distance traveled between time steps
-			btemp.dll.0.net <- diag(dist2(btemp.ll.new, ll.0, method="euclidean")) # net geographical distance from origin to updated
-			btemp.dll.0.tot <- btemp.dll.0.tot + btemp.dll.t # total distance traveled so far (distance covered by trajectory)
+			btemp.dll.t1.t <- diag(dist2(btemp.ll.new, btemp.ll.t, method="euclidean")) # geographical distance traveled between time steps
+			btemp.dll.t1.t0 <- diag(dist2(btemp.ll.new, ll.0, method="euclidean")) # net geographical distance from origin to updated
+			btemp.dll.0.tot <- btemp.dll.0.tot + btemp.dll.t1.t # total distance traveled so far (distance covered by trajectory)
 		
 			
 			# 1.5) Geographical angles between current and new Btemp
 			btemp.ll.new.del <- btemp.ll.new-ll.0 # new geographical location relative to origin
-			btemp.ll.t.del <- btemp.ll.new-btemp.ll.t # new geographical position relative to last position
-			btemp.dll.0.net.angle <- atan2(btemp.ll.new.del[,2], btemp.ll.new.del[,1])*180/pi # angle between new location and origin
-			btemp.dll.t.angle <- atan2(btemp.ll.t.del[,2], btemp.ll.t.del[,1])*180/pi # angle between new location and last position
+			btemp.dll.t1.t <- btemp.ll.new-btemp.ll.t # new geographical position relative to last position
+			btemp.dll.angle.t1.t0 <- atan2(btemp.ll.new.del[,2], btemp.ll.new.del[,1])*180/pi # angle between new location and origin
+			btemp.dll.angle.t1.t <- atan2(btemp.dll.t1.t[,2], btemp.dll.t1.t[,1])*180/pi # angle between new location and last position
 			
 			
 			# 2) Btemp distances
 			# Set up Btemp matrices
 			btemp.castExp.t.new <- unique(btemp.dat.t.new)[,btemp]
 			
-			# Btemp distances – between time steps, from origin to updated
-			t.dBtemp.0.net <- as.numeric(diag(dist2(btemp.castExp.t.new, btemp.castExp.0, method="euclidean")))
-			t.dBtemp.t <- dBtemp.t[btempMatch.arr]
+			# Btemp distances – between time steps, from origin to updated, and from current to origin
+			t.dBtemp.t.t0 <- as.numeric(diag(dist2(btemp.castExp.t, btemp.castExp.0, method="euclidean")))
+			t.dBtemp.t1.t0 <- as.numeric(diag(dist2(btemp.castExp.t.new, btemp.castExp.0, method="euclidean")))
+			t.dBtemp.t1.t <- dBtemp.t1.t[btempMatch.arr]
 			
 			
 			# ============================
@@ -421,12 +394,13 @@ shifts <- frogData[,
 			t.btemp.lat.km.t <- info.0[btempMatch0, "com.lat.km.t"]
 			t.btemp.lon.km.t <- info.0[btempMatch0, "com.lon.km.t"]
 			
+			
 			# ==========================
 			# = Clean up temps w/ NA's =
 			# ==========================
 			bs.stemp <- as.integer(stempMatch00)==0L
 			st2na <- seq_along(stempMatch00)
-			st2na[bs.stemp] <- NA
+			st2na[bs.stemp] <- NA # the trick here is that if you have (1:3)[c(1,NA,3)], you get 1, NA, 3 back.
 			
 			bs.btemp <- as.integer(btempMatch00)==0L
 			bt2na <- seq_along(btempMatch00)
@@ -436,82 +410,120 @@ shifts <- frogData[,
 			# ===================================================
 			# = Compute com/stemp/btemp arrivals and departures =
 			# ===================================================
-			# Community
+			# Community arrivals
 			comArrive0 <- table(strata[comMatch0])
 			comArrive.tot <- sum(comArrive0, na.rm=TRUE)
 			comArrive.t <- numeric(n.str)
-			comArrive.t[strata%in%names(comArrive0)] <- as.numeric(comArrive0) #/comArrive.tot
-			comArrive.net <- comArrive.net + comArrive.t + -1#/comArrive.tot
+			comArrive.t[strata%in%names(comArrive0)] <- as.numeric(comArrive0) /comArrive.tot
+			comArrive.net <- comArrive.net + comArrive.t + -1/comArrive.tot
 			
-			# Stemp
+			# Stemp arrivals
 			stempArrive0 <- table(strata[stempMatch0])
 			stempArrive.tot <- sum(stempArrive0, na.rm=TRUE)
 			stempArrive.t <- numeric(n.str)
 			if(sum(!bs.btemp)>0){
-				stempArrive.t[strata%in%names(stempArrive0)] <- as.numeric(stempArrive0)#/stempArrive.tot
+				stempArrive.t[strata%in%names(stempArrive0)] <- as.numeric(stempArrive0)/stempArrive.tot
 			}
-			stempArrive.net <- stempArrive.net + stempArrive.t + -1#/stempArrive.tot
+			stempArrive.net <- stempArrive.net + stempArrive.t + -1/stempArrive.tot
 			
-			# Btemp
+			# Btemp arrivals
 			btempArrive0 <- table(strata[btempMatch0])
 			btempArrive.tot <- sum(btempArrive0, na.rm=TRUE)
 			btempArrive.t <- numeric(n.str)
 			if(sum(!bs.btemp)>0){
-				btempArrive.t[strata%in%names(btempArrive0)] <- as.numeric(btempArrive0)#/btempArrive.tot
+				btempArrive.t[strata%in%names(btempArrive0)] <- as.numeric(btempArrive0)/btempArrive.tot
 			}
-			btempArrive.net <- btempArrive.net + btempArrive.t + -1#/btempArrive.tot
-			
-			
+			btempArrive.net <- btempArrive.net + btempArrive.t + -1/btempArrive.tot
 
-			# n.stat <- sum((comMatch.arr[,1] - comMatch.arr[,2])==0) # number that didn't move this time
-			# stemp.n.stat <- sum((stempMatch.arr[,1] - stempMatch.arr[,2])==0) # number that didn't move this time
 			
+			# =============================
+			# = Calculate Alpha Diversity =
+			# =============================
+			alphaD.t <- diversity(castExp.t)
+			alphaD.t1 <- diversity(castExp.t1)
+			
+			
+			# ============================
+			# = The Data Table to Return =
+			# ============================
 			comMatch0 <- data.table(
-				s.reg=s.reg, # region name
-				year=t.yr, # "origin" year
+				# Basic information
+				region=s.reg.key[s.reg], # full region name (handy for making nice graphs)
+				year=t.yr, # current year
+				dYear.t1.t=years[i+1]-t.yr, # size of time step
 				stratum=strata, # this is the "origin" stratum (even if leapfrogging), not the "destination" stratum
 				strat.lat.0=t.lat.0, # origin latitude
 				strat.lon.0=t.lon.0, # origin longitude
-
+				
+				
+				# Location information
 				comStrat.t=strata[comMatch0], # destination stratum for the community (next year's best match)
 				com.lat.t=t.com.lat.t, # destination latitude for the community
 				com.lon.t=t.com.lon.t, # destination longitude for the community
+				
 				stempStrat.t=strata[stempMatch0][st2na], # destination stratum for surface temperature
 				stemp.lat.t=t.stemp.lat.t[st2na], # destination latitude for surface temperature
 				stemp.lon.t=t.stemp.lon.t[st2na], # destination longitude for surface temperature
+				
 				btempStrat.t=strata[btempMatch0][bt2na], # destination stratum for bottom temperature
 				btemp.lat.t=t.btemp.lat.t[bt2na], # destination latitude for bottom temperature
 				btemp.lon.t=t.btemp.lon.t[bt2na], # destination longitude for bottom temperature
 				
-				com.dll.0.net=com.dll.0.net, # distance from community origin (year t0) to destination (year t+1) position in ll
+				
+				# Movement information
+				com.dLon.t.t0=t.com.lon.t-t.lon.0,
+				com.dLat.t.t0=t.com.lat.t-t.lat.0,
+				com.dll.t1.t0=com.dll.t1.t0, # distance from community origin (year t0) to destination (year t+1) position in ll
 				com.dll.0.tot=com.dll.0.tot, # sum of all community current-to-destination distances up to this point, in lat-lon
-				com.dll.t=com.dll.t, # distance (lat-lon) community moved from current (year t) to destination (year t+1)
-				stemp.dll.0.net=stemp.dll.0.net[st2na], # surface temperature distance from origin to current (ll)
-				stemp.dll.t=stemp.dll.t[st2na], # distance (ll) surface temperature moved this time step
-				btemp.dll.0.net=btemp.dll.0.net[bt2na], # distance (ll) between bottom tempearture origin and destination
-				btemp.dll.t=btemp.dll.t[bt2na], # distance (ll) between bottom temperature current position and destination
+				com.dll.t1.t=com.dll.t1.t, # distance (lat-lon) community moved from current (year t) to destination (year t+1)
+				com.dll.angle.t1.t=stemp.dll.angle.t1.t,
+				com.dll.angle.t1.t0=stemp.dll.angle.t1.t0,
+				
+				stemp.dLon.t.t0=t.stemp.lon.t[st2na]-t.lon.0,
+				stemp.dLat.t.t0=t.stemp.lat.t[st2na]-t.lat.0,
+				stemp.dll.t1.t0=stemp.dll.t1.t0[st2na], # surface temperature distance from origin to current (ll)
+				stemp.dll.t1.t=stemp.dll.t1.t[st2na], # distance (ll) surface temperature moved this time step
+				stemp.dll.angle.t1.t=stemp.dll.angle.t1.t[st2na],
+				stemp.dll.angle.t1.t0=stemp.dll.angle.t1.t0[st2na],
+				
+				btemp.dLon.t.t0=t.btemp.lon.t[st2na]-t.lon.0,
+				btemp.dLat.t.t0=t.btemp.lat.t[st2na]-t.lat.0,
+				btemp.dll.t1.t0=btemp.dll.t1.t0[bt2na], # distance (ll) between bottom tempearture origin and destination
+				btemp.dll.t1.t=btemp.dll.t1.t[bt2na], # distance (ll) between bottom temperature current position and destination
+				btemp.dll.angle.t1.t=btemp.dll.angle.t1.t[bt2na],
+				btemp.dll.angle.t1.t0=btemp.dll.angle.t1.t0[bt2na],
+				
 				
 				# These are sort of like the residuals from the match – the "degree of mismatch" in the "best match", if you will
-				dComp.net=t.dComp.0.net, # community distance (betaD) between original (t0) and destination (t+1) communities
-				dComp.t=t.dComp.t, # community distance (betaD) between current (t) and destination (t+1) communities
-				dStemp.net=t.dStemp.0.net[st2na], # change in temperature between 
-				dStemp.t=t.dStemp.t[st2na], 
-				dBtemp.net=t.dBtemp.0.net[bt2na],
-				dBtemp.t=t.dBtemp.t[bt2na], 
+				dComp.t.t0=t.dComp.t.t0, # community distance (betaD) between original (t0) and current (t) communities
+				dComp.t1.t0=t.dComp.t1.t0, # community distance (betaD) between original (t0) and destination (t+1) communities
+				dComp.t1.t=t.dComp.t1.t, # community distance (betaD) between current (t) and destination (t+1) communities
 				
-				com.dll.t.angle=stemp.dll.t.angle,
-				com.dll.0.net.angle=stemp.dll.0.net.angle,
-				stemp.dll.t.angle=stemp.dll.t.angle[st2na],
-				stemp.dll.0.net.angle=stemp.dll.0.net.angle[st2na],
-				btemp.dll.t.angle=btemp.dll.t.angle[bt2na],
-				btemp.dll.0.net.angle=btemp.dll.0.net.angle[bt2na],
+				dStemp.t.t0=t.dStemp.t.t0,
+				dStemp.t1.t0=t.dStemp.t1.t0[st2na], # change in surface temperature between origin (t0) and destination (t+1)
+				dStemp.t1.t=t.dStemp.t1.t[st2na], # change in surface temperature between current (t) and destination (t+1)
 				
+				dBtemp.t.t0=t.dBtemp.t.t0,
+				dBtemp.t1.t0=t.dBtemp.t1.t0[bt2na], # change in bottom temperature between origin (t0) and destination (t+1)
+				dBtemp.t1.t=t.dBtemp.t1.t[bt2na], # change in bottom temperature between current (t) and destination (t+1)
+				
+				
+				# Arrival counts
 				comArrive.t=comArrive.t,
 				comArrive.net=comArrive.net,
+				
 				stempArrive.t=stempArrive.t,
 				stempArrive.net=stempArrive.net,
+				
 				btempArrive.t=btempArrive.t,
-				btempArrive.net=btempArrive.net
+				btempArrive.net=btempArrive.net,
+				
+				# Alpha Diversity measures
+				alphaD.t=alphaD.t,
+				alphaD.t1=alphaD.t1,
+				dAlphaD.t.t0=alphaD.t-alphaD.t0,
+				dAlphaD.t1.t0=alphaD.t1-alphaD.t0,
+				dAlphaD.t1.t=alphaD.t1-alphaD.t
 			)
 			
 			# ===============================================
