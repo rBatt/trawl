@@ -23,29 +23,49 @@ plot.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/StatFunctions
 invisible(sapply(paste(plot.location, list.files(plot.location), sep="/"), source, .GlobalEnv))
 
 
-
-
-abline.mod <- function(x,y){
-	abmod <- lm(y~x)
-	# Plot Lines
-	if(!is.na(abmod$coef[2])){
-		pval <- summary(abmod)$coef[2,4]
-		if(pval<0.05){
-			abline(abmod, col="red", lwd=2)
-		}else{
-			abline(abmod, col="red", lwd=0.5)
+# ==================================================
+# = Create shifts.strat by averaging across years  =
+# ==================================================
+shift.strat <- shifts[,
+	j={	
+		list(
+			# Lat-lon shifts
+			com.dLon.t.t0=mean(com.lon.t-strat.lon.0),
+			com.dLat.t.t0=mean(com.lat.t-strat.lon.0),
 		
-		}
-		if(pval<0.005){
-			abline(abmod, col="red", lwd=2)
-			abline(abmod, col="white", lty="dashed", lwd=1)
-		}
+			btemp.dLon.t.t0=mean(btemp.lon.t-strat.lon.0),
+			btemp.dLat.t.t0=mean(btemp.lat.t-strat.lat.0),
+		
+			stemp.dLon.t.t0=mean(stemp.lon.t-strat.lon.0),
+			stemp.dLat.t.t0=mean(stemp.lat.t-strat.lat.0),
+			
+			# 
+		)
 	}
-}
+]
 
-# ==============================================
-# = Begin plotting everything you can think of =
-# ==============================================
+		
+		
+		com.lon.shift <- .SD[,list(comShift=mean(com.lon.t-strat.lon.0, na.rm=TRUE)), by=c("stratum")][,comShift]
+		
+		
+		btemp.lon.shift <- .SD[,list(btempShift=mean(btemp.lon.t-strat.lon.0, na.rm=TRUE)), by=c("stratum")][,btempShift] # btemp.lon.t- strat.lon.0
+		dComp.t1.t.strat <- .SD[,list(comShift=mean(dComp.t, na.rm=TRUE)), by=c("stratum")][,comShift] # should maybe divid this by the absolute value of dBtemp.t.strat, because the best matching community could change a lot if the best matching temperature changed a lot
+		dBtemp.t1.t.strat <- .SD[,list(comShift=mean(dBtemp.t, na.rm=TRUE)), by=c("stratum")][,comShift]
+		t.strata <- .SD[,unique(year)]
+		
+		dBtemp.net.strat <- .SD[,list(netBtemp=mean(dBtemp.net, na.rm=TRUE)), by=c("stratum")][,netBtemp]
+		dComp.net.strat <- .SD[,list(netComp=mean(dComp.net, na.rm=TRUE)), by=c("stratum")][,netComp]
+		
+		dBtemp.t.strat <- .SD[,list(tBtemp=mean(dBtemp.t, na.rm=TRUE)), by=c("stratum")][,tBtemp]
+		dComp.t.strat <- .SD[,list(tComp=mean(dComp.t, na.rm=TRUE)), by=c("stratum")][,tComp]
+		
+		
+		mod.mat <- matrix(c(com.lon.shift,btemp.lon.shift),ncol=2)
+		# sing.check <- det(t(mod.mat)%*%mod.mat) < 1E-9
+		na.check <- sum(complete.cases(mod.mat)) > 2
+
+
 
 # ==============
 # = Trajectory =
@@ -91,7 +111,6 @@ abline.mod <- function(x,y){
 #
 # 	by=c("s.reg")
 # ]
-
 
 
 
@@ -458,39 +477,11 @@ mtext(bquote(Between-Year~Btemp~Change~(degree*C)), side=1, line=-0.15, outer=TR
 # ===============================
 # = Community Lon vs. Btemp Lon =
 # ===============================
-shifts[,stratum:=factor(stratum, levels=unique(stratum)[order(strat.lon.0[!duplicated(stratum)])])]
-setkey(shifts, s.reg, stratum)
-
-# Create community / btemp velocity device
-dev.new(width=3.5, height=6.5)
-# png("~/Desktop/communityShift_vs_surfTempShift.png", width=4, height=6, res=300, units="in")
-par(mfrow=c(5,2), mar=c(0.85,0.85,0.75,0.5), oma=c(0.75,0.75,0.1,0.1), mgp=c(0.75,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
-comBtemp.vel.dev <- dev.cur()
-
-# Create com/btemp residual from 1:1 device
-dev.new(width=3.5, height=6.5)
-# png("~/Desktop/communityShift_vs_surfTempShift.png", width=4, height=6, res=300, units="in")
-par(mfrow=c(5,2), mar=c(0.85,0.85,0.75,0.5), oma=c(0.75,0.75,0.1,0.1), mgp=c(0.75,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
-comBtemp.res11.dev <- dev.cur()
-
-# Create com/btemp residual from regression line device
-dev.new(width=3.5, height=6.5)
-# png("~/Desktop/communityShift_vs_surfTempShift.png", width=4, height=6, res=300, units="in")
-par(mfrow=c(5,2), mar=c(0.85,0.85,0.75,0.5), oma=c(0.75,0.75,0.1,0.1), mgp=c(0.75,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
-comBtemp.resFit.dev <- dev.cur()
-
-# Create net change device
-dev.new(width=3.5, height=6.5)
-# png("~/Desktop/communityShift_vs_surfTempShift.png", width=4, height=6, res=300, units="in")
-par(mfrow=c(5,2), mar=c(0.85,0.85,0.75,0.5), oma=c(0.75,0.75,0.1,0.1), mgp=c(0.75,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
-netChange.dev <- dev.cur()
-
-# Create mean dt change device
-dev.new(width=3.5, height=6.5)
-# png("~/Desktop/communityShift_vs_surfTempShift.png", width=4, height=6, res=300, units="in")
-par(mfrow=c(5,2), mar=c(0.85,0.85,0.75,0.5), oma=c(0.75,0.75,0.1,0.1), mgp=c(0.75,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
-tChange.dev <- dev.cur()
-
+dev.new.lf("comBtemp.vel.dev") # Create community / btemp velocity device
+dev.new.lf("comBtemp.res11.dev") # Create com/btemp residual from 1:1 device
+dev.new.lf("comBtemp.resFit.dev") # Create com/btemp residual from regression line device
+dev.new.lf("netChange.dev") # Create net change device
+dev.new.lf("tChange.dev") # Create mean dt change device
 
 shifts[,
 	j={		
