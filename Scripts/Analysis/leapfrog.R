@@ -558,6 +558,6 @@ shifts <- frogData[,
 	by=c("s.reg")
 ]
 
-save("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Results/frog_shifts.RData")
+save(shifts, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Results/frog_shifts.RData")
 
 
