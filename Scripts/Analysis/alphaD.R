@@ -21,7 +21,6 @@ load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/divData.RData")
 # Load Data functions
 dat.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions"
 invisible(sapply(paste(dat.location, list.files(dat.location), sep="/"), source, .GlobalEnv))
-lu <- function(x) length(unique(x))
 
 # Load plottign functions
 plot.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/PlotFunctions"
@@ -84,8 +83,6 @@ alpha.now.expr <- bquote({
 	}else{
 		as.numeric(NA)
 	}
-
-
 })
 
 
