@@ -57,11 +57,11 @@ s.reg.key <- c(
 	"newf"="Newfoundland",
 	"ngulf"="Northern Gulf of St. Lawrence",
 	"sa"="South Atlantic US",
-	"sgulf"="Southern Gulf of St. Lawrence",
+	"sgulf"="S. Gulf of St. Lawrence",
 	"shelf"="Scotian Shelf",
 	"wcann"="West Coast US (annual)",
 	"wctri"="West Coast US (triennial)",
-	"wc"= "West Coast US (combined annual & triennial)"
+	"wc"= "West Coast US" #(combined annual & triennial)"
 )
 
 
@@ -184,6 +184,7 @@ shifts <- frogData[,
 			# dat.t1 <- test[year==years[i+1],] # in year t+1
 			
 			print(paste(s.reg,i))
+			# print(round(sum(is.na(btemp))/length(btemp),2))
 			# =============================================
 			# = Find distances between current and future =
 			# =============================================
@@ -194,6 +195,10 @@ shifts <- frogData[,
 			dComp.t1.t <- dist2(castExp.t, castExp.t1)
 			comMatch0 <- apply(dComp.t1.t, 1, which.min)
 			comMatch.arr <- matrix(c(1:length(comMatch0), as.integer(comMatch0)), ncol=2)
+			
+			dComp.t.t0.matched0 <- dist2(castExp.0, castExp.t) # matching initial community to closest current analog
+			comMatch.t.t0.0 <- apply(dComp.t.t0.matched0, 1, which.min)
+			comMatch.t.t0.arr <- matrix(c(1:length(comMatch.t.t0.0), as.integer(comMatch.t.t0.0)), ncol=2)
 			
 			
 			# 2) Stemp distances
@@ -247,6 +252,14 @@ shifts <- frogData[,
 			dat.t.new[,stratum:=dat.t1[,stratum]]
 			
 			
+			# ===================================================
+			# = Update community for closest analog to original =
+			# ===================================================
+			dat.t0.match <- dat.t[strata[comMatch.t.t0.0]]
+			dat.t0.match[,comStrat.t0.match:=stratum]
+			dat.t0.match[,stratum:=dat.t[,stratum]]
+			
+			
 			# =====================================
 			# = Update temperature based on match =
 			# =====================================
@@ -270,16 +283,22 @@ shifts <- frogData[,
 			# Set up geographical locations
 			setkey(dat.t.new, stratum) # set key so can use unique()
 			setkey(dat.t, stratum) # set key so can use unique()
-			com.ll.new <- as.matrix(unique(dat.t.new)[,list(lon.km, lat.km)]) # lat-lon for the updated location
-			com.ll.t <- as.matrix(unique(dat.t)[,list(lon.km, lat.km)]) # lat-lon for the current location
-			ll.0 <- matrix(c(t.lon.km.0, t.lat.km.0), ncol=2) # lat-lon for the original location (should move to outside for loop)
-
-			# note: can get com.ll.t from t.com.lat.km.t and t.com.lon.km.t
+			com.ll.new <- as.matrix(unique(dat.t.new)[,list(lon, lat)]) #as.matrix(unique(dat.t.new)[,list(lon.km, lat.km)]) # lat-lon for the updated location
+			com.ll.t <- as.matrix(unique(dat.t)[,list(lon, lat)]) #as.matrix(unique(dat.t)[,list(lon.km, lat.km)]) # lat-lon for the current location
+			ll.0 <- matrix(c(t.lon.0, t.lat.0), ncol=2) #matrix(c(t.lon.km.0, t.lat.km.0), ncol=2) # lat-lon for the original location (should move to outside for loop)
+			
+			# Geographical locations for current-original match
+			setkey(dat.t0.match)
+			com.ll.t0.match <- as.matrix(unique(dat.t0.match)[,list(lon, lat)])
 			
 			# Geographical distances – between time steps, and from origin to updated (net and total)
 			com.dll.t1.t <- diag(dist2(com.ll.new, com.ll.t, method="euclidean")) # geographical distance traveled between time steps
 			com.dll.t1.t0 <- diag(dist2(com.ll.new, ll.0, method="euclidean")) # net geographical distance from origin to updated
 			com.dll.0.tot <- com.dll.0.tot + com.dll.t1.t # total distance traveled so far (distance covered by trajectory)
+			
+			# Geographical community distance for current-origin match
+			# skipping for now b/c I just want the shift mostly
+			
 			
 			
 			# 1.5) Geographical angles
@@ -293,10 +312,11 @@ shifts <- frogData[,
 			# Set up community matrices
 			castExp.t.new <- acast(melt(dat.t.new, id.vars=c("stratum","spp"), measure.vars=c("wtcpue")), stratum~spp, fill=0)[,-1]
 			
-			# Community distances – between time steps, from origin to updated
-			t.dComp.t.t0 <- as.numeric(diag(dist2(castExp.t, castExp.0))) # using diag() so that comparing the same stratum to itself (between t and t0)
+			# Community distances – between time steps, from origin to updated, from origin to current, and from origin to current match
+			t.dComp.t.t0 <- as.numeric(diag(dist2(castExp.t, castExp.0))) # using diag() so that comparing the same stratum to itself (between t and t0). Note that this isn't the distance between initial communities and best current analog – it's comparing the stationary stratum community
 			t.dComp.t1.t0 <- as.numeric(diag(dist2(castExp.t.new, castExp.0)))
 			t.dComp.t1.t <- dComp.t1.t[comMatch.arr]
+			t.dComp.t.t0.matched <- dComp.t.t0.matched0[comMatch.t.t0.arr]
 			
 			# 3) Temperature distances
 			# Set up temperature matrices (should be extremely simple b/c just scalar)
@@ -311,9 +331,8 @@ shifts <- frogData[,
 			# Set up geographical locations
 			setkey(stemp.dat.t.new, stratum) # set key so can use unique()
 			setkey(dat.t, stratum) # set key so can use unique()
-			stemp.ll.new <- as.matrix(unique(stemp.dat.t.new)[,list(lon.km, lat.km)]) # lat-lon for the updated location
-			stemp.ll.t <- as.matrix(unique(dat.t)[,list(lon.km, lat.km)]) # lat-lon for the current location
-			# ll.0 <- matrix(c(t.lon.km.0, t.lat.km.0), ncol=2) # lat-lon for the original location (should move to outside for loop)
+			stemp.ll.new <- as.matrix(unique(stemp.dat.t.new)[,list(lon, lat)]) #as.matrix(unique(stemp.dat.t.new)[,list(lon.km, lat.km)]) # lat-lon for the updated location
+			stemp.ll.t <- as.matrix(unique(dat.t)[,list(lon, lat)]) #as.matrix(unique(dat.t)[,list(lon.km, lat.km)]) # lat-lon for the current location
 			
 			# Geographical distances to new Stemp – between time steps, and from origin to updated (net and total)
 			# TODO Fix all of these geographical distances, because they are wrong!!! (I think)
@@ -346,9 +365,8 @@ shifts <- frogData[,
 			# Set up geographical locations
 			setkey(btemp.dat.t.new, stratum) # set key so can use unique()
 			setkey(dat.t, stratum) # set key so can use unique()
-			btemp.ll.new <- as.matrix(unique(btemp.dat.t.new)[,list(lon.km, lat.km)]) # lat-lon for the updated location
-			btemp.ll.t <- as.matrix(unique(dat.t)[,list(lon.km, lat.km)]) # lat-lon for the current location
-			# ll.0 <- matrix(c(t.lon.km.0, t.lat.km.0), ncol=2) # lat-lon for the original location (should move to outside for loop)
+			btemp.ll.new <- as.matrix(unique(btemp.dat.t.new)[,list(lon, lat)]) #as.matrix(unique(btemp.dat.t.new)[,list(lon.km, lat.km)]) # lat-lon for the updated location
+			btemp.ll.t <- as.matrix(unique(dat.t)[,list(lon, lat)]) #as.matrix(unique(dat.t)[,list(lon.km, lat.km)]) # lat-lon for the current location
 			
 			# Geographical distances to new Btemp – between time steps, and from origin to updated (net and total)
 			btemp.dll.t1.t <- diag(dist2(btemp.ll.new, btemp.ll.t, method="euclidean")) # geographical distance traveled between time steps
@@ -377,22 +395,28 @@ shifts <- frogData[,
 			# = Add location information =
 			# ============================
 			# Community
-			t.com.lat.t <- info.0[comMatch0, "com.lat.t"]
-			t.com.lon.t <- info.0[comMatch0, "com.lon.t"]
-			t.com.lat.km.t <- info.0[comMatch0, "com.lat.km.t"]
-			t.com.lon.km.t <- info.0[comMatch0, "com.lon.km.t"]
+			t.com.lat.t1 <- info.0[comMatch0, "com.lat.t"]
+			t.com.lon.t1 <- info.0[comMatch0, "com.lon.t"]
+			t.com.lat.km.t1 <- info.0[comMatch0, "com.lat.km.t"]
+			t.com.lon.km.t1 <- info.0[comMatch0, "com.lon.km.t"]
+			
+			# Community that is current best match to initial
+			t.com.lat.t0.match <- info.0[comMatch.t.t0.0, "com.lat.t"]
+			t.com.lon.t0.match <- info.0[comMatch.t.t0.0, "com.lon.t"]
+			t.com.lat.km.t0.match <- info.0[comMatch.t.t0.0, "com.lat.km.t"]
+			t.com.lon.km.t0.match <- info.0[comMatch.t.t0.0, "com.lon.km.t"]
 			
 			# Stemp
-			t.stemp.lat.t <- info.0[stempMatch0, "com.lat.t"]
-			t.stemp.lon.t <- info.0[stempMatch0, "com.lon.t"]
-			t.stemp.lat.km.t <- info.0[stempMatch0, "com.lat.km.t"]
-			t.stemp.lon.km.t <- info.0[stempMatch0, "com.lon.km.t"]
+			t.stemp.lat.t1 <- info.0[stempMatch0, "com.lat.t"]
+			t.stemp.lon.t1 <- info.0[stempMatch0, "com.lon.t"]
+			t.stemp.lat.km.t1 <- info.0[stempMatch0, "com.lat.km.t"]
+			t.stemp.lon.km.t1 <- info.0[stempMatch0, "com.lon.km.t"]
 			
 			# Btemp
-			t.btemp.lat.t <- info.0[btempMatch0, "com.lat.t"]
-			t.btemp.lon.t <- info.0[btempMatch0, "com.lon.t"]
-			t.btemp.lat.km.t <- info.0[btempMatch0, "com.lat.km.t"]
-			t.btemp.lon.km.t <- info.0[btempMatch0, "com.lon.km.t"]
+			t.btemp.lat.t1 <- info.0[btempMatch0, "com.lat.t"]
+			t.btemp.lon.t1 <- info.0[btempMatch0, "com.lon.t"]
+			t.btemp.lat.km.t1 <- info.0[btempMatch0, "com.lat.km.t"]
+			t.btemp.lon.km.t1 <- info.0[btempMatch0, "com.lon.km.t"]
 			
 			
 			# ==========================
@@ -414,27 +438,83 @@ shifts <- frogData[,
 			comArrive0 <- table(strata[comMatch0])
 			comArrive.tot <- sum(comArrive0, na.rm=TRUE)
 			comArrive.t <- numeric(n.str)
-			comArrive.t[strata%in%names(comArrive0)] <- as.numeric(comArrive0) /comArrive.tot
-			comArrive.net <- comArrive.net + comArrive.t + -1/comArrive.tot
+			comArrive.t[strata%in%names(comArrive0)] <- as.numeric(comArrive0) #/comArrive.tot
+			comArrive.net <- comArrive.net + comArrive.t + -1 #/comArrive.tot
 			
 			# Stemp arrivals
 			stempArrive0 <- table(strata[stempMatch0])
 			stempArrive.tot <- sum(stempArrive0, na.rm=TRUE)
 			stempArrive.t <- numeric(n.str)
 			if(sum(!bs.btemp)>0){
-				stempArrive.t[strata%in%names(stempArrive0)] <- as.numeric(stempArrive0)/stempArrive.tot
+				stempArrive.t[strata%in%names(stempArrive0)] <- as.numeric(stempArrive0) #/stempArrive.tot
 			}
-			stempArrive.net <- stempArrive.net + stempArrive.t + -1/stempArrive.tot
+			stempArrive.net <- stempArrive.net + stempArrive.t + -1 #/stempArrive.tot
 			
 			# Btemp arrivals
 			btempArrive0 <- table(strata[btempMatch0])
 			btempArrive.tot <- sum(btempArrive0, na.rm=TRUE)
 			btempArrive.t <- numeric(n.str)
 			if(sum(!bs.btemp)>0){
-				btempArrive.t[strata%in%names(btempArrive0)] <- as.numeric(btempArrive0)/btempArrive.tot
+				btempArrive.t[strata%in%names(btempArrive0)] <- as.numeric(btempArrive0) #/btempArrive.tot
 			}
-			btempArrive.net <- btempArrive.net + btempArrive.t + -1/btempArrive.tot
-
+			btempArrive.net <- btempArrive.net + btempArrive.t + -1 #/btempArrive.tot
+			
+			
+			# ==========================
+			# = Attemp at flow through =
+			# ==========================
+			# Stemp flow through
+			stemp.lon.mat0 <- matrix(c(t.lon.0, t.stemp.lon.t1),ncol=2)
+			stemp.lon.mat <- stemp.lon.mat0
+			stemp.lon.mat.logic <- stemp.lon.mat0[,1] > stemp.lon.mat0[,2]
+			stemp.lon.mat[stemp.lon.mat.logic,] <- stemp.lon.mat0[stemp.lon.mat.logic, 2:1]
+			
+			stemp.lat.mat0 <- matrix(c(t.lat.0, t.stemp.lat.t1),ncol=2)
+			stemp.lat.mat <- stemp.lat.mat0
+			stemp.lat.mat.logic <- stemp.lat.mat0[,1] > stemp.lat.mat0[,2]
+			stemp.lat.mat[stemp.lat.mat.logic,] <- stemp.lat.mat0[stemp.lat.mat.logic, 2:1]
+			
+			stemp.ft <- numeric(length(t.lon.0))
+			for(j in 1:length(t.lon.0)){
+				t.stemp.lon.ft <- t.lon.0[j]>stemp.lon.mat[,1] & t.lon.0[j]<stemp.lon.mat[,2]
+				t.stemp.lat.ft <- t.lat.0[j]>stemp.lat.mat[,1] & t.lat.0[j]<stemp.lat.mat[,2]
+				stemp.ft[j] <- sum(t.stemp.lon.ft & t.stemp.lat.ft, na.rm=TRUE)
+			}
+			
+			# Btemp flow through
+			btemp.lon.mat0 <- matrix(c(t.lon.0, t.btemp.lon.t1),ncol=2)
+			btemp.lon.mat <- btemp.lon.mat0
+			btemp.lon.mat.logic <- btemp.lon.mat0[,1] > btemp.lon.mat0[,2]
+			btemp.lon.mat[btemp.lon.mat.logic,] <- btemp.lon.mat0[btemp.lon.mat.logic, 2:1]
+			
+			btemp.lat.mat0 <- matrix(c(t.lat.0, t.btemp.lat.t1),ncol=2)
+			btemp.lat.mat <- btemp.lat.mat0
+			btemp.lat.mat.logic <- btemp.lat.mat0[,1] > btemp.lat.mat0[,2]
+			btemp.lat.mat[btemp.lat.mat.logic,] <- btemp.lat.mat0[btemp.lat.mat.logic, 2:1]
+			
+			btemp.ft <- numeric(length(t.lon.0))
+			for(j in 1:length(t.lon.0)){
+				t.btemp.lon.ft <- t.lon.0[j]>btemp.lon.mat[,1] & t.lon.0[j]<btemp.lon.mat[,2]
+				t.btemp.lat.ft <- t.lat.0[j]>btemp.lat.mat[,1] & t.lat.0[j]<btemp.lat.mat[,2]
+				btemp.ft[j] <- sum(t.btemp.lon.ft & t.btemp.lat.ft, na.rm=TRUE)
+			}
+			
+			
+			# =========================
+			# = Calculate Burrows %'s =
+			# =========================
+			stemp.N.tot <- stempArrive.t + 1 + stemp.ft
+			stemp.N.start <- rep(1, n.str)/stemp.N.tot
+			stemp.N.end <- stempArrive.t/stemp.N.tot
+			stemp.N.ft <- stemp.ft/stemp.N.tot
+			stemp.cat <- burrow.cat(stemp.N.start, stemp.N.end, stemp.N.ft)
+			
+			btemp.N.tot <- btempArrive.t + 1 + btemp.ft
+			btemp.N.start <- rep(1, n.str)/btemp.N.tot
+			btemp.N.end <- btempArrive.t/btemp.N.tot
+			btemp.N.ft <- btemp.ft/btemp.N.tot
+			btemp.cat <- burrow.cat(btemp.N.start, btemp.N.end, btemp.N.ft)
+			
 			
 			# =============================
 			# = Calculate Alpha Diversity =
@@ -458,36 +538,43 @@ shifts <- frogData[,
 				
 				# Location information
 				comStrat.t=strata[comMatch0], # destination stratum for the community (next year's best match)
-				com.lat.t=t.com.lat.t, # destination latitude for the community
-				com.lon.t=t.com.lon.t, # destination longitude for the community
+				com.lat.t1=t.com.lat.t1, # destination latitude for the community
+				com.lon.t1=t.com.lon.t1, # destination longitude for the community
 				
-				stempStrat.t=strata[stempMatch0][st2na], # destination stratum for surface temperature
-				stemp.lat.t=t.stemp.lat.t[st2na], # destination latitude for surface temperature
-				stemp.lon.t=t.stemp.lon.t[st2na], # destination longitude for surface temperature
+				comStrat.t0.match=strata[comMatch.t.t0.0], # stratum in current year that is best match to original community
+				com.lat.t0.match=t.com.lat.t0.match, # latitude of current match to original
+				com.lon.t0.match=t.com.lon.t0.match, # longitude of current match to original
 				
-				btempStrat.t=strata[btempMatch0][bt2na], # destination stratum for bottom temperature
-				btemp.lat.t=t.btemp.lat.t[bt2na], # destination latitude for bottom temperature
-				btemp.lon.t=t.btemp.lon.t[bt2na], # destination longitude for bottom temperature
+				stempStrat.t1=strata[stempMatch0][st2na], # destination stratum for surface temperature
+				stemp.lat.t1=t.stemp.lat.t1[st2na], # destination latitude for surface temperature
+				stemp.lon.t1=t.stemp.lon.t1[st2na], # destination longitude for surface temperature
+				
+				btempStrat.t1=strata[btempMatch0][bt2na], # destination stratum for bottom temperature
+				btemp.lat.t1=t.btemp.lat.t1[bt2na], # destination latitude for bottom temperature
+				btemp.lon.t1=t.btemp.lon.t1[bt2na], # destination longitude for bottom temperature
 				
 				
 				# Movement information
-				com.dLon.t.t0=t.com.lon.t-t.lon.0,
-				com.dLat.t.t0=t.com.lat.t-t.lat.0,
+				com.dLon.t1.t=t.com.lon.t1-t.lon.0, # shift in ºlongitude between current community and its destination
+				com.dLat.t1.t=t.com.lat.t1-t.lat.0, # shift in ºlatitude between current community and its destination
 				com.dll.t1.t0=com.dll.t1.t0, # distance from community origin (year t0) to destination (year t+1) position in ll
 				com.dll.0.tot=com.dll.0.tot, # sum of all community current-to-destination distances up to this point, in lat-lon
 				com.dll.t1.t=com.dll.t1.t, # distance (lat-lon) community moved from current (year t) to destination (year t+1)
-				com.dll.angle.t1.t=stemp.dll.angle.t1.t,
-				com.dll.angle.t1.t0=stemp.dll.angle.t1.t0,
+				com.dll.angle.t1.t=com.dll.angle.t1.t, # angle between destination community and current community
+				com.dll.angle.t1.t0=com.dll.angle.t1.t0, # angle between destination community and original community (only matters for leapfrog?)
 				
-				stemp.dLon.t.t0=t.stemp.lon.t[st2na]-t.lon.0,
-				stemp.dLat.t.t0=t.stemp.lat.t[st2na]-t.lat.0,
+				com.dLon.t0.match=t.com.lon.t0.match-t.lon.0, # shift in ºlongitude between original community and its current best match
+				com.dLat.t0.match=t.com.lat.t0.match-t.lat.0, # shift in ºlatitude between original community and its current best match
+				
+				stemp.dLon.t1.t=t.stemp.lon.t1[st2na]-t.lon.0,
+				stemp.dLat.t1.t=t.stemp.lat.t1[st2na]-t.lat.0,
 				stemp.dll.t1.t0=stemp.dll.t1.t0[st2na], # surface temperature distance from origin to current (ll)
 				stemp.dll.t1.t=stemp.dll.t1.t[st2na], # distance (ll) surface temperature moved this time step
 				stemp.dll.angle.t1.t=stemp.dll.angle.t1.t[st2na],
 				stemp.dll.angle.t1.t0=stemp.dll.angle.t1.t0[st2na],
 				
-				btemp.dLon.t.t0=t.btemp.lon.t[st2na]-t.lon.0,
-				btemp.dLat.t.t0=t.btemp.lat.t[st2na]-t.lat.0,
+				btemp.dLon.t1.t=t.btemp.lon.t1[bt2na]-t.lon.0,
+				btemp.dLat.t1.t=t.btemp.lat.t1[bt2na]-t.lat.0,
 				btemp.dll.t1.t0=btemp.dll.t1.t0[bt2na], # distance (ll) between bottom tempearture origin and destination
 				btemp.dll.t1.t=btemp.dll.t1.t[bt2na], # distance (ll) between bottom temperature current position and destination
 				btemp.dll.angle.t1.t=btemp.dll.angle.t1.t[bt2na],
@@ -498,6 +585,7 @@ shifts <- frogData[,
 				dComp.t.t0=t.dComp.t.t0, # community distance (betaD) between original (t0) and current (t) communities
 				dComp.t1.t0=t.dComp.t1.t0, # community distance (betaD) between original (t0) and destination (t+1) communities
 				dComp.t1.t=t.dComp.t1.t, # community distance (betaD) between current (t) and destination (t+1) communities
+				dComp.t.t0.matched=t.dComp.t.t0.matched, # community distance (betaD) between original (t0) and current best match (matched to t) communities
 				
 				dStemp.t.t0=t.dStemp.t.t0,
 				dStemp.t1.t0=t.dStemp.t1.t0[st2na], # change in surface temperature between origin (t0) and destination (t+1)
@@ -508,22 +596,30 @@ shifts <- frogData[,
 				dBtemp.t1.t=t.dBtemp.t1.t[bt2na], # change in bottom temperature between current (t) and destination (t+1)
 				
 				
-				# Arrival counts
-				comArrive.t=comArrive.t,
-				comArrive.net=comArrive.net,
+				# Burrows Counts and Cats
+				stemp.N.start=stemp.N.start,
+				stemp.N.end=stemp.N.end,
+				stemp.N.ft=stemp.N.ft,
+				stemp.N.tot=stemp.N.tot,
+				stemp.cat=stemp.cat,
 				
-				stempArrive.t=stempArrive.t,
-				stempArrive.net=stempArrive.net,
+				btemp.N.start=btemp.N.start,
+				btemp.N.end=btemp.N.end,
+				btemp.N.ft=btemp.N.ft,
+				btemp.N.tot=btemp.N.tot,
+				btemp.cat=btemp.cat,
 				
-				btempArrive.t=btempArrive.t,
-				btempArrive.net=btempArrive.net,
 				
 				# Alpha Diversity measures
 				alphaD.t=alphaD.t,
 				alphaD.t1=alphaD.t1,
 				dAlphaD.t.t0=alphaD.t-alphaD.t0,
 				dAlphaD.t1.t0=alphaD.t1-alphaD.t0,
-				dAlphaD.t1.t=alphaD.t1-alphaD.t
+				dAlphaD.t1.t=alphaD.t1-alphaD.t,
+				
+				# 
+				stemp=mean(stemp, na.rm=TRUE), 
+				btemp=mean(btemp, na.rm=TRUE)
 			)
 			
 			# ===============================================
