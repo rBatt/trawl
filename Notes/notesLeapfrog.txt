@@ -1,0 +1,26 @@
+
+ =================================================
+ = Interpretation of temporally averaged figures =
+ =================================================
+There's a bit of a nuanced interpretation to the way I have plotted the community velocity and the temperature velocities. By taking a stratum's average temp/com velocity, what the graph shows is "strata that have temperatures that move north in most years also have communities that move north in most years". In other words, strata differ in where things move once they're there! So some strata tend to have temperatures that go north, others have temperatures that on average go south. Same for communities. So this could incorporate some geographical or boundary effects. Strata that are at their northern limit will always have things going south. But this affect isn't caused by the temporal averaging. The noise in the averaging could be due to a time lag of sorts.
+
+ ====================================================
+ = Why I limit velocity tracking to adjoining years =
+ ==================================================== 
+If you find the best temperature match to exist 20 years from now, the clostest analog to the current community will have probably changed a good bit, and for a variety of reasons. Goal is to see where a community goes in space over a short period over time; the goal is *not* to predict community composition from temperature.
+
+
+
+ =================================================
+ = Why the communities following climate is cool =
+ =================================================
+1) Intuitively, a map of single-taxon trajectories reveals extensive heterogeneity – many species are moving in separate directions, which suggests that the communities are breaking up
+2) Per region, previous study only shows species velocity in 1 spot per species, and this spot is not the same for all species. My analysis shows community velocity for each stratum!
+3) My analysis includes rare species, and thus many more species than previous study!
+4) The matching of the community is actually very different from the match of individual taxa – communities are considered equivalent if the relative abundance of species within the communities are equal; see: s1 <- matrix(c(1,2,3,6,9,18), nrow=2); beta.div(s1, save.D=TRUE)$D; thus, tracking taxa tells you where the regional biomass of species goes, but tracking a community means that a shift in abundance doesn't matter so long as it's what the other taxa do too, or that a taxon with no change in abundance could contribute to a moving community if all the other taxa change their abundance in proportion. I.e., you could get very very different results.
+5) Conceptually, tracking a community is like tracking a set of interactions (presence/ absence of the taxa) and the strengths of those interactions (the relative biomasses)
+6) On average the taxa track climate velocity, but they don't have the same average velocity (if they did, Figure S5 in Pinsky et al. 2013 would be a flat line); Just because both x and y are correlated with z does not mean that x and y are correlated with each other. Thus, species tracking climate velocity does not mean that the community is moving together, and just because communities also track climate velocity does not even mean that community velocity is correlated with taxon velocity
+7) The taxa are definitely different from the communities. Consider a simple region with 2 strata (N at 9º and S at 0º), and 2 species (Pred and Prey). In year 1, N[Prey=10, Pred=10], M[Prey=5, Pred=10], S[Prey=10, Pred=5], and the communities are dissimilar. Note that the center of biomass for Prey is halfway between N & S (4.5º), and the center of biomass for pred is at 5.4º. Other than being most similar to themselves, current M & S are most similar to N and most dissimilar from each other, whereas N is equally distance from M & S. Say that N loses 5 prey and gains 5 predator, such that in year 2 N[Prey=5, Pred=15] and M&S stay the same. The Prey biomass center would shift south (from 5.4º to 4.5º), and the Pred biomass would shift north (from 4.5º to 6º). However, whereas N was previous equidistant from both M&S, N is now more similar M than to S; furthermore, looking where each stratum would "move" from year 1 to year 2, N would go to either M or S whereas M and S would stay put. So one taxon biomass went north, the other south, and the stratum of change had its next year's match go south whereas the other 2 strata didn't change. These two things are just unrelated in terms of how they can change in space. In another simple scenario, consider a northern stratum where all taxa in that stratum have their biomass decrease by exactly half. This would shift the biomass envelopes north, but the community location would remain unchanged.
+
+
+
