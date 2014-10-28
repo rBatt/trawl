@@ -1,0 +1,78 @@
+https://datras.ices.dk/Data_products/Download/Download_Data_public.aspx
+
+Trawl data started in the 1980's (well, the useful stuff)
+
+Gear was standardized in 1983 (for the Quarter 1 survey)
+
+Quarter 3 survey started in 1991
+
+Abundance at length data – need to convert to biomass via length-weight regressions; Robertson et al 2010 has most of the regressions in it
+
+
+Look out for 2m long sprat 
+
+SpeciesCodeType is the database (e.g., T is tsn)
+SpeciesCode is the number for that taxon in the databse
+
+
+Cephalopods and crustaceans are in the database – may want to co
+
+
+How Georgina removed bad species– she uses species codes, and gets the taxonomy, and then filters out unwanted families etc
+
+
+LngtCode tells you what units they measured it in
+TotalNo tells you how many they caught
+HLnoAtLngt tells you how many fish they measured
+
+
+NoMeas*SubFactor=TotalNo (where TotalNo is the number they caught for that species in that haul across all lengths)
+
+HLNoAtLngt*SubFactor= total number of fish at that length in the haul (sometimes HLNoAtLngt is precorrected, but if it is precorrected the subfactor would be 1, so don't be confused if the other columns suggest that the subfactor can't be1)
+
+TotalNo is always the total number of the fish in the haul (for that species) – sometimes this will be equal to the NoMeas if the subfactor is 1.
+
+So if you adjust the HLNoAtLngt to the Subfactor, then add up the HlAtLngt across all the lengths for that species, you should get the TotalNo column (and TotalNo should be constant for that species in that haul)
+
+
+Correct LngtClass to a standard unit based on the LngtCode
+
+
+The advise to discard night hauls, and to discard hauls that lasted less than 15 minutes
+
+
+How to standardize the catch to the area:
+Depends on 1) width of the net opening; 2) multiply by the speed of the boat and the duration
+
+They are supposed to trawl at 4 naughts 
+
+so (door or wing spread) * (duration) * (speed) = area swept
+
+Their Effort in CPUE is "catch per hour"
+
+DoorSpread and WingSpread (use one or the other, somtimes the appropriate one can depends on the species)
+	There are published regressions to calculate DoorSpread and WingSpread from depth, these can be used in the values are NA (-9) in the data (ibts_sample)hauls.csv, e.g.
+	Fung et al 2012 and Fraser et al 2008 and 2009
+	
+There are catchability corrections for many species (in one of the above Fraser papers), for each species at each length
+	
+Gear column in the data set – use the GOV gear type
+
+
+
+Get max lengths for all of the species, and if anything seems to long, remove it
+
+ShootLat and ShootLon tells you where the haul was taken
+
+StatRec is the stratum
+
+
+
+
+
+
+
+	
+
+
+
