@@ -6,8 +6,9 @@
 .DS_Store
 
 
-/Data/*.RData2
 /Data/**/*.txt
 /Data/**/*.csv
 /Data/**/*.DAT
 /Data/**/*.nc
+/Data/**/*.fwf
+/Data/**/*.zip
