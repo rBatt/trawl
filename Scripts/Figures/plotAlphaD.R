@@ -1,3 +1,7 @@
+
+
+load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Results/alphaD.RData")
+
 library(maps)
 
 
