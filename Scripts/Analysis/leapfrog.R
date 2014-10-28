@@ -618,8 +618,8 @@ shifts <- frogData[,
 				dAlphaD.t1.t=alphaD.t1-alphaD.t,
 				
 				# 
-				stemp=mean(stemp, na.rm=TRUE), 
-				btemp=mean(btemp, na.rm=TRUE)
+				stemp=stemp.castExp.t, 
+				btemp=btemp.castExp.t
 			)
 			
 			# ===============================================

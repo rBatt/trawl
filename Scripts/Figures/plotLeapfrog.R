@@ -3,6 +3,7 @@
 # = Load Data =
 # =============
 load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Results/frog_shifts.RData")
+load("~/Documents/School&Work/pinskyPost/trawl/Results/trawl.betaD.RData")
 library(data.table)
 library(maps)
 
@@ -23,823 +24,1044 @@ plot.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/StatFunctions
 invisible(sapply(paste(plot.location, list.files(plot.location), sep="/"), source, .GlobalEnv))
 
 
+# =================
+# = Set Constants =
+# =================
+gray2 <- rgb(t(col2rgb("gray")), alpha=150, maxColorValue=255)
+black2 <- rgb(t(col2rgb("black")), alpha=150, maxColorValue=255)
+heat.cols <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(256)
+SaveFigs <- c(FALSE,TRUE)[2]
+
+# pdf("~/Desktop/temp_dComp.t.t0_time.pdf", width=3.5, height=3.5)
 # ==================================================
 # = Create shifts.strat by averaging across years  =
 # ==================================================
-shift.strat <- shifts[,
+shifts.strat <- shifts[,
 	j={	
+		# Burrow Categories
+		stemp.cat.0 <- table(stemp.cat)
+		btemp.cat.0 <- table(btemp.cat)
+		years.elapsed0 <- (year-min(year, na.rm=TRUE))
+		years.elapsed <- years.elapsed0[-1]
+		
+		dBtemp.t.t0 <- btemp - btemp[1]
+		dStemp.t.t0 <- stemp - stemp[1]
+		
+		# par(mfrow=c(2,1), mar=c(2,2,0.1,0.5), mgp=c(1,0.25,0), tcl=-0.15, cex=1, ps=10, family="Times")
+		# plot(years.elapsed0, btemp, type="o", pch=19, col="blue", ylab="Temperature", xlab="Years since beginning", main=paste(region, stratum), ylim=range(c(btemp,stemp), na.rm=TRUE))
+		# lines(years.elapsed0, stemp, type="o", pch=19, col="red")
+		# # par(new=TRUE)
+		# plot(years.elapsed0, dComp.t.t0.matched, type="o", pch=19, ylab="Community distance", xlab="Years since beginning", ylim=range(c(dComp.t.t0.matched, dComp.t.t0), na.rm=TRUE))
+		# lines(years.elapsed0, dComp.t.t0, lty="dashed")
+		
 		list(
+			lat=mean(strat.lat.0, na.rm=TRUE),
+			lon=mean(strat.lon.0, na.rm=TRUE),
+			
 			# Lat-lon shifts
-			com.dLon.t.t0=mean(com.lon.t-strat.lon.0),
-			com.dLat.t.t0=mean(com.lat.t-strat.lon.0),
+			com.dLon.t1.t=mean(com.dLon.t1.t/dYear.t1.t, na.rm=TRUE),
+			com.dLat.t1.t=mean(com.dLat.t1.t/dYear.t1.t, na.rm=TRUE),
 		
-			btemp.dLon.t.t0=mean(btemp.lon.t-strat.lon.0),
-			btemp.dLat.t.t0=mean(btemp.lat.t-strat.lat.0),
+			btemp.dLon.t1.t=mean(btemp.dLon.t1.t/dYear.t1.t, na.rm=TRUE),
+			btemp.dLat.t1.t=mean(btemp.dLat.t1.t/dYear.t1.t, na.rm=TRUE),
 		
-			stemp.dLon.t.t0=mean(stemp.lon.t-strat.lon.0),
-			stemp.dLat.t.t0=mean(stemp.lat.t-strat.lat.0),
+			stemp.dLon.t1.t=mean(stemp.dLon.t1.t/dYear.t1.t, na.rm=TRUE),
+			stemp.dLat.t1.t=mean(stemp.dLat.t1.t/dYear.t1.t, na.rm=TRUE),
 			
-			# 
+			
+			# Most frequent burrow category
+			# Do certain categories move in Lon/Lat faster? So if strat is divergence, does that mean its t1.t matches tend to be far away?
+			# Also, do certain categories have a positive or negative *trend* in alphaD (need to merge in original alphaD analysis)?
+			# Regions that are corridors might be the regions with high average temporal beta diversity (need to merge in original betaD analysis)
+			stemp.cat=names(stemp.cat.0)[which.max(stemp.cat.0)],
+			btemp.cat=names(btemp.cat.0)[which.max(btemp.cat.0)],
+			
+			
+			# Average Burrow Trajectory
+			# Could plot a map of each stratum's average % in each of the 3 cateogories (3 maps)
+			# Instead of using categorical predictors for changes in alpha and beta and distance, like above, could use these values in regressions
+			stemp.N.start=mean(stemp.N.start, na.rm=TRUE),
+			stemp.N.end=mean(stemp.N.end, na.rm=TRUE),
+			stemp.N.ft=mean(stemp.N.ft, na.rm=TRUE),
+			
+			btemp.N.start=mean(btemp.N.start, na.rm=TRUE),
+			btemp.N.end=mean(btemp.N.end, na.rm=TRUE),
+			btemp.N.ft=mean(btemp.N.ft, na.rm=TRUE),
+			
+			
+			# Change from origin
+			# Could make a map of each stratum's average minimum distance from its origin
+			# Could also regress distance from origin against distance that the community traveled – are community's w/ a geographically distance match very different?
+			# Should probably ask if the temperature in the originally community's match is very different from the original community's temperature
+			dComp.t.t0.matched.perYear=mean(dComp.t.t0.matched[-1]/years.elapsed, na.rm=TRUE),
+			com.dLon.t0.match=mean(com.dLon.t0.match[-1]/years.elapsed, na.rm=TRUE),
+			com.dLat.t0.match=mean(com.dLat.t0.match[-1]/years.elapsed, na.rm=TRUE),
+			
+			
+			# Alpha D Values
+			# Does a good match in the community  mean good or bad things for alpha?
+			# Do communities that do a good job of following temperature have higher alpha diversity?
+			# Do certain trajectory categories have community matches that are good or bad for alpha diversity in the destination relative to the current?
+			alphaD.t=mean(alphaD.t, na.rm=TRUE), # average alpha diversity in each region. Does trajectory category affect average alpha?
+			dAlphaD.t1.t=mean(dAlphaD.t1.t/dYear.t1.t, na.rm=TRUE), # rate of change in alpha diversity as the community moves.
+			alphaD.slope=summary(lm(alphaD.t~years.elapsed0))$coef[2,1], # does trajectory category affect trend in alpha?
+			
+			# Correlation of community and temperature shifts
+			com.stemp.lon.cor=cor((com.dLon.t1.t/dYear.t1.t), (stemp.dLon.t1.t/dYear.t1.t), use="na.or.complete"),
+			com.stemp.lat.cor=cor((com.dLat.t1.t/dYear.t1.t), (stemp.dLat.t1.t/dYear.t1.t), use="na.or.complete"),
+			com.btemp.lon.cor=cor((com.dLon.t1.t/dYear.t1.t), (btemp.dLon.t1.t/dYear.t1.t), use="na.or.complete"),
+			com.btemp.lat.cor=cor((com.dLat.t1.t/dYear.t1.t), (btemp.dLat.t1.t/dYear.t1.t), use="na.or.complete"),
+			
+			# Closest community analog
+			dComp.t.t0.matched=mean(dComp.t.t0.matched[-1], na.rm=TRUE),
+			dComp.t.t0.matched.slope=summary(lm(dComp.t.t0.matched[-1]~years.elapsed))$coef[2,1],
+			
+			# Rate of temperature change
+			stemp.slope=tryCatch(summary(lm(stemp~years.elapsed0))$coef[2,1], error=function(cond)as.numeric(NA)),
+			btemp.slope=summary(lm(btemp~years.elapsed0))$coef[2,1]
+			
+			
+			
 		)
-	}
+	}, 
+	by=c("s.reg","region", "stratum")
 ]
 
-		
-		
-		com.lon.shift <- .SD[,list(comShift=mean(com.lon.t-strat.lon.0, na.rm=TRUE)), by=c("stratum")][,comShift]
-		
-		
-		btemp.lon.shift <- .SD[,list(btempShift=mean(btemp.lon.t-strat.lon.0, na.rm=TRUE)), by=c("stratum")][,btempShift] # btemp.lon.t- strat.lon.0
-		dComp.t1.t.strat <- .SD[,list(comShift=mean(dComp.t, na.rm=TRUE)), by=c("stratum")][,comShift] # should maybe divid this by the absolute value of dBtemp.t.strat, because the best matching community could change a lot if the best matching temperature changed a lot
-		dBtemp.t1.t.strat <- .SD[,list(comShift=mean(dBtemp.t, na.rm=TRUE)), by=c("stratum")][,comShift]
-		t.strata <- .SD[,unique(year)]
-		
-		dBtemp.net.strat <- .SD[,list(netBtemp=mean(dBtemp.net, na.rm=TRUE)), by=c("stratum")][,netBtemp]
-		dComp.net.strat <- .SD[,list(netComp=mean(dComp.net, na.rm=TRUE)), by=c("stratum")][,netComp]
-		
-		dBtemp.t.strat <- .SD[,list(tBtemp=mean(dBtemp.t, na.rm=TRUE)), by=c("stratum")][,tBtemp]
-		dComp.t.strat <- .SD[,list(tComp=mean(dComp.t, na.rm=TRUE)), by=c("stratum")][,tComp]
-		
-		
-		mod.mat <- matrix(c(com.lon.shift,btemp.lon.shift),ncol=2)
-		# sing.check <- det(t(mod.mat)%*%mod.mat) < 1E-9
-		na.check <- sum(complete.cases(mod.mat)) > 2
-
-
-
-# ==============
-# = Trajectory =
-# ==============
-# comMatch[,stratum:=factor(stratum, levels=unique(stratum)[order(strat.lat.0[!duplicated(stratum)])])]
-# setkey(comMatch, s.reg, stratum)
-# dev.new()
-# par(mfrow=c(1,1), mar=c(1.5,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.75,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
-# comMatch[,
-# 	j={
-#
-#
-# 		strat.cols1 <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(lu(stratum))
-# 		strat.cols1.5 <- rgb(t(col2rgb(strat.cols1)), alpha=100, maxColorValue=255)
-# 		strat.cols2 <- rgb(t(col2rgb(strat.cols1)), alpha=45, maxColorValue=255)
-# 		strat.chars <- as.character(as.numeric(unique(stratum)))
-# 		names(strat.cols1) <- unique(stratum)
-# 		names(strat.cols2) <- unique(stratum)
-# 		names(strat.chars) <- unique(stratum)
-#
-# 		# ==================================
-# 		# = Plot 1: Community Trajectories =
-# 		# ==================================
-#
-# 		plot(com.lon.t, com.lat.t, type="n")
-# 		.SD[,
-# 			j={
-# 				lines(com.lon.t, com.lat.t, type="l", col=strat.cols2[stratum])
-#
-# 			},
-# 			by=c("stratum")
-# 		]
-# 		.SD[,
-# 			points(jitter(rev(com.lon.t)[1], factor=0.15), jitter(rev(com.lat.t)[1], factor=0.15), col="black", bg=strat.cols1.5[stratum], pch=21, cex=2),
-# 			by=c("stratum")
-# 		]
-#
-# 		points(unique(strat.lon.0), unique(strat.lat.0), col=strat.cols1, bg=strat.cols2, cex=3, pch=21)
-# 		text(unique(strat.lon.0), unique(strat.lat.0), col="black", cex=1, labels=strat.chars, font=1)
-#
-#
-# 	},
-#
-# 	by=c("s.reg")
-# ]
-
-
-
-gray2 <- rgb(t(col2rgb("black")), alpha=150, maxColorValue=255)
-
-# ===============================
-# = Community Lat vs. Stemp Lat =
-# ===============================
-shifts[,stratum:=factor(stratum, levels=unique(stratum)[order(strat.lat.0[!duplicated(stratum)])])]
-setkey(shifts, s.reg, stratum)
-
-# Create community / stemp velocity device
-dev.new(width=3.5, height=6.5)
-# png("~/Desktop/communityShift_vs_surfTempShift.png", width=4, height=6, res=300, units="in")
-par(mfrow=c(5,2), mar=c(0.85,0.85,0.75,0.5), oma=c(0.75,0.75,0.1,0.1), mgp=c(0.75,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
-comStemp.vel.dev <- dev.cur()
-
-# Create com/stemp residual from 1:1 device
-dev.new(width=3.5, height=6.5)
-# png("~/Desktop/communityShift_vs_surfTempShift.png", width=4, height=6, res=300, units="in")
-par(mfrow=c(5,2), mar=c(0.85,0.85,0.75,0.5), oma=c(0.75,0.75,0.1,0.1), mgp=c(0.75,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
-comStemp.res11.dev <- dev.cur()
-
-# Create com/stemp residual from regression line device
-dev.new(width=3.5, height=6.5)
-# png("~/Desktop/communityShift_vs_surfTempShift.png", width=4, height=6, res=300, units="in")
-par(mfrow=c(5,2), mar=c(0.85,0.85,0.75,0.5), oma=c(0.75,0.75,0.1,0.1), mgp=c(0.75,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
-comStemp.resFit.dev <- dev.cur()
-
-# Create net change device
-dev.new(width=3.5, height=6.5)
-# png("~/Desktop/communityShift_vs_surfTempShift.png", width=4, height=6, res=300, units="in")
-par(mfrow=c(5,2), mar=c(0.85,0.85,0.75,0.5), oma=c(0.75,0.75,0.1,0.1), mgp=c(0.75,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
-netChange.dev <- dev.cur()
-
-# Create mean dt change device
-dev.new(width=3.5, height=6.5)
-# png("~/Desktop/communityShift_vs_surfTempShift.png", width=4, height=6, res=300, units="in")
-par(mfrow=c(5,2), mar=c(0.85,0.85,0.75,0.5), oma=c(0.75,0.75,0.1,0.1), mgp=c(0.75,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
-tChange.dev <- dev.cur()
-
-
-shifts[,
-	j={		
-		com.lat.shift <- .SD[,list(comShift=mean(com.lat.t-strat.lat.0, na.rm=TRUE)), by=c("stratum")][,comShift]
-		stemp.lat.shift <- .SD[,list(stempShift=mean(stemp.lat.t-strat.lat.0, na.rm=TRUE)), by=c("stratum")][,stempShift] # stemp.lat.t- strat.lat.0
-		dComp.t.strat <- .SD[,list(comShift=mean(dComp.t, na.rm=TRUE)), by=c("stratum")][,comShift] # should maybe divid this by the absolute value of dStemp.t.strat, because the best matching community could change a lot if the best matching temperature changed a lot
-		dStemp.t.strat <- .SD[,list(comShift=mean(dStemp.t, na.rm=TRUE)), by=c("stratum")][,comShift]
-		t.strata <- .SD[,unique(year)]
-		
-		dStemp.net.strat <- .SD[,list(netStemp=mean(dStemp.net, na.rm=TRUE)), by=c("stratum")][,netStemp]
-		dComp.net.strat <- .SD[,list(netComp=mean(dComp.net, na.rm=TRUE)), by=c("stratum")][,netComp]
-		
-		dStemp.t.strat <- .SD[,list(tStemp=mean(dStemp.t, na.rm=TRUE)), by=c("stratum")][,tStemp]
-		dComp.t.strat <- .SD[,list(tComp=mean(dComp.t, na.rm=TRUE)), by=c("stratum")][,tComp]
-		
-		
-		mod.mat <- matrix(c(com.lat.shift,stemp.lat.shift),ncol=2)
-		# sing.check <- det(t(mod.mat)%*%mod.mat) < 1E-9
-		na.check <- sum(complete.cases(mod.mat)) > 2
-		# Regressions
-		if(na.check){
-			t.mod <- lm(com.lat.shift~stemp.lat.shift)
-			resFit.com.lat.shift <- abs(com.lat.shift - as.numeric(predict(t.mod)))
-			res11.com.lat.shift <- abs(com.lat.shift - stemp.lat.shift)
-		}
-		
-		print(s.reg)
-		print(summary(t.mod))		
-		
-		# First Figure
-		dev.set(comStemp.vel.dev)
-		# Plot Blank
-		if(na.check){
-			plot(stemp.lat.shift, com.lat.shift, ylab="", xlab="", pch=21, bg=gray2, col=NA, type="n", main=s.reg)
-			abline.mod(stemp.lat.shift, com.lat.shift)
-			r2 <- round(summary(t.mod)$r.squ,2)
-			legend("topleft", bty="n", legend=bquote(R^2==.(r2)), inset=c(-0.15,-0.1))
-		}else{
-			plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=s.reg)	
-		}
-		
-		# Plot Lines	
-		abline(a=0, b=1, col="blue", lty="dashed", lwd=1)
-		
-		# Plot Real
-		if(na.check){
-			points(stemp.lat.shift, com.lat.shift, pch=21, bg=gray2, col=NA)
-		}else{
-			points(1, xaxt="n",yaxt="n", pch="NA", bg=gray2, col=NA)	
-		}
-		
-		
-		
-		# Second Figure
-		dev.set(comStemp.res11.dev)
-		if(na.check){
-			plot(res11.com.lat.shift, dComp.t.strat, ylab="",xlab="", main=s.reg, lwd=1, pch=21, bg=gray2, col=NA)
-			abline.mod(res11.com.lat.shift, dComp.t.strat)
-			
-		}else{
-			plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=s.reg)	
-		}
-		
-		
-		
-		# Third Figure
-		dev.set(comStemp.resFit.dev)
-		if(na.check){
-			plot(resFit.com.lat.shift, dComp.t.strat, ylab="",xlab="", main=s.reg, lwd=1, pch=21, bg=gray2, col=NA)
-			abline.mod(resFit.com.lat.shift, dComp.t.strat)
-			
-		}else{
-			plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=s.reg)	
-		}
-		
-
-		# Fourth Figure
-		dev.set(netChange.dev)
-		if(na.check){
-			plot(dStemp.net.strat, dComp.net.strat, ylab="",xlab="", main=s.reg, lwd=1, pch=21, bg=gray2, col=NA)
-			abline.mod(dStemp.net.strat, dComp.net.strat)
-			
-		}else{
-			plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=s.reg)	
-		}
-		
-		# Fifth Figure
-		dev.set(tChange.dev)
-		if(na.check){
-			plot(dStemp.t.strat, dComp.t.strat, ylab="",xlab="", main=s.reg, lwd=1, pch=21, bg=gray2, col=NA)
-			abline.mod(dStemp.t.strat, dComp.t.strat)
-			
-		}else{
-			plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=s.reg)	
-		}
-		
-		
-		
-		# print(summary(lm(com.lat.shift~stemp.lat.shift)))
-		# print(summary(lm(com.lat.shift~stemp.lat.shift*strat.lat.0)))
-	
-	},
-	
-	by=c("s.reg")
-]
-
-# First Figure
-dev.set(comStemp.vel.dev)
-mtext(bquote(Com~(degree*N/yr)), side=2, line=-0.15, outer=TRUE)
-mtext(bquote(Stemp~(degree*N/yr)), side=1, line=-0.15, outer=TRUE)
-# dev.off(comStemp.vel.dev)
-
-
-# Second Figure
-dev.set(comStemp.res11.dev)
-mtext(bquote(Community~Change), side=2, line=-0.15, outer=TRUE)
-mtext(bquote(Deviation~from~Stemp~Velocity~(degree*N/yr)), side=1, line=-0.15, outer=TRUE)
-# dev.off(comStemp.res11.dev)
-
-
-# Third Figure
-dev.set(comStemp.resFit.dev)
-mtext(bquote(Community~Change), side=2, line=-0.15, outer=TRUE)
-mtext(bquote(Deviation~from~Predicted~Velocity~~(degree*N/yr)), side=1, line=-0.15, outer=TRUE)
-# dev.off(comStemp.resFit.dev)
-
-# Fourth Figure
-dev.set(netChange.dev)
-mtext(bquote(Net~Community~Change), side=2, line=-0.15, outer=TRUE)
-mtext(bquote(Net~Stemp~Change~(degree*C)), side=1, line=-0.15, outer=TRUE)
-# dev.off(netChange.dev)
-
-# Fifth Figure
-dev.set(tChange.dev)
-mtext(bquote(Between-Year~Community~Change), side=2, line=-0.15, outer=TRUE)
-mtext(bquote(Between-Year~Stemp~Change~(degree*C)), side=1, line=-0.15, outer=TRUE)
-# dev.off(tChange.dev)
-
-
-
-
-
-# ===============================
-# = Community Lat vs. Btemp Lat =
-# ===============================
-shifts[,stratum:=factor(stratum, levels=unique(stratum)[order(strat.lat.0[!duplicated(stratum)])])]
-setkey(shifts, s.reg, stratum)
-
-# Create community / btemp velocity device
-dev.new(width=3.5, height=6.5)
-# png("~/Desktop/communityShift_vs_surfTempShift.png", width=4, height=6, res=300, units="in")
-par(mfrow=c(5,2), mar=c(0.85,0.85,0.75,0.5), oma=c(0.75,0.75,0.1,0.1), mgp=c(0.75,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
-comBtemp.vel.dev <- dev.cur()
-
-# Create com/btemp residual from 1:1 device
-dev.new(width=3.5, height=6.5)
-# png("~/Desktop/communityShift_vs_surfTempShift.png", width=4, height=6, res=300, units="in")
-par(mfrow=c(5,2), mar=c(0.85,0.85,0.75,0.5), oma=c(0.75,0.75,0.1,0.1), mgp=c(0.75,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
-comBtemp.res11.dev <- dev.cur()
-
-# Create com/btemp residual from regression line device
-dev.new(width=3.5, height=6.5)
-# png("~/Desktop/communityShift_vs_surfTempShift.png", width=4, height=6, res=300, units="in")
-par(mfrow=c(5,2), mar=c(0.85,0.85,0.75,0.5), oma=c(0.75,0.75,0.1,0.1), mgp=c(0.75,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
-comBtemp.resFit.dev <- dev.cur()
-
-# Create net change device
-dev.new(width=3.5, height=6.5)
-# png("~/Desktop/communityShift_vs_surfTempShift.png", width=4, height=6, res=300, units="in")
-par(mfrow=c(5,2), mar=c(0.85,0.85,0.75,0.5), oma=c(0.75,0.75,0.1,0.1), mgp=c(0.75,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
-netChange.dev <- dev.cur()
-
-# Create mean dt change device
-dev.new(width=3.5, height=6.5)
-# png("~/Desktop/communityShift_vs_surfTempShift.png", width=4, height=6, res=300, units="in")
-par(mfrow=c(5,2), mar=c(0.85,0.85,0.75,0.5), oma=c(0.75,0.75,0.1,0.1), mgp=c(0.75,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
-tChange.dev <- dev.cur()
-
-
-shifts[,
-	j={		
-		com.lat.shift <- .SD[,list(comShift=mean(com.lat.t-strat.lat.0, na.rm=TRUE)), by=c("stratum")][,comShift]
-		btemp.lat.shift <- .SD[,list(btempShift=mean(btemp.lat.t-strat.lat.0, na.rm=TRUE)), by=c("stratum")][,btempShift] # btemp.lat.t- strat.lat.0
-		dComp.t.strat <- .SD[,list(comShift=mean(dComp.t, na.rm=TRUE)), by=c("stratum")][,comShift] # should maybe divid this by the absolute value of dBtemp.t.strat, because the best matching community could change a lot if the best matching temperature changed a lot
-		dBtemp.t.strat <- .SD[,list(comShift=mean(dBtemp.t, na.rm=TRUE)), by=c("stratum")][,comShift]
-		t.strata <- .SD[,unique(year)]
-		
-		dBtemp.net.strat <- .SD[,list(netBtemp=mean(dBtemp.net, na.rm=TRUE)), by=c("stratum")][,netBtemp]
-		dComp.net.strat <- .SD[,list(netComp=mean(dComp.net, na.rm=TRUE)), by=c("stratum")][,netComp]
-		
-		dBtemp.t.strat <- .SD[,list(tBtemp=mean(dBtemp.t, na.rm=TRUE)), by=c("stratum")][,tBtemp]
-		dComp.t.strat <- .SD[,list(tComp=mean(dComp.t, na.rm=TRUE)), by=c("stratum")][,tComp]
-		
-		
-		mod.mat <- matrix(c(com.lat.shift,btemp.lat.shift),ncol=2)
-		# sing.check <- det(t(mod.mat)%*%mod.mat) < 1E-9
-		na.check <- sum(complete.cases(mod.mat)) > 2
-		# Regressions
-		if(na.check){
-			t.mod <- lm(com.lat.shift~btemp.lat.shift)
-			resFit.com.lat.shift <- abs(com.lat.shift - as.numeric(predict(t.mod)))
-			res11.com.lat.shift <- abs(com.lat.shift - btemp.lat.shift)
-		}
-		
-		print(s.reg)
-		print(summary(t.mod))		
-		
-		# First Figure
-		dev.set(comBtemp.vel.dev)
-		# Plot Blank
-		if(na.check){
-			plot(btemp.lat.shift, com.lat.shift, ylab="", xlab="", pch=21, bg=gray2, col=NA, type="n", main=s.reg)
-			abline.mod(btemp.lat.shift, com.lat.shift)
-			r2 <- round(summary(t.mod)$r.squ,2)
-			legend("topleft", bty="n", legend=bquote(R^2==.(r2)), inset=c(-0.15,-0.1))
-		}else{
-			plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=s.reg)	
-		}
-		
-		# Plot Lines	
-		abline(a=0, b=1, col="blue", lty="dashed", lwd=1)
-		
-		# Plot Real
-		if(na.check){
-			points(btemp.lat.shift, com.lat.shift, pch=21, bg=gray2, col=NA)
-		}else{
-			points(1, xaxt="n",yaxt="n", pch="NA", bg=gray2, col=NA)	
-		}
-		
-		
-		
-		# Second Figure
-		dev.set(comBtemp.res11.dev)
-		if(na.check){
-			plot(res11.com.lat.shift, dComp.t.strat, ylab="",xlab="", main=s.reg, lwd=1, pch=21, bg=gray2, col=NA)
-			abline.mod(res11.com.lat.shift, dComp.t.strat)
-			
-		}else{
-			plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=s.reg)	
-		}
-		
-		
-		
-		# Third Figure
-		dev.set(comBtemp.resFit.dev)
-		if(na.check){
-			plot(resFit.com.lat.shift, dComp.t.strat, ylab="",xlab="", main=s.reg, lwd=1, pch=21, bg=gray2, col=NA)
-			abline.mod(resFit.com.lat.shift, dComp.t.strat)
-			
-		}else{
-			plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=s.reg)	
-		}
-		
-
-		# Fourth Figure
-		dev.set(netChange.dev)
-		if(na.check){
-			plot(dBtemp.net.strat, dComp.net.strat, ylab="",xlab="", main=s.reg, lwd=1, pch=21, bg=gray2, col=NA)
-			abline.mod(dBtemp.net.strat, dComp.net.strat)
-			
-		}else{
-			plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=s.reg)	
-		}
-		
-		# Fifth Figure
-		dev.set(tChange.dev)
-		if(na.check){
-			plot(dBtemp.t.strat, dComp.t.strat, ylab="",xlab="", main=s.reg, lwd=1, pch=21, bg=gray2, col=NA)
-			abline.mod(dBtemp.t.strat, dComp.t.strat)
-			
-		}else{
-			plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=s.reg)	
-		}
-		
-		
-		
-		# print(summary(lm(com.lat.shift~btemp.lat.shift)))
-		# print(summary(lm(com.lat.shift~btemp.lat.shift*strat.lat.0)))
-	
-	},
-	
-	by=c("s.reg")
-]
-
-# First Figure
-dev.set(comBtemp.vel.dev)
-mtext(bquote(Com~(degree*N/yr)), side=2, line=-0.15, outer=TRUE)
-mtext(bquote(Btemp~(degree*N/yr)), side=1, line=-0.15, outer=TRUE)
-# dev.off(comBtemp.vel.dev)
-
-
-# Second Figure
-dev.set(comBtemp.res11.dev)
-mtext(bquote(Community~Change), side=2, line=-0.15, outer=TRUE)
-mtext(bquote(Deviation~from~Btemp~Velocity~(degree*N/yr)), side=1, line=-0.15, outer=TRUE)
-# dev.off(comBtemp.res11.dev)
-
-
-# Third Figure
-dev.set(comBtemp.resFit.dev)
-mtext(bquote(Community~Change), side=2, line=-0.15, outer=TRUE)
-mtext(bquote(Deviation~from~Predicted~Velocity~~(degree*N/yr)), side=1, line=-0.15, outer=TRUE)
-# dev.off(comBtemp.resFit.dev)
-
-# Fourth Figure
-dev.set(netChange.dev)
-mtext(bquote(Net~Community~Change), side=2, line=-0.15, outer=TRUE)
-mtext(bquote(Net~Btemp~Change~(degree*C)), side=1, line=-0.15, outer=TRUE)
-# dev.off(netChange.dev)
-
-# Fifth Figure
-dev.set(tChange.dev)
-mtext(bquote(Between-Year~Community~Change), side=2, line=-0.15, outer=TRUE)
-mtext(bquote(Between-Year~Btemp~Change~(degree*C)), side=1, line=-0.15, outer=TRUE)
-# dev.off(tChange.dev)
-
-
-
-
-
-
-
-# ===============================
-# = Community Lon vs. Btemp Lon =
-# ===============================
-dev.new.lf("comBtemp.vel.dev") # Create community / btemp velocity device
-dev.new.lf("comBtemp.res11.dev") # Create com/btemp residual from 1:1 device
-dev.new.lf("comBtemp.resFit.dev") # Create com/btemp residual from regression line device
-dev.new.lf("netChange.dev") # Create net change device
-dev.new.lf("tChange.dev") # Create mean dt change device
-
-shifts[,
-	j={		
-		com.lon.shift <- .SD[,list(comShift=mean(com.lon.t-strat.lon.0, na.rm=TRUE)), by=c("stratum")][,comShift]
-		btemp.lon.shift <- .SD[,list(btempShift=mean(btemp.lon.t-strat.lon.0, na.rm=TRUE)), by=c("stratum")][,btempShift] # btemp.lon.t- strat.lon.0
-		dComp.t.strat <- .SD[,list(comShift=mean(dComp.t, na.rm=TRUE)), by=c("stratum")][,comShift] # should maybe divid this by the absolute value of dBtemp.t.strat, because the best matching community could change a lot if the best matching temperature changed a lot
-		dBtemp.t.strat <- .SD[,list(comShift=mean(dBtemp.t, na.rm=TRUE)), by=c("stratum")][,comShift]
-		t.strata <- .SD[,unique(year)]
-		
-		dBtemp.net.strat <- .SD[,list(netBtemp=mean(dBtemp.net, na.rm=TRUE)), by=c("stratum")][,netBtemp]
-		dComp.net.strat <- .SD[,list(netComp=mean(dComp.net, na.rm=TRUE)), by=c("stratum")][,netComp]
-		
-		dBtemp.t.strat <- .SD[,list(tBtemp=mean(dBtemp.t, na.rm=TRUE)), by=c("stratum")][,tBtemp]
-		dComp.t.strat <- .SD[,list(tComp=mean(dComp.t, na.rm=TRUE)), by=c("stratum")][,tComp]
-		
-		
-		mod.mat <- matrix(c(com.lon.shift,btemp.lon.shift),ncol=2)
-		# sing.check <- det(t(mod.mat)%*%mod.mat) < 1E-9
-		na.check <- sum(complete.cases(mod.mat)) > 2
-		# Regressions
-		if(na.check){
-			t.mod <- lm(com.lon.shift~btemp.lon.shift)
-			resFit.com.lon.shift <- abs(com.lon.shift - as.numeric(predict(t.mod)))
-			res11.com.lon.shift <- abs(com.lon.shift - btemp.lon.shift)
-		}
-		
-		print(s.reg)
-		print(summary(t.mod))		
-		
-		# First Figure
-		dev.set(comBtemp.vel.dev)
-		# Plot Blank
-		if(na.check){
-			plot(btemp.lon.shift, com.lon.shift, ylab="", xlab="", pch=21, bg=gray2, col=NA, type="n", main=s.reg)
-			abline.mod(btemp.lon.shift, com.lon.shift)
-			r2 <- round(summary(t.mod)$r.squ,2)
-			legend("topleft", bty="n", legend=bquote(R^2==.(r2)), inset=c(-0.15,-0.1))
-		}else{
-			plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=s.reg)	
-		}
-		
-		# Plot Lines	
-		abline(a=0, b=1, col="blue", lty="dashed", lwd=1)
-		
-		# Plot Real
-		if(na.check){
-			points(btemp.lon.shift, com.lon.shift, pch=21, bg=gray2, col=NA)
-		}else{
-			points(1, xaxt="n",yaxt="n", pch="NA", bg=gray2, col=NA)	
-		}
-		
-		
-		
-		# Second Figure
-		dev.set(comBtemp.res11.dev)
-		if(na.check){
-			plot(res11.com.lon.shift, dComp.t.strat, ylab="",xlab="", main=s.reg, lwd=1, pch=21, bg=gray2, col=NA)
-			abline.mod(res11.com.lon.shift, dComp.t.strat)
-			
-		}else{
-			plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=s.reg)	
-		}
-		
-		
-		
-		# Third Figure
-		dev.set(comBtemp.resFit.dev)
-		if(na.check){
-			plot(resFit.com.lon.shift, dComp.t.strat, ylab="",xlab="", main=s.reg, lwd=1, pch=21, bg=gray2, col=NA)
-			abline.mod(resFit.com.lon.shift, dComp.t.strat)
-			
-		}else{
-			plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=s.reg)	
-		}
-		
-
-		# Fourth Figure
-		dev.set(netChange.dev)
-		if(na.check){
-			plot(dBtemp.net.strat, dComp.net.strat, ylab="",xlab="", main=s.reg, lwd=1, pch=21, bg=gray2, col=NA)
-			abline.mod(dBtemp.net.strat, dComp.net.strat)
-			
-		}else{
-			plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=s.reg)	
-		}
-		
-		# Fifth Figure
-		dev.set(tChange.dev)
-		if(na.check){
-			plot(dBtemp.t.strat, dComp.t.strat, ylab="",xlab="", main=s.reg, lwd=1, pch=21, bg=gray2, col=NA)
-			abline.mod(dBtemp.t.strat, dComp.t.strat)
-			
-		}else{
-			plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=s.reg)	
-		}
-		
-		
-		
-		# print(summary(lm(com.lon.shift~btemp.lon.shift)))
-		# print(summary(lm(com.lon.shift~btemp.lon.shift*strat.lon.0)))
-	
-	},
-	
-	by=c("s.reg")
-]
-
-# First Figure
-dev.set(comBtemp.vel.dev)
-mtext(bquote(Com~(degree*E/yr)), side=2, line=-0.15, outer=TRUE)
-mtext(bquote(Btemp~(degree*E/yr)), side=1, line=-0.15, outer=TRUE)
-# dev.off(comBtemp.vel.dev)
-
-
-# Second Figure
-dev.set(comBtemp.res11.dev)
-mtext(bquote(Community~Change), side=2, line=-0.15, outer=TRUE)
-mtext(bquote(Deviation~from~Btemp~Velocity~(degree*E/yr)), side=1, line=-0.15, outer=TRUE)
-# dev.off(comBtemp.res11.dev)
-
-
-# Third Figure
-dev.set(comBtemp.resFit.dev)
-mtext(bquote(Community~Change), side=2, line=-0.15, outer=TRUE)
-mtext(bquote(Deviation~from~Predicted~Velocity~~(degree*E/yr)), side=1, line=-0.15, outer=TRUE)
-# dev.off(comBtemp.resFit.dev)
-
-# Fourth Figure
-dev.set(netChange.dev)
-mtext(bquote(Net~Community~Change), side=2, line=-0.15, outer=TRUE)
-mtext(bquote(Net~Btemp~Change~(degree*C)), side=1, line=-0.15, outer=TRUE)
-# dev.off(netChange.dev)
-
-# Fifth Figure
-dev.set(tChange.dev)
-mtext(bquote(Between-Year~Community~Change), side=2, line=-0.15, outer=TRUE)
-mtext(bquote(Between-Year~Btemp~Change~(degree*C)), side=1, line=-0.15, outer=TRUE)
-# dev.off(tChange.dev)
-
-
-
-
-
-
-
-# =============================================================
-# = Community velocity as scalar projection of Btemp velocity =
-# =============================================================
-# Create device for scalar projection of community velocity in direction of btemp velocity
-dev.new.lf("sProj.dev")
-
-
-shifts[,
-	j={		
-		com.lon.shift <- .SD[,list(comShift.lon=mean(com.lon.t-strat.lon.0, na.rm=TRUE)), by=c("stratum")][,comShift.lon]
-		btemp.lon.shift <- .SD[,list(btempShift.lon=mean(btemp.lon.t-strat.lon.0, na.rm=TRUE)), by=c("stratum")][,btempShift.lon] # btemp.lon.t- strat.lon.0
-		com.lat.shift <- .SD[,list(comShift.lat=mean(com.lat.t-strat.lat.0, na.rm=TRUE)), by=c("stratum")][,comShift.lat]
-		btemp.lat.shift <- .SD[,list(btempShift.lat=mean(btemp.lat.t-strat.lat.0, na.rm=TRUE)), by=c("stratum")][,btempShift.lat] # btemp.lat.t- strat.lat.0		
-		com.dll.shift <- .SD[,list(com.dll.shift=mean(com.dll.t, na.rm=TRUE)), by=c("stratum")][,com.dll.shift]
-		btemp.dll.shift <- .SD[,list(btemp.dll.shift=mean(btemp.dll.t, na.rm=TRUE)), by=c("stratum")][,btemp.dll.shift]
-		
-		# t.a <- as.matrix(.SD[,list(strat.lon.0, strat.lat.0, com.lon.t, com.lat.t)])
-		# t.b <- as.matrix(.SD[,list(strat.lon.0, strat.lat.0, btemp.lon.t, btemp.lat.t)])
-		# t.lenA <- as.matrix(.SD[,com.dll.shift])
-		# print(t.a)
-		# print(t.b)
-		# print(t.lenA)
-		# t.dt <- data.table(stratum=.SD[,stratum], com.proj2.btemp=sProj(t.a, t.b, t.lenA))
-		
-		
-		com.proj2.btemp <- .SD[,
-			{
-				t.a <- as.matrix(.SD[,list(strat.lon.0, strat.lat.0, com.lon.t, com.lat.t)])
-				t.b <- as.matrix(.SD[,list(strat.lon.0, strat.lat.0, btemp.lon.t, btemp.lat.t)])
-				t.lenA <- as.matrix(.SD[,list(com.dll.t)])
-				list(com.proj2.btemp=mean(sProj(t.a, t.b, t.lenA), na.rm=TRUE))
-			},
-			by=c("stratum")
-		][,com.proj2.btemp]
-
-		# Calculate the scalar projection of the community shift in the direction of the bottom temperature shfit		
-		# com.proj2.btemp <- sProj(a=matrix(c(com.lon.shift,com.lat.shift),ncol=2), b=matrix(c(btemp.lon.shift,btemp.lat.shift),ncol=2), lenA=matrix(com.dll.shift, ncol=1))
-		# com.proj2.btemp <- t.dt[,list(com.proj2.btemp=mean(com.proj2.btemp, na.rm=TRUE)), by=c("stratum")][,com.proj2.btemp]
-
-		
-		dComp.t.strat <- .SD[,list(comShift=mean(dComp.t, na.rm=TRUE)), by=c("stratum")][,comShift] # should maybe divid this by the absolute value of dBtemp.t.strat, because the best matching community could change a lot if the best matching temperature changed a lot
-		dBtemp.t.strat <- .SD[,list(comShift=mean(dBtemp.t, na.rm=TRUE)), by=c("stratum")][,comShift]
-		t.strata <- .SD[,unique(year)]
-		
-		dBtemp.net.strat <- .SD[,list(netBtemp=mean(dBtemp.net, na.rm=TRUE)), by=c("stratum")][,netBtemp]
-		dComp.net.strat <- .SD[,list(netComp=mean(dComp.net, na.rm=TRUE)), by=c("stratum")][,netComp]
-		
-		dBtemp.t.strat <- .SD[,list(tBtemp=mean(dBtemp.t, na.rm=TRUE)), by=c("stratum")][,tBtemp]
-		dComp.t.strat <- .SD[,list(tComp=mean(dComp.t, na.rm=TRUE)), by=c("stratum")][,tComp]
-		
-		
-		mod.mat <- matrix(c(com.proj2.btemp,btemp.dll.shift),ncol=2)
-		# sing.check <- det(t(mod.mat)%*%mod.mat) < 1E-9
-		na.check <- sum(complete.cases(mod.mat)) > 2
-		# Regressions
-		if(na.check){
-			t.mod <- lm(com.proj2.btemp~btemp.dll.shift)
-			resFit.com.shift <- abs(com.proj2.btemp - as.numeric(predict(t.mod)))
-			res11.com.shift <- abs(com.proj2.btemp - btemp.dll.shift)
-		}
-		
-		print(s.reg)
-		print(summary(t.mod))		
-		
-		
-		# Sixth Figure
-		dev.set(sProj.dev)
-		# Plot Blank
-		if(na.check){
-			plot(btemp.dll.shift, com.proj2.btemp, ylab="", xlab="", pch=21, bg=gray2, col=NA, type="n", main=s.reg)
-			abline.mod(btemp.dll.shift, com.proj2.btemp)
-			r2 <- round(summary(t.mod)$r.squ,2)
-			legend("topleft", bty="n", legend=bquote(R^2==.(r2)), inset=c(-0.15,-0.1))
-		}else{
-			plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=s.reg)	
-		}
-		
-		# Plot Lines	
-		abline(a=0, b=1, col="blue", lty="dashed", lwd=1)
-		
-		# Plot Real
-		if(na.check){
-			points(btemp.dll.shift, com.proj2.btemp, pch=21, bg=gray2, col=NA)
-		}else{
-			points(1, xaxt="n",yaxt="n", pch="NA", bg=gray2, col=NA)	
-		}
-	
-	},
-	
-	by=c("s.reg")
-]
-
-# Sixth Figure
-dev.set(sProj.dev)
-mtext(bquote(Scalar~Projection~of~Community~Shift~"in"~the~Direction~of~Btemp~Shift), side=2, line=-0.15, outer=TRUE)
-mtext(bquote(Btemp~Shift), side=1, line=-0.15, outer=TRUE)
-# dev.off(tChange.dev)
-
-
-
-
-
-
-
-
-# ===============================================
-# = Change in Community vs. Change in Btemp Lat =
-# ===============================================
-shifts[,stratum:=factor(stratum, levels=unique(stratum)[order(strat.lat.0[!duplicated(stratum)])])]
-setkey(shifts, s.reg, stratum)
-# dev.new(width=4, height=6)
-png("~/Desktop/deltaCommunity_vs_botTempShift.png", width=4, height=6, res=300, units="in")
-par(mfrow=c(5,2), mar=c(1.5,1.5,0.75,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.75,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
-shifts[,
+shifts.strat <- merge(shifts.strat, beta.var.time[,list(s.reg,stratum,var.time)], by=c("s.reg","stratum"))
+
+# =============================================
+# = Community vs. Climate Velocity: By Region =
+# =============================================
+# First, do the figures separated by region
+shifts.strat[,
 	j={
-
-		
-		strat.cols1 <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(lu(stratum))
-		strat.cols1.5 <- rgb(t(col2rgb(strat.cols1)), alpha=100, maxColorValue=255)
-		strat.cols2 <- rgb(t(col2rgb(strat.cols1)), alpha=45, maxColorValue=255)
-		gray2 <- rgb(t(col2rgb("gray")), alpha=85, maxColorValue=255)
-		strat.chars <- as.character(as.numeric(unique(stratum)))
-		names(strat.cols1) <- unique(stratum)
-		names(strat.cols2) <- unique(stratum)
-		names(strat.chars) <- unique(stratum)
-		
-		btemp.lat.shift <- btemp.lat.t-strat.lat.0
-		
-		if(!all(is.na(btemp.lat.shift))){
-			plot(btemp.lat.shift, dComp.t, ylab=bquote(delta*Com~(degree*N/yr)), xlab=bquote(Btemp~(degree*N/yr)), pch=21, bg=gray2, col=NA, main=s.reg)
+		# ====================
+		# = Latitude + Stemp =
+		# ====================
+		if(SaveFigs){
+			dev.new.lf("velocity_com_stemp_lat", fileName="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/FishBaste_Figures/velocity_com_stemp_lat.png")
 		}else{
-			plot(1, ylab=bquote(delta*Com~(degree*N/yr)), xlab=bquote(Btemp~(degree*N/yr)), xaxt="n",yaxt="n", pch="NA", bg=gray2, col=NA, main=s.reg)	
+			dev.new.lf("velocity_com_stemp_lat")
 		}
+		
+		.SD[
+			j={
+				mod.mat <- matrix(c(com.dLat.t1.t,stemp.dLat.t1.t),ncol=2)
+				na.check <- sum(complete.cases(mod.mat)) > 2
+				# Regressions
+				if(na.check){
+					t.mod <- lm(com.dLat.t1.t~stemp.dLat.t1.t)
+					# resFit <- abs(com.dLat.t1.t - as.numeric(predict(t.mod)))
+					# res11 <- abs(com.dLat.t1.t - stemp.dLat.t1.t)
+				}
 				
-		pval <- summary(lm(dComp.t~btemp.lat.shift))$coef[2,4]
+				if(na.check){
+					plot(stemp.dLat.t1.t, com.dLat.t1.t, ylab="", xlab="", pch=21, bg=black2, col=NA, type="n", main=region)
+					abline.mod(stemp.dLat.t1.t, com.dLat.t1.t)
+					r2 <- round(summary(t.mod)$r.squ,2)
+					legend("topleft", bty="n", legend=bquote(R^2==.(r2)), inset=c(-0.15,-0.1))
+				}else{
+					plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=region)	
+				}
 		
+				# Plot Lines	
+				abline(a=0, b=1, col="blue", lty="dashed", lwd=1)
 		
-		
-		if(pval<0.05){
-			abline(a=0, b=1, col="red", lwd=3)
+				# Plot Real
+				if(na.check){
+					points(stemp.dLat.t1.t, com.dLat.t1.t, pch=21, bg=black2, col=NA)
+				}else{
+					points(1, xaxt="n",yaxt="n", pch="NA", bg=black2, col=NA)	
+				}
+			},
+			by=c("s.reg","region")
+		]
+		mtext(bquote(Community~Velocity~(degree*North/yr)), side=2, line=-0.15, outer=TRUE)
+		mtext(bquote(Surface~Temp~Velocity~(degree*North/yr)), side=1, line=-0.15, outer=TRUE)
+		if(SaveFigs){dev.off()}
+		# ====================
+		# = Latitude + Btemp =
+		# ====================
+		if(SaveFigs){
+			dev.new.lf("velocity_com_btemp_lat", fileName="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/FishBaste_Figures/velocity_com_btemp_lat.png")
 		}else{
-			abline(a=0, b=1, col="red")
+			dev.new.lf("velocity_com_btemp_lat")
 		}
-		if(pval<0.005){
-			abline(a=0, b=1, col="red", lwd=3)
-			abline(a=0, b=1, col="white", lty="dashed", lwd=1.5)
+		.SD[
+			j={
+				mod.mat <- matrix(c(com.dLat.t1.t,btemp.dLat.t1.t),ncol=2)
+				na.check <- sum(complete.cases(mod.mat)) > 2
+				# Regressions
+				if(na.check){
+					t.mod <- lm(com.dLat.t1.t~btemp.dLat.t1.t)
+					# resFit <- abs(com.dLat.t1.t - as.numeric(predict(t.mod)))
+					# res11 <- abs(com.dLat.t1.t - btemp.dLat.t1.t)
+				}
+				
+				if(na.check){
+					plot(btemp.dLat.t1.t, com.dLat.t1.t, ylab="", xlab="", pch=21, bg=black2, col=NA, type="n", main=region)
+					abline.mod(btemp.dLat.t1.t, com.dLat.t1.t)
+					r2 <- round(summary(t.mod)$r.squ,2)
+					legend("topleft", bty="n", legend=bquote(R^2==.(r2)), inset=c(-0.15,-0.1))
+				}else{
+					plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=region)	
+				}
+		
+				# Plot Lines	
+				abline(a=0, b=1, col="blue", lty="dashed", lwd=1)
+		
+				# Plot Real
+				if(na.check){
+					points(btemp.dLat.t1.t, com.dLat.t1.t, pch=21, bg=black2, col=NA)
+				}else{
+					points(1, xaxt="n",yaxt="n", pch="NA", bg=black2, col=NA)	
+				}
+			},
+			by=c("s.reg","region")
+		]
+		mtext(bquote(Community~Velocity~(degree*North/yr)), side=2, line=-0.15, outer=TRUE)
+		mtext(bquote(Bottom~Temp~Velocity~(degree*North/yr)), side=1, line=-0.15, outer=TRUE)
+		if(SaveFigs){dev.off()}
+		
+		# ====================
+		# = Longitude + Stemp =
+		# ====================
+		if(SaveFigs){
+			dev.new.lf("velocity_com_stemp_laon", fileName="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/FishBaste_Figures/velocity_com_stemp_lon.png")
+		}else{
+			dev.new.lf("velocity_com_stemp_lon")
+		}
+		.SD[
+			j={
+				mod.mat <- matrix(c(com.dLon.t1.t,stemp.dLon.t1.t),ncol=2)
+				na.check <- sum(complete.cases(mod.mat)) > 2
+				# Regressions
+				if(na.check){
+					t.mod <- lm(com.dLon.t1.t~stemp.dLon.t1.t)
+					# resFit <- abs(com.dLon.t1.t - as.numeric(predict(t.mod)))
+					# res11 <- abs(com.dLon.t1.t - stemp.dLon.t1.t)
+				}
+				
+				if(na.check){
+					plot(stemp.dLon.t1.t, com.dLon.t1.t, ylab="", xlab="", pch=21, bg=black2, col=NA, type="n", main=region)
+					abline.mod(stemp.dLon.t1.t, com.dLon.t1.t)
+					r2 <- round(summary(t.mod)$r.squ,2)
+					legend("topleft", bty="n", legend=bquote(R^2==.(r2)), inset=c(-0.15,-0.1))
+				}else{
+					plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=region)	
+				}
+		
+				# Plot Lines	
+				abline(a=0, b=1, col="blue", lty="dashed", lwd=1)
+		
+				# Plot Real
+				if(na.check){
+					points(stemp.dLon.t1.t, com.dLon.t1.t, pch=21, bg=black2, col=NA)
+				}else{
+					points(1, xaxt="n",yaxt="n", pch="NA", bg=black2, col=NA)	
+				}
+			},
+			by=c("s.reg","region")
+		]
+		mtext(bquote(Community~Velocity~(degree*East/yr)), side=2, line=-0.15, outer=TRUE)
+		mtext(bquote(Surface~Temp~Velocity~(degree*East/yr)), side=1, line=-0.15, outer=TRUE)
+		if(SaveFigs){dev.off()}
+		
+		# ====================
+		# = Longitude + Btemp =
+		# ====================
+		if(SaveFigs){
+			dev.new.lf("velocity_com_btemp_lon", fileName="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/FishBaste_Figures/velocity_com_btemp_lon.png")
+		}else{
+			dev.new.lf("velocity_com_btemp_lon")
+		}
+		.SD[
+			j={
+				mod.mat <- matrix(c(com.dLon.t1.t,btemp.dLon.t1.t),ncol=2)
+				na.check <- sum(complete.cases(mod.mat)) > 2
+				# Regressions
+				if(na.check){
+					t.mod <- lm(com.dLon.t1.t~btemp.dLon.t1.t)
+					# resFit <- abs(com.dLon.t1.t - as.numeric(predict(t.mod)))
+					# res11 <- abs(com.dLon.t1.t - btemp.dLon.t1.t)
+				}
+				
+				if(na.check){
+					plot(btemp.dLon.t1.t, com.dLon.t1.t, ylab="", xlab="", pch=21, bg=black2, col=NA, type="n", main=region)
+					abline.mod(btemp.dLon.t1.t, com.dLon.t1.t)
+					r2 <- round(summary(t.mod)$r.squ,2)
+					legend("topleft", bty="n", legend=bquote(R^2==.(r2)), inset=c(-0.15,-0.1))
+				}else{
+					plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=region)	
+				}
+		
+				# Plot Lines	
+				abline(a=0, b=1, col="blue", lty="dashed", lwd=1)
+		
+				# Plot Real
+				if(na.check){
+					points(btemp.dLon.t1.t, com.dLon.t1.t, pch=21, bg=black2, col=NA)
+				}else{
+					points(1, xaxt="n",yaxt="n", pch="NA", bg=black2, col=NA)	
+				}
+			},
+			by=c("s.reg","region")
+		]
+		mtext(bquote(Community~Velocity~(degree*East/yr)), side=2, line=-0.15, outer=TRUE)
+		mtext(bquote(Bottom~Temp~Velocity~(degree*East/yr)), side=1, line=-0.15, outer=TRUE)
+		if(SaveFigs){dev.off()}
+	},
+]
+
+
+# =======================================
+# = Btemp & Stemp Latitude: All Regions =
+# =======================================
+shifts.strat[,
+	j={
+		if(SaveFigs){
+			dev.new.lf2("velocity_com_temp_lat_allRegs", fileName="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/FishBaste_Figures/velocity_com_temp_lat_allRegs.png")
+		}else{
+			dev.new.lf2("velocity_com_temp_lat_allRegs")
 		}
 		
-		print(summary(lm(dComp.t~btemp.lat.shift)))
-		print(summary(lm(dComp.t~btemp.lat.shift*strat.lat.0)))
-	
+		# =========
+		# = Stemp =
+		# =========
+		mod.mat <- matrix(c(com.dLat.t1.t,stemp.dLat.t1.t),ncol=2)
+		na.check <- sum(complete.cases(mod.mat)) > 2
+		# Regressions
+		if(na.check){
+			t.mod <- lm(com.dLat.t1.t~stemp.dLat.t1.t)
+			# resFit <- abs(com.dLat.t1.t - as.numeric(predict(t.mod)))
+			# res11 <- abs(com.dLat.t1.t - stemp.dLat.t1.t)
+		}
+		
+		if(na.check){
+			plot(stemp.dLat.t1.t, com.dLat.t1.t, ylab="", xlab="", pch=21, bg=black2, col=NA, type="n")
+			abline.mod(stemp.dLat.t1.t, com.dLat.t1.t)
+			r2 <- round(summary(t.mod)$r.squ,2)
+			legend("topleft", bty="n", legend=bquote(R^2==.(r2)), inset=c(-0.05,-0.01))
+		}else{
+			plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n")	
+		}
+
+		# Plot Lines	
+		abline(a=0, b=1, col="blue", lty="dashed", lwd=1)
+
+		# Plot Real
+		if(na.check){
+			points(stemp.dLat.t1.t, com.dLat.t1.t, pch=21, bg=black2, col=NA)
+		}else{
+			points(1, xaxt="n",yaxt="n", pch="NA", bg=black2, col=NA)	
+		}
+		mtext(bquote(Surface~Temp~Velocity~(degree*North/yr)), side=1, line=1, outer=FALSE)
+		
+		# =========
+		# = Btemp =
+		# =========
+		mod.mat <- matrix(c(com.dLat.t1.t,btemp.dLat.t1.t),ncol=2)
+		na.check <- sum(complete.cases(mod.mat)) > 2
+		# Regressions
+		if(na.check){
+			t.mod <- lm(com.dLat.t1.t~btemp.dLat.t1.t)
+			# resFit <- abs(com.dLat.t1.t - as.numeric(predict(t.mod)))
+			# res11 <- abs(com.dLat.t1.t - btemp.dLat.t1.t)
+		}
+		
+		if(na.check){
+			plot(btemp.dLat.t1.t, com.dLat.t1.t, ylab="", xlab="", pch=21, bg=black2, col=NA, type="n")
+			abline.mod(btemp.dLat.t1.t, com.dLat.t1.t)
+			r2 <- round(summary(t.mod)$r.squ,2)
+			legend("topleft", bty="n", legend=bquote(R^2==.(r2)), inset=c(-0.05,-0.01))
+		}else{
+			plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n")	
+		}
+
+		# Plot Lines	
+		abline(a=0, b=1, col="blue", lty="dashed", lwd=1)
+
+		# Plot Real
+		if(na.check){
+			points(btemp.dLat.t1.t, com.dLat.t1.t, pch=21, bg=black2, col=NA)
+		}else{
+			points(1, xaxt="n",yaxt="n", pch="NA", bg=black2, col=NA)	
+		}
+		mtext(bquote(Bottom~Temp~Velocity~(degree*North/yr)), side=1, line=1, outer=FALSE)
 	},
-	
-	by=c("s.reg")
 ]
-dev.off()
-
-
-
-
-
-
-
+mtext(bquote(Community~Velocity~(degree*North/yr)), side=2, line=-1.25, outer=TRUE)
+if(SaveFigs){dev.off()}
 
 
 
 # =======================================
-# = Plot map of arrivals and departures =
+# = Btemp & Stemp Longitude: All Regions =
 # =======================================
-heat.cols <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(256)
+shifts.strat[,
+	j={
+		if(SaveFigs){
+			dev.new.lf2("velocity_com_temp_lon_allRegs", fileName="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/FishBaste_Figures/velocity_com_temp_lon_allRegs.png")
+		}else{
+			dev.new.lf2("velocity_com_temp_lon_allRegs")
+		}
+		
+		# =========
+		# = Stemp =
+		# =========
+		mod.mat <- matrix(c(com.dLon.t1.t,stemp.dLon.t1.t),ncol=2)
+		na.check <- sum(complete.cases(mod.mat)) > 2
+		# Regressions
+		if(na.check){
+			t.mod <- lm(com.dLon.t1.t~stemp.dLon.t1.t)
+			# resFit <- abs(com.dLon.t1.t - as.numeric(predict(t.mod)))
+			# res11 <- abs(com.dLon.t1.t - stemp.dLon.t1.t)
+		}
+		
+		if(na.check){
+			plot(stemp.dLon.t1.t, com.dLon.t1.t, ylab="", xlab="", pch=21, bg=black2, col=NA, type="n")
+			abline.mod(stemp.dLon.t1.t, com.dLon.t1.t)
+			r2 <- round(summary(t.mod)$r.squ,2)
+			legend("topleft", bty="n", legend=bquote(R^2==.(r2)), inset=c(-0.05,-0.01))
+		}else{
+			plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n")	
+		}
 
-# Community Arrivals
-shifts[,comArrive.net.final:=comArrive.net[which.max(year)], by=c("s.reg","stratum")]
+		# Plot Lines	
+		abline(a=0, b=1, col="blue", lty="dashed", lwd=1)
 
-shifts[,comArrive.net.final.col:=heat.cols[cut(comArrive.net.final, 256)]]
+		# Plot Real
+		if(na.check){
+			points(stemp.dLon.t1.t, com.dLon.t1.t, pch=21, bg=black2, col=NA)
+		}else{
+			points(1, xaxt="n",yaxt="n", pch="NA", bg=black2, col=NA)	
+		}
+		mtext(bquote(Surface~Temp~Velocity~(degree*East/yr)), side=1, line=1, outer=FALSE)
+		
+		# =========
+		# = Btemp =
+		# =========
+		mod.mat <- matrix(c(com.dLon.t1.t,btemp.dLon.t1.t),ncol=2)
+		na.check <- sum(complete.cases(mod.mat)) > 2
+		# Regressions
+		if(na.check){
+			t.mod <- lm(com.dLon.t1.t~btemp.dLon.t1.t)
+			# resFit <- abs(com.dLon.t1.t - as.numeric(predict(t.mod)))
+			# res11 <- abs(com.dLon.t1.t - btemp.dLon.t1.t)
+		}
+		
+		if(na.check){
+			plot(btemp.dLon.t1.t, com.dLon.t1.t, ylab="", xlab="", pch=21, bg=black2, col=NA, type="n")
+			abline.mod(btemp.dLon.t1.t, com.dLon.t1.t)
+			r2 <- round(summary(t.mod)$r.squ,2)
+			legend("topleft", bty="n", legend=bquote(R^2==.(r2)), inset=c(-0.05,-0.01))
+		}else{
+			plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n")	
+		}
 
-dev.new(height=4, width=shifts[,map.w(strat.lat.0,strat.lon.0,4)])
-# pdf(height=4, width=shifts[,map.w(strat.lat.0,strat.lon.0,4)], file="~/Documents/School&Work/pinskyPost/trawl/Figures/shifts_now.pdf")
-par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1, bg="lightgray")
+		# Plot Lines	
+		abline(a=0, b=1, col="blue", lty="dashed", lwd=1)
 
-shifts[,plot(strat.lon.0, strat.lat.0, col=comArrive.net.final.col, pch=21, cex=1, type="n")]
-invisible(shifts[,map(add=TRUE, fill=FALSE, col="black")])
-
-shifts[,points(strat.lon.0, strat.lat.0, col=comArrive.net.final.col, pch=21, cex=1)]
-
-shifts[,segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)]
-
-shifts[,segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")] # tick marks
-shifts[,text(-167, y=seq(30,40, length.out=4), round(seq(min(comArrive.net.final), max(comArrive.net.final), length.out=4),4), adj=1, cex=1, col="black")]
-
-shifts[,text(-162.5, 41.5, bquote("#"~Community~Arrivals))]
-
+		# Plot Real
+		if(na.check){
+			points(btemp.dLon.t1.t, com.dLon.t1.t, pch=21, bg=black2, col=NA)
+		}else{
+			points(1, xaxt="n",yaxt="n", pch="NA", bg=black2, col=NA)	
+		}
+		mtext(bquote(Bottom~Temp~Velocity~(degree*East/yr)), side=1, line=1, outer=FALSE)
+	},
+]
+mtext(bquote(Community~Velocity~(degree*East/yr)), side=2, line=-1.25, outer=TRUE)
+if(SaveFigs){dev.off()}
 
 
 
-# Stemp Arrivals
-shifts[,stempArrive.net.final:=stempArrive.net[which.max(year)], by=c("s.reg","stratum")]
 
-shifts[,stempArrive.net.final.col:=heat.cols[cut(stempArrive.net.final, 256)]]
 
-dev.new(height=4, width=shifts[,map.w(strat.lat.0,strat.lon.0,4)])
-# pdf(height=4, width=shifts[,map.w(strat.lat.0,strat.lon.0,4)], file="~/Documents/School&Work/pinskyPost/trawl/Figures/shifts_now.pdf")
-par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1, bg="lightgray")
+# shifts.strat[,table(stemp.cat, s.reg)]
 
-shifts[,plot(strat.lon.0, strat.lat.0, col=stempArrive.net.final.col, pch=21, cex=1, type="n")]
-invisible(shifts[,map(add=TRUE, fill=FALSE, col="black")])
+# Quick summary of the btemp categories
+# shifts.strat[,round(prop.table(table(btemp.cat, s.reg),2),3)*100]
+# dev.new()
+# shifts.strat[,barplot(round(prop.table(table(btemp.cat, s.reg),2),3)*100, legend.text=TRUE, beside=F, args.legend=list(ncol=2))]
+#
+#
 
-shifts[,points(strat.lon.0, strat.lat.0, col=stempArrive.net.final.col, pch=21, cex=1)]
 
-shifts[,segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)]
+# =============================
+# = Map of Burrows Categories =
+# =============================
+categ.cols <- c(
+	"Source"="mediumblue",
+	"Sink"="red",
+	"Corridor"="magenta1",
+	"Convergence"="yellow",
+	"Divergence"="cyan",
+	"Balanced"="white"
+	)
 
-shifts[,segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")] # tick marks
-shifts[,text(-167, y=seq(30,40, length.out=4), round(seq(min(stempArrive.net.final), max(stempArrive.net.final), length.out=4),4), adj=1, cex=1, col="black")]
 
-shifts[,text(-162.5, 41.5, bquote("#"~Stemp~Arrivals))]
+shifts.strat[,btemp.categ.col:=categ.cols[btemp.cat]]
+
+if(SaveFigs){
+	png("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/FishBaste_Figures/map_burrowsCategory.btemp.png", res=300, height=4, width=shifts.strat[,map.w(lat,lon,4)], units="in")
+}else{
+	dev.new(height=4, width=shifts.strat[,map.w(lat,lon,4)])
+}
+par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=10, family="Times", cex=1, bg="lightgray")
+shifts.strat[,plot(lon, lat, col=btemp.categ.col, pch=21, cex=1, type="n")]
+invisible(shifts.strat[,map(add=TRUE, fill=FALSE, col="black")])
+shifts.strat[,points(lon, lat, col=btemp.categ.col, pch=21, cex=1)]
+legend("bottomleft", legend=names(categ.cols), pt.bg=categ.cols, pch=21, text.font=2, cex=1.5)
+if(SaveFigs){dev.off()}
+
+
+
+# ==========================================
+# = Map of Community Velocity in ºLatitude =
+# ==========================================
+if(SaveFigs){
+	png("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/FishBaste_Figures/velocity_map_com_lat.png", res=300, height=4, width=shifts.strat[,map.w(lat,lon,4)], units="in")
+}else{
+	dev.new(height=4, width=shifts.strat[,map.w(lat,lon,4)])
+}
+par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=10, family="Times", cex=1, bg="lightgray")
+comVel.lat.col <- shifts.strat[,heat.cols[cut(com.dLat.t1.t, 256)]]
+shifts.strat[,plot(lon, lat, col=comVel.lat.col, pch=21, cex=1, type="n")]
+invisible(shifts.strat[,map(add=TRUE, fill=FALSE, col="black")])
+shifts.strat[,points(lon, lat, col=comVel.lat.col, pch=21, cex=1)]
+segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)
+segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")
+shifts.strat[,text(-167, y=seq(30,40, length.out=4), round(seq(min(com.dLat.t1.t), max(com.dLat.t1.t), length.out=4),4), adj=1, cex=1, col="black")]
+text(-162.5, 41.5, bquote(Community~Velocity~degree*North/yr))
+if(SaveFigs){dev.off()}
+
+
+
+# ==========================================
+# = Map of Community Velocity in ºLongitude =
+# ==========================================
+if(SaveFigs){
+	png("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/FishBaste_Figures/velocity_map_com_lon.png", res=300, height=4, width=shifts.strat[,map.w(lat,lon,4)], units="in")
+}else{
+	dev.new(height=4, width=shifts.strat[,map.w(lat,lon,4)])
+}
+par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=10, family="Times", cex=1, bg="lightgray")
+comVel.lon.col <- shifts.strat[,heat.cols[cut(com.dLon.t1.t, 256)]]
+shifts.strat[,plot(lon, lat, col=comVel.lon.col, pch=21, cex=1, type="n")]
+# invisible(shifts.strat[,map(add=TRUE, fill=FALSE, col="black")])
+map(add=TRUE, fill=FALSE, col="black")
+shifts.strat[,points(lon, lat, col=comVel.lon.col, pch=21, cex=1)]
+segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)
+segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black") # tick marks
+shifts.strat[,text(-167, y=seq(30,40, length.out=4), round(seq(min(com.dLon.t1.t), max(com.dLon.t1.t), length.out=4),4), adj=1, cex=1, col="black")]
+text(-162.5, 41.5, bquote(Community~Velocity~degree*East/yr))
+if(SaveFigs){dev.off()}
+
+
+
+
+
+# ======================================
+# = Map of Stemp Velocity in ºLatitude =
+# ======================================
+if(SaveFigs){
+	png("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/FishBaste_Figures/velocity_map_stemp_lat.png", res=300, height=4, width=shifts.strat[,map.w(lat,lon,4)], units="in")
+}else{
+	dev.new(height=4, width=shifts.strat[,map.w(lat,lon,4)])
+}
+par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=10, family="Times", cex=1, bg="lightgray")
+stempVel.lat.col <- shifts.strat[,heat.cols[cut(stemp.dLat.t1.t, 256)]]
+shifts.strat[,plot(lon, lat, col=stempVel.lat.col, pch=21, cex=1, type="n")]
+invisible(shifts.strat[,map(add=TRUE, fill=FALSE, col="black")])
+shifts.strat[,points(lon, lat, col=stempVel.lat.col, pch=21, cex=1)]
+segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)
+segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")
+shifts.strat[,text(-167, y=seq(30,40, length.out=4), round(seq(min(stemp.dLat.t1.t, na.rm=TRUE), max(stemp.dLat.t1.t, na.rm=TRUE), length.out=4),4), adj=1, cex=1, col="black")]
+text(-162.5, 41.5, bquote(Surface~Temperature~Velocity~degree*North/yr))
+if(SaveFigs){dev.off()}
+
+
+# ======================================
+# = Map of Btemp Velocity in ºLatitude =
+# ======================================
+if(SaveFigs){
+	png("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/FishBaste_Figures/velocity_map_btemp_lat.png", res=300, height=4, width=shifts.strat[,map.w(lat,lon,4)], units="in")
+}else{
+	dev.new(height=4, width=shifts.strat[,map.w(lat,lon,4)])
+}
+par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=10, family="Times", cex=1, bg="lightgray")
+btempVel.lat.col <- shifts.strat[,heat.cols[cut(btemp.dLat.t1.t, 256)]]
+shifts.strat[,plot(lon, lat, col=btempVel.lat.col, pch=21, cex=1, type="n")]
+invisible(shifts.strat[,map(add=TRUE, fill=FALSE, col="black")])
+shifts.strat[,points(lon, lat, col=btempVel.lat.col, pch=21, cex=1)]
+segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)
+segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")
+shifts.strat[,text(-167, y=seq(30,40, length.out=4), round(seq(min(btemp.dLat.t1.t, na.rm=TRUE), max(btemp.dLat.t1.t, na.rm=TRUE), length.out=4),4), adj=1, cex=1, col="black")]
+text(-162.5, 41.5, bquote(Bottom~Temperature~Velocity~degree*North/yr))
+if(SaveFigs){dev.off()}
+
+
+
+# ======================================
+# = Map of Stemp Velocity in ºLongitude =
+# ======================================
+if(SaveFigs){
+	png("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/FishBaste_Figures/velocity_map_stemp.lon.png", res=300, height=4, width=shifts.strat[,map.w(lat,lon,4)], units="in")
+}else{
+	dev.new(height=4, width=shifts.strat[,map.w(lat,lon,4)])
+}
+par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=10, family="Times", cex=1, bg="lightgray")
+stempVel.lon.col <- shifts.strat[,heat.cols[cut(stemp.dLon.t1.t, 256)]]
+shifts.strat[,plot(lon, lat, col=stempVel.lon.col, pch=21, cex=1, type="n")]
+invisible(shifts.strat[,map(add=TRUE, fill=FALSE, col="black")])
+shifts.strat[,points(lon, lat, col=stempVel.lon.col, pch=21, cex=1)]
+segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)
+segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")
+shifts.strat[,text(-167, y=seq(30,40, length.out=4), round(seq(min(stemp.dLon.t1.t, na.rm=TRUE), max(stemp.dLon.t1.t, na.rm=TRUE), length.out=4),4), adj=1, cex=1, col="black")]
+text(-162.5, 41.5, bquote(Surface~Temperature~Velocity~degree*East/yr))
+if(SaveFigs){dev.off()}
+
+
+# ======================================
+# = Map of Btemp Velocity in ºLatitude =
+# ======================================
+if(SaveFigs){
+	png("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/FishBaste_Figures/velocity_map_btemp_lon.png", res=300, height=4, width=shifts.strat[,map.w(lat,lon,4)], units="in")
+}else{
+	dev.new(height=4, width=shifts.strat[,map.w(lat,lon,4)])
+}
+par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=10, family="Times", cex=1, bg="lightgray")
+btempVel.lon.col <- shifts.strat[,heat.cols[cut(btemp.dLon.t1.t, 256)]]
+shifts.strat[,plot(lon, lat, col=btempVel.lon.col, pch=21, cex=1, type="n")]
+invisible(shifts.strat[,map(add=TRUE, fill=FALSE, col="black")])
+shifts.strat[,points(lon, lat, col=btempVel.lon.col, pch=21, cex=1)]
+segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)
+segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")
+shifts.strat[,text(-167, y=seq(30,40, length.out=4), round(seq(min(btemp.dLon.t1.t, na.rm=TRUE), max(btemp.dLon.t1.t, na.rm=TRUE), length.out=4),4), adj=1, cex=1, col="black")]
+text(-162.5, 41.5, bquote(Bottom~Temperature~Velocity~degree*East/yr))
+if(SaveFigs){dev.off()}
+
+
+# ==========================================
+# = Map of Cor(btempLatitude, comLatitude) =
+# ==========================================
+if(SaveFigs){
+	png("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/FishBaste_Figures/veloicty_map_corr_com_btemp_lat.png", res=300, height=4, width=shifts.strat[,map.w(lat,lon,4)], units="in")
+}else{
+	dev.new(height=4, width=shifts.strat[,map.w(lat,lon,4)])
+}
+par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=10, family="Times", cex=1, bg="lightgray")
+com.btemp.lat.cor.col <- shifts.strat[,heat.cols[findInterval(com.btemp.lat.cor, seq(-1,1,length.out=256))]]
+shifts.strat[,plot(lon, lat, col=com.btemp.lat.cor.col, pch=21, cex=1, type="n")]
+invisible(shifts.strat[,map(add=TRUE, fill=FALSE, col="black")])
+shifts.strat[,points(lon, lat, col=com.btemp.lat.cor.col, pch=21, cex=1)]
+segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)
+segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")
+text(-167, y=seq(30,40, length.out=4), round(seq(-1, 1, length.out=4),4), adj=1, cex=1, col="black")
+text(-162.5, 41.5, bquote(Cor(Btemp*","~Community)~Velocities~(degree*North/yr)))
+if(SaveFigs){dev.off()}
+
+
+# ==========================================
+# = Map of Cor(stempLatitude, comLatitude) =
+# ==========================================
+if(SaveFigs){
+	png("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/FishBaste_Figures/velocity_map_corr_com_stemp_lat.png", res=300, height=4, width=shifts.strat[,map.w(lat,lon,4)], units="in")
+}else{
+	dev.new(height=4, width=shifts.strat[,map.w(lat,lon,4)])
+}
+par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=10, family="Times", cex=1, bg="lightgray")
+
+com.stemp.lat.cor.col <- shifts.strat[,heat.cols[findInterval(com.stemp.lat.cor, seq(-1,1,length.out=256))]]
+shifts.strat[,plot(lon, lat, col=com.stemp.lat.cor.col, pch=21, cex=1, type="n")]
+invisible(shifts.strat[,map(add=TRUE, fill=FALSE, col="black")])
+shifts.strat[,points(lon, lat, col=com.stemp.lat.cor.col, pch=21, cex=1)]
+segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)
+segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")
+text(-167, y=seq(30,40, length.out=4), round(seq(-1, 1, length.out=4),4), adj=1, cex=1, col="black")
+text(-162.5, 41.5, bquote(Cor(Stemp*","~Community)~Velocities~(degree*East/yr)))
+if(SaveFigs){dev.off()}
+	
+
+
+# ==========================================
+# = Map of Cor(btempLongitude, comLongitude) =
+# ==========================================
+if(SaveFigs){
+	png("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/FishBaste_Figures/veloicty_map_corr_com_btemp_lon.png", res=300, height=4, width=shifts.strat[,map.w(lat,lon,4)], units="in")
+}else{
+	dev.new(height=4, width=shifts.strat[,map.w(lat,lon,4)])
+}
+par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=10, family="Times", cex=1, bg="lightgray")
+com.btemp.lon.cor.col <- shifts.strat[,heat.cols[findInterval(com.btemp.lon.cor, seq(-1,1,length.out=256))]]
+shifts.strat[,plot(lon, lat, col=com.btemp.lon.cor.col, pch=21, cex=1, type="n")]
+invisible(shifts.strat[,map(add=TRUE, fill=FALSE, col="black")])
+shifts.strat[,points(lon, lat, col=com.btemp.lon.cor.col, pch=21, cex=1)]
+segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)
+segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")
+text(-167, y=seq(30,40, length.out=4), round(seq(-1, 1, length.out=4),4), adj=1, cex=1, col="black")
+text(-162.5, 41.5, bquote(Cor(Btemp*","~Community)~Velocities~(degree*East/yr)))
+if(SaveFigs){dev.off()}
+
+
+# ==========================================
+# = Map of Cor(stempLongitude, comLongitude) =
+# ==========================================
+if(SaveFigs){
+	png("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/FishBaste_Figures/velocity_map_corr_com_stemp_lon.png", res=300, height=4, width=shifts.strat[,map.w(lat,lon,4)], units="in")
+}else{
+	dev.new(height=4, width=shifts.strat[,map.w(lat,lon,4)])
+}
+par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=10, family="Times", cex=1, bg="lightgray")
+com.stemp.lon.cor.col <- shifts.strat[,heat.cols[findInterval(com.stemp.lon.cor, seq(-1,1,length.out=256))]]
+shifts.strat[,plot(lon, lat, col=com.stemp.lon.cor.col, pch=21, cex=1, type="n")]
+invisible(shifts.strat[,map(add=TRUE, fill=FALSE, col="black")])
+shifts.strat[,points(lon, lat, col=com.stemp.lon.cor.col, pch=21, cex=1)]
+shifts.strat[,segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)]
+segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")
+text(-167, y=seq(30,40, length.out=4), round(seq(-1, 1, length.out=4),4), adj=1, cex=1, col="black")
+text(-162.5, 41.5, bquote(Cor(Stemp*","~Community)~Velocities~(degree*East/yr)))
+if(SaveFigs){dev.off()}
+
+
+# ======================================================================================
+# = Map of mean difference between original community and closest contemprorary analog =
+# ======================================================================================
+if(SaveFigs){
+	png("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/FishBaste_Figures/map_meanDiff_origCom_analog.png", res=300, height=4, width=shifts.strat[,map.w(lat,lon,4)], units="in")
+}else{
+	dev.new(height=4, width=shifts.strat[,map.w(lat,lon,4)])
+}
+par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=10, family="Times", cex=1, bg="lightgray")
+
+dComp.t.t0.matched.col <- shifts.strat[,heat.cols[cut(dComp.t.t0.matched, 256)]]
+shifts.strat[,plot(lon, lat, col=dComp.t.t0.matched.col, pch=21, cex=1, type="n")]
+invisible(shifts.strat[,map(add=TRUE, fill=FALSE, col="black")])
+shifts.strat[,points(lon, lat, col=dComp.t.t0.matched.col, pch=21, cex=1)]
+segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)
+segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")
+shifts.strat[,text(-167, y=seq(30,40, length.out=4), round(seq(min(dComp.t.t0.matched), max(dComp.t.t0.matched), length.out=4),4), adj=1, cex=1, col="black")]
+text(-162.5, 41.5, bquote(Mean~Dissimilarity~"b/w"~Original~"&"~Analogs))
+if(SaveFigs){dev.off()}
+
+
+
+# ==============================================================================
+# = Map of rate of change of dissimilarity between original and closest analog =
+# ==============================================================================
+if(SaveFigs){
+	png("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/FishBaste_Figures/map_regional_rateLoss_origCom_analog.png", res=300, height=4, width=shifts.strat[,map.w(lat,lon,4)], units="in")
+}else{
+	dev.new(height=4, width=shifts.strat[,map.w(lat,lon,4)])
+}
+par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=10, family="Times", cex=1, bg="lightgray")
+dComp.t.t0.matched.slope.col <- shifts.strat[,heat.cols[cut(dComp.t.t0.matched.slope, 256)]]
+shifts.strat[,plot(lon, lat, col=dComp.t.t0.matched.slope.col, pch=21, cex=1, type="n")]
+invisible(shifts.strat[,map(add=TRUE, fill=FALSE, col="black")])
+shifts.strat[,points(lon, lat, col=dComp.t.t0.matched.slope.col, pch=21, cex=1)]
+segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)
+segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")
+shifts.strat[,text(-167, y=seq(30,40, length.out=4), round(seq(min(dComp.t.t0.matched.slope), max(dComp.t.t0.matched.slope), length.out=4),4), adj=1, cex=1, col="black")]
+text(-162.5, 41.5, bquote(Rate~of~Regional~Loss~of~Original~Local~Community))
+if(SaveFigs){dev.off()}
+
+
+
+
+# ===========================
+# = Average Alpha Diversity =
+# ===========================
+if(SaveFigs){
+	png("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/FishBaste_Figures/map_mean_alphaD.png", res=300, height=4, width=shifts.strat[,map.w(lat,lon,4)], units="in")
+}else{
+	dev.new(height=4, width=shifts.strat[,map.w(lat,lon,4)])
+}
+par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=10, family="Times", cex=1, bg="lightgray")
+alphaD.t.col <- shifts.strat[,heat.cols[cut(alphaD.t, 256)]]
+shifts.strat[,plot(lon, lat, col=alphaD.t.col, pch=21, cex=1, type="n")]
+invisible(shifts.strat[,map(add=TRUE, fill=FALSE, col="black")])
+shifts.strat[,points(lon, lat, col=alphaD.t.col, pch=21, cex=1)]
+segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)
+segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")
+shifts.strat[,text(-167, y=seq(30,40, length.out=4), round(seq(min(alphaD.t), max(alphaD.t), length.out=4),4), adj=1, cex=1, col="black")]
+text(-162.5, 41.5, bquote(Average~alpha~Diversity))
+if(SaveFigs){dev.off()}
+
+
+
+# =====================================
+# = Rate of change in Alpha diversity =
+# =====================================
+if(SaveFigs){
+	png("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/FishBaste_Figures/map_slope_alphaD.png", res=300, height=4, width=shifts.strat[,map.w(lat,lon,4)], units="in")
+}else{
+	dev.new(height=4, width=shifts.strat[,map.w(lat,lon,4)])
+}
+par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=10, family="Times", cex=1, bg="lightgray")
+alphaD.slope.col <- shifts.strat[,heat.cols[cut(alphaD.slope, 256)]]
+shifts.strat[,plot(lon, lat, col=alphaD.slope.col, pch=21, cex=1, type="n")]
+invisible(shifts.strat[,map(add=TRUE, fill=FALSE, col="black")])
+shifts.strat[,points(lon, lat, col=alphaD.slope.col, pch=21, cex=1)]
+segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)
+segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")
+shifts.strat[,text(-167, y=seq(30,40, length.out=4), round(seq(min(alphaD.slope, na.rm=TRUE), max(alphaD.slope, na.rm=TRUE), length.out=4),4), adj=1, cex=1, col="black")]
+text(-162.5, 41.5, bquote(Rate~of~Change~"in"~alpha~Diversity))
+if(SaveFigs){dev.off()}
+
+
+
+# ==================
+# = Beta Diveristy =
+# ==================
+if(SaveFigs){
+	png("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/FishBaste_Figures/map_betaD.png", res=300, height=4, width=shifts.strat[,map.w(lat,lon,4)], units="in")
+}else{
+	dev.new(height=4, width=shifts.strat[,map.w(lat,lon,4)])
+}
+par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=10, family="Times", cex=1, bg="lightgray")
+var.time.col <- shifts.strat[,heat.cols[cut(var.time, 256)]]
+shifts.strat[,plot(lon, lat, col=var.time.col, pch=21, cex=1, type="n")]
+invisible(shifts.strat[,map(add=TRUE, fill=FALSE, col="black")])
+shifts.strat[,points(lon, lat, col=var.time.col, pch=21, cex=1)]
+segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)
+segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")
+shifts.strat[,text(-167, y=seq(30,40, length.out=4), round(seq(min(var.time), max(var.time), length.out=4),4), adj=1, cex=1, col="black")]
+text(-162.5, 41.5, bquote(beta~Diversity))
+if(SaveFigs){dev.off()}
+
+
+# ======================================
+# = Surface Temperature Rate of Change =
+# ======================================
+if(SaveFigs){
+	png("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/FishBaste_Figures/map_Stemp_slope.png", res=300, height=4, width=shifts.strat[,map.w(lat,lon,4)], units="in")
+}else{
+	dev.new(height=4, width=shifts.strat[,map.w(lat,lon,4)])
+}
+par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=10, family="Times", cex=1, bg="lightgray")
+stemp.slope.col <- shifts.strat[,heat.cols[cut(stemp.slope, 256)]]
+shifts.strat[,plot(lon, lat, col=stemp.slope.col, pch=21, cex=1, type="n")]
+invisible(shifts.strat[,map(add=TRUE, fill=FALSE, col="black")])
+shifts.strat[,points(lon, lat, col=stemp.slope.col, pch=21, cex=1)]
+segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)
+segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")
+shifts.strat[,text(-167, y=seq(30,40, length.out=4), round(seq(min(stemp.slope, na.rm=TRUE), max(stemp.slope, na.rm=TRUE), length.out=4),4), adj=1, cex=1, col="black")]
+text(-162.5, 41.5, bquote(Rate~of~Change~"in"~Surface~Temp))
+if(SaveFigs){dev.off()}
+
+
+# =====================================
+# = Bottom Temperature Rate of Change =
+# =====================================
+if(SaveFigs){
+	png("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/FishBaste_Figures/map_Btemp_slope.png", res=300, height=4, width=shifts.strat[,map.w(lat,lon,4)], units="in")
+}else{
+	dev.new(height=4, width=shifts.strat[,map.w(lat,lon,4)])
+}
+par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=10, family="Times", cex=1, bg="lightgray")
+btemp.slope.col <- shifts.strat[,heat.cols[cut(btemp.slope, 256)]]
+shifts.strat[,plot(lon, lat, col=btemp.slope.col, pch=21, cex=1, type="n")]
+invisible(shifts.strat[,map(add=TRUE, fill=FALSE, col="black")])
+shifts.strat[,points(lon, lat, col=btemp.slope.col, pch=21, cex=1)]
+segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)
+segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")
+shifts.strat[,text(-167, y=seq(30,40, length.out=4), round(seq(min(btemp.slope, na.rm=TRUE), max(btemp.slope, na.rm=TRUE), length.out=4),4), adj=1, cex=1, col="black")]
+text(-162.5, 41.5, bquote(Rate~of~Change~"in"~Bottom~Temp))
+if(SaveFigs){dev.off()}
+
+
+
+# =================================================
+# = Diversity vs. Temperature rate of change =
+# =================================================
+# First, do the figures separated by region
+shifts.strat[,
+	j={
+		# ====================
+		# = BetaD vs Stemp Slope =
+		# ====================
+		if(SaveFigs){
+			dev.new.lf("betaD_stempSlope", fileName="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/FishBaste_Figures/betaD_stempSlope.png")
+		}else{
+			dev.new.lf("velocity_com_stemp_lat")
+		}
+		.SD[
+			j={
+				mod.mat <- matrix(c(var.time,stemp.slope),ncol=2)
+				na.check <- sum(complete.cases(mod.mat)) > 2
+				# Regressions
+				if(na.check){
+					t.mod <- lm(var.time~stemp.slope)
+					# resFit <- abs(com.dLat.t1.t - as.numeric(predict(t.mod)))
+					# res11 <- abs(com.dLat.t1.t - stemp.dLat.t1.t)
+				}
+				
+				if(na.check){
+					plot(stemp.slope, var.time, ylab="", xlab="", pch=21, bg=black2, col=NA, type="n", main=region)
+					abline.mod(stemp.slope, var.time)
+					r2 <- round(summary(t.mod)$r.squ,2)
+					legend("topleft", bty="n", legend=bquote(R^2==.(r2)), inset=c(-0.15,-0.1))
+				}else{
+					plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=region)	
+				}
+		
+				# Plot Lines	
+				abline(a=0, b=1, col="blue", lty="dashed", lwd=1)
+		
+				# Plot Real
+				if(na.check){
+					points(stemp.slope, var.time, pch=21, bg=black2, col=NA)
+				}else{
+					points(1, xaxt="n",yaxt="n", pch="NA", bg=black2, col=NA)	
+				}
+			},
+			by=c("s.reg","region")
+		]
+		mtext(bquote(beta~Diversity), side=2, line=-0.15, outer=TRUE)
+		mtext(bquote(Surface~Temp~Change~(degree*C/yr)), side=1, line=-0.15, outer=TRUE)
+		if(SaveFigs){dev.off()}
+		
+		
+		# ====================
+		# = betaD vs. btempSlope =
+		# ====================
+		if(SaveFigs){
+			dev.new.lf("betaD_btempSlope", fileName="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/FishBaste_Figures/betaD_btempSlope.png")
+		}else{
+			dev.new.lf("betaD_btempSlope")
+		}
+		.SD[
+			j={
+				mod.mat <- matrix(c(var.time,btemp.slope),ncol=2)
+				na.check <- sum(complete.cases(mod.mat)) > 2
+				# Regressions
+				if(na.check){
+					t.mod <- lm(var.time~btemp.slope)
+					# resFit <- abs(com.dLat.t1.t - as.numeric(predict(t.mod)))
+					# res11 <- abs(com.dLat.t1.t - btemp.dLat.t1.t)
+				}
+				
+				if(na.check){
+					plot(btemp.slope, var.time, ylab="", xlab="", pch=21, bg=black2, col=NA, type="n", main=region)
+					abline.mod(btemp.slope, var.time)
+					r2 <- round(summary(t.mod)$r.squ,2)
+					legend("topleft", bty="n", legend=bquote(R^2==.(r2)), inset=c(-0.15,-0.1))
+				}else{
+					plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=region)	
+				}
+		
+				# Plot Lines	
+				abline(a=0, b=1, col="blue", lty="dashed", lwd=1)
+		
+				# Plot Real
+				if(na.check){
+					points(btemp.slope, var.time, pch=21, bg=black2, col=NA)
+				}else{
+					points(1, xaxt="n",yaxt="n", pch="NA", bg=black2, col=NA)	
+				}
+			},
+			by=c("s.reg","region")
+		]
+		mtext(bquote(beta~Diversity), side=2, line=-0.15, outer=TRUE)
+		mtext(bquote(Bottom~Temp~Change~(degree*C/yr)), side=1, line=-0.15, outer=TRUE)
+		if(SaveFigs){dev.off()}
+		
+		# ====================
+		# = alphaD.slope vs stemp.slope =
+		# ====================
+		if(SaveFigs){
+			dev.new.lf("alphaD.slope_stempSlope", fileName="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/FishBaste_Figures/alphaD.slope_stempSlope.png")
+		}else{
+			dev.new.lf("alphaD.slope_stempSlope")
+		}
+		.SD[
+			j={
+				mod.mat <- matrix(c(alphaD.slope,stemp.slope),ncol=2)
+				na.check <- sum(complete.cases(mod.mat)) > 2
+				# Regressions
+				if(na.check){
+					t.mod <- lm(alphaD.slope~stemp.slope)
+					# resFit <- abs(com.dLat.t1.t - as.numeric(predict(t.mod)))
+					# res11 <- abs(com.dLat.t1.t - stemp.dLat.t1.t)
+				}
+				
+				if(na.check){
+					plot(stemp.slope, alphaD.slope, ylab="", xlab="", pch=21, bg=black2, col=NA, type="n", main=region)
+					abline.mod(stemp.slope, alphaD.slope)
+					r2 <- round(summary(t.mod)$r.squ,2)
+					legend("topleft", bty="n", legend=bquote(R^2==.(r2)), inset=c(-0.15,-0.1))
+				}else{
+					plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=region)	
+				}
+		
+				# Plot Lines	
+				abline(a=0, b=1, col="blue", lty="dashed", lwd=1)
+		
+				# Plot Real
+				if(na.check){
+					points(stemp.slope, alphaD.slope, pch=21, bg=black2, col=NA)
+				}else{
+					points(1, xaxt="n",yaxt="n", pch="NA", bg=black2, col=NA)	
+				}
+			},
+			by=c("s.reg","region")
+		]
+		mtext(bquote(alpha~Diversity~Change~(alpha/yr)), side=2, line=-0.15, outer=TRUE)
+		mtext(bquote(Surface~Temp~Change~(degree*C/yr)), side=1, line=-0.15, outer=TRUE)
+		if(SaveFigs){dev.off()}
+		
+		# ====================
+		# = alphaD vs. btempSlope =
+		# ====================
+		if(SaveFigs){
+			dev.new.lf("alphaD.slope_btempSlope", fileName="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/FishBaste_Figures/alphaD.slope_btempSlope.png")
+		}else{
+			dev.new.lf("alphaD.slope_btempSlope")
+		}
+		.SD[
+			j={
+				mod.mat <- matrix(c(alphaD.slope,btemp.slope),ncol=2)
+				na.check <- sum(complete.cases(mod.mat)) > 2
+				# Regressions
+				if(na.check){
+					t.mod <- lm(alphaD.slope~btemp.slope)
+					# resFit <- abs(com.dLat.t1.t - as.numeric(predict(t.mod)))
+					# res11 <- abs(com.dLat.t1.t - btemp.dLat.t1.t)
+				}
+				
+				if(na.check){
+					plot(btemp.slope, alphaD.slope, ylab="", xlab="", pch=21, bg=black2, col=NA, type="n", main=region)
+					abline.mod(btemp.slope, alphaD.slope)
+					r2 <- round(summary(t.mod)$r.squ,2)
+					legend("topleft", bty="n", legend=bquote(R^2==.(r2)), inset=c(-0.15,-0.1))
+				}else{
+					plot(1, ylab="", xlab="", xaxt="n",yaxt="n", pch="NA", col=NA, type="n", main=region)	
+				}
+		
+				# Plot Lines	
+				abline(a=0, b=1, col="blue", lty="dashed", lwd=1)
+		
+				# Plot Real
+				if(na.check){
+					points(btemp.slope, alphaD.slope, pch=21, bg=black2, col=NA)
+				}else{
+					points(1, xaxt="n",yaxt="n", pch="NA", bg=black2, col=NA)	
+				}
+			},
+			by=c("s.reg","region")
+		]
+		mtext(bquote(alpha~Diversity~Change~(alpha/yr)), side=2, line=-0.15, outer=TRUE)
+		mtext(bquote(Bottom~Temp~Change~(degree*C/yr)), side=1, line=-0.15, outer=TRUE)
+		if(SaveFigs){dev.off()}
+	},
+]
+
+
+
+
+
+
+
 
 
