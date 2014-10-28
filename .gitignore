@@ -1,0 +1,13 @@
+# History files
+.Rhistory
+.Rapp.history
+
+# OS Files
+.DS_Store
+
+
+/Data/*.RData2
+/Data/**/*.txt
+/Data/**/*.csv
+/Data/**/*.DAT
+/Data/**/*.nc
