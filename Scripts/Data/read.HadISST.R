@@ -46,15 +46,15 @@ Date <- Date[dstart:dend] # trim the brick dates to match the brick
 # = 3) Trim brick by lat/lon =
 # ============================
 # Do Latitude trimming
-newExtent <- extent(c(-180, 180, 20, 70)) # define the new "extent" for latitude trimming
+newExtent <- extent(c(-180, 180, 20, 65)) # define the new "extent" for latitude trimming
 sst01 <- crop(sst00, newExtent) # trim latitude
 
 # Do longitude trimming
 sst02 <- as.array(sst01) # change to array for easy manipulation
 sst02[,1:360,] <- as.array(sst01)[,c(181:360,1:180),] # everything east of the PM, put to the west, yielding WH coords
-sst03 <- brick(sst02, xmn=-360, xmx=0, ymn=20, ymx=70) # convert to a raster brick, defining coordinates
+sst03 <- brick(sst02, xmn=-360, xmx=0, ymn=20, ymx=65) # convert to a raster brick, defining coordinates
 names(sst03) <- names(sst01) # get old names (dates)
-sst0 <- crop(sst03, extent(c(-190, -40, 20, 70))) # trim longitude
+sst0 <- crop(sst03, extent(c(-190, -40, 20, 65))) # trim longitude
 
 
 # ===============================
