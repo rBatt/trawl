@@ -29,9 +29,14 @@ timeTrend <- stackApply(sst.ann, indices=rep(1,length(sst)), fun=sstTimeSlope)
 # = Get the spatial gradient =
 # ============================
 spatGrad.slope <- slope(sst.mu, latlon=TRUE)
-spatGrad.aspect <- aspect(sst.mu, latlon=FALSE)
-reclassify(spatGrad.aspect, cbind(-1, NA))
+# spatGrad.aspect <- aspect(sst.mu+runif(n=length(sst.mu), -0.05, 0.05), latlon=FALSE)
+# spatGrad.aspect <- reclassify(spatGrad.aspect, cbind(-1, NA))
 
+sst.mu2 <- sst.mu
+crs(sst.mu2) <- "+proj=lcc +lat_1=65 +lat_2=20 +lon_0=0 +ellps=WGS84" # as far as I can tell, the +lon_0 value in the projection doesn't affect the aspect calculation via terrain, so I'm not worrying about it. using the aspect() function was returning a lot of "no slope" values, so I don't want to use it.
+spatGrad.aspect <- terrain(sst.mu2, opt="aspect", unit="degrees")
+
+save(sst.mu, spatGrad.aspect, spatGrad.slope, timeTrend, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Results/HadISST_tempGrads.RData")
 
 # ===========================
 # = Calculate Climate Speed =
@@ -75,25 +80,66 @@ trajLat <- setValues(trajLat, rep(lats, each=nrow(trajLat)), layer=1)
 dXkm.s <- spdX*(1/n.per.yr) # "small" (per-time-step) change in X
 dYkm.s <- spdY*(1/n.per.yr) # "small" (per-time-step) change in Y
 
-t.dest.dX <- dXkm.s # the X speed in the previous location 
-t.dest.dY <- dYkm.s # they Y speed in the previous location
+# Initial values for velocities
+dest.dX <- dXkm.s # the X speed in the previous location (updated at each time step)
+dest.dY <- dYkm.s # they Y speed in the previous location
+
+
+
+
+
+
+test <- raster(matrix(c(rep(NA,6), 1, 2, NA, 3:9), ncol=4))
+test.f <- focal(test, w=fw.mat, which.min) # gets the cell # within the focal matrix
+
+adjDest <- function(start.vel, stop.vel, r.prop){
+	# if start.vel is !is.na(start.vel)
+	naStart.cell <- as.matrix(Which(is.na(test), cells=TRUE))
+	setValues(test, rep(3, length(naStart.cell)), naStart.cell)
+	
+}
+
+focal.min <- function(r.min){ # where is the smallest value in the rook focus?
+	fw.mat <- matrix(c(NA,1,NA,1,NA,1,NA,1,NA),ncol=3) # focal weight matrix
+	focal(r.min, w=fw.mat, which.min) # focal raster cell# containing smallest value
+}
+
+focal.max <- function(r.max){ # where is the biggest value in the rook focus?
+	fw.mat <- matrix(c(NA,1,NA,1,NA,1,NA,1,NA),ncol=3) # focal weight matrix
+	focal(r.max, w=fw.mat, which.max) # focal raster cell# containing biggest value
+}
+
+focal2cell <- function(f){ # convert the focal raster cell# to parent raster cell#
+	f.cell <- setValues(f, 1:length(f)) # cell #'s for raster
+	f.ncol <- ncol(f) # number of columns in raster
+	f.conv <- reclassify(f, cbind(c(4,6,2,8),c(-1,1,-f.ncol,f.ncol))) # the conversion between focal cell# and raster cell#
+	f.cell+f.conv # convert
+}
+
+
+
 
 sst.pb <- txtProgressBar(min=2, max=max(step.index), style=3)
 for(i in step.index){
+	t.yr <- tYrs[i]
+	t.temps <- subset(sst.ann, t.yr)
 	
 	# Calculate the longitude and latitude of proposed destination
-	t.X.lon <- subset(trajLon, i-1) + t.dest.dX/111.325*cos(subset(trajLat, i-1))
-	t.Y.lat <- subset(trajLat, i-1) + t.dest.dY/111.325
+	prop.lon <- subset(trajLon, i-1) + t.dest.dX/111.325*cos(subset(trajLat, i-1))
+	prop.lat <- subset(trajLat, i-1) + t.dest.dY/111.325
 	
-	# Extract cexll# and X/Y speeds of proposed cell
-	t.LL <- cbind(values(t.X.lon), values(t.Y.lat)) # format proposed LL
-	ex.dX <- extract(dXkm.s, t.LL, cellnumbers=TRUE) # extract X speed and cell # of cell
-	ex.dY <- extract(dYkm.s, t.LL) # extract Y speed of proposed cell (cell numbers are the same for ex.dX and ex.dY)
+	# Extract cell# and X/Y speeds of proposed cell
+	prop.LL <- cbind(values(prop.lon), values(prop.lat)) # format proposed LL
+	prop.dX <- extract(dXkm.s, prop.LL, cellnumbers=TRUE) # extract X speed and cell # of proposed cell
+	prop.dY <- extract(dYkm.s, prop.LL) # extract Y speed of proposed cell (cell numbers are the same for ex.dX and ex.dY)
 	
 	# Insert check to make sure not crossing boundary
 	# If the destination X velocity is NA, so too is the Y velocity, probably; could probably just check for either
-	if(!is.na(t.dest.dX) & is.na(ex.dX[,2])){ # if moving from cell with non-NA to NA velocity ...
-		if(t.dest.dX>0){ # if the velocity was positive, search for lowest temp non-diagonal neighbor
+	failProp <- !is.na(dest.dX) & is.na(prop.dX[,2])
+	
+	
+	if(!is.na(dest.dX) & is.na(prop.dX[,2])){ # if moving from cell with non-NA to NA velocity ...
+		if(dest.dX>0){ # if the velocity was positive, search for lowest temp non-diagonal neighbor
 			# need to get non-diagonal focal temperatures, find the index of the lowest temp
 		}else{
 			# if the velocity is negative, then find the highest temp
@@ -102,8 +148,8 @@ for(i in step.index){
 	}
 	
 	# Update dest speeds to reflect those in proposed cell
-	t.dest.dX <- setValues(t.dest.dX, ex.dX[,2])
-	t.dest.dY <- setValues(t.dest.dY, ex.dY)
+	dest.dX <- setValues(dest.dX, prop.dX[,2])
+	dest.dY <- setValues(t.dest.dY, prop.dY)
 	
 	# Update the destination LL in the trajectories (not rounded to correspond to cell)
 	trajLon <- setValues(trajLon, t.X.lon, layer=i)
