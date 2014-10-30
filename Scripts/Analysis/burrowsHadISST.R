@@ -90,6 +90,8 @@ dest.dY <- dYkm.s # they Y speed in the previous location
 
 
 test <- raster(matrix(c(rep(NA,6), 1, 2, NA, 3:9), ncol=4))
+test.dest <- raster(matrix(c(rep(NA,6), NA, 2, NA, NA, 4:9), ncol=4))
+fw.mat <- matrix(c(NA,1,NA,1,NA,1,NA,1,NA),ncol=3) # focal weight matrix
 test.f <- focal(test, w=fw.mat, which.min) # gets the cell # within the focal matrix
 
 adjDest <- function(start.vel, stop.vel, r.prop){
@@ -97,9 +99,16 @@ adjDest <- function(start.vel, stop.vel, r.prop){
 	naStart.cell <- as.matrix(Which(is.na(test), cells=TRUE))
 	setValues(test, rep(3, length(naStart.cell)), naStart.cell)
 	
+	# need to figure out which cells need the focal min, and which need the focal max
+	# by the time I do that, I might as well also figure out which cells need adjusting at all (based on non-na to na prop)
+	
+	# Maybe the best approach is to do all cases separately, then create an empty raster, do the logical tests on the appropriate rasters, then fill in the empty raster 1 part at a time (each part is a different logical test, like "prop is OK", or "prop not OK, location is a sink", "prop not OK, find warmer", and finally, "prop not OK, find colder"). Note that if you can't find the colder/ warmer (respectively), then that's what denotes the sink. So there has to be a logical test to determine which scenario is needed (basically, findWarmer <- velocity < 0; findCooler <- velocity > 0). Note sure what to do about the case where velocity == 0 case ... shouldn't happen, because then the prop == current location, and neither should be NA (or both should be NA).
+	
+	
 }
 
 focal.min <- function(r.min){ # where is the smallest value in the rook focus?
+	# calculate smallest (or biggest) temperature in the focal region, do smallestFocalTemp - temp, and find which is smallest *and* is also negative. This is going to be tough. Might have to do this in the other function, later.
 	fw.mat <- matrix(c(NA,1,NA,1,NA,1,NA,1,NA),ncol=3) # focal weight matrix
 	focal(r.min, w=fw.mat, which.min) # focal raster cell# containing smallest value
 }
