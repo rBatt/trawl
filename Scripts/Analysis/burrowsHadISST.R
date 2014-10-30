@@ -36,7 +36,7 @@ reclassify(spatGrad.aspect, cbind(-1, NA))
 # ===========================
 # = Calculate Climate Speed =
 # ===========================
-climSpeed0 <- timeTrend/spatGrad.slope # climate speed in km/yr
+climSpeed <- timeTrend/spatGrad.slope # climate speed in km/yr
 
 spdX0 <- climSpeed*sin(spatGrad.aspect) # in km/yr (to the east)
 spdY0 <- climSpeed*cos(spatGrad.aspect) # in km/yr (to the north)
@@ -60,25 +60,17 @@ tYrs <- rep(1:n.yrs, each=n.per.yr) # reference to the year # that lines up with
 # Expand rasters
 spdX <- disaggregate(spdX0, 3) # fine spatial resolution for longitudinal climate speed
 spdY <- disaggregate(spdY0, 3) # fine spatial resolution for latitudinal climate speed
-ang <- disaggregate(spatGrad.aspect0, 3) # final spatial resolution for the angle of climate velocity
-
-#
+ang <- disaggregate(spatGrad.aspect, 3) # final spatial resolution for the angle of climate velocity
 
 
-
+# Create empty bricks to hold trajectory lon/ lat at each time step
 trajLon <- brick(array(NA, dim=dim(sst.ann)*c(n.per.ll,n.per.ll,n.per.yr)), xmn=-190, xmx=-40, ymn=20, ymx=65)
 lons <- seq(xmin(trajLon), xmax(trajLon), length.out=ncol(trajLon))
 trajLon <- setValues(trajLon, rep(lons, nrow(trajLon)), layer=1)
 
-# extract(trajLon,as.matrix(expand.grid(-180:-170, 30:40)), layer=1, nl=1, cellnumbers=TRUE)
-
 trajLat <- brick(array(NA, dim=dim(sst.ann)*c(n.per.ll,n.per.ll,n.per.yr)), xmn=-190, xmx=-40, ymn=20, ymx=65)
 lats <- seq(ymax(trajLat), ymin(trajLat), length.out=ncol(trajLat))
 trajLat <- setValues(trajLat, rep(lats, each=nrow(trajLat)), layer=1)
-
-# practice matrix subsetting matrix
-# test <- matrix(0, ncol=3, nrow=3)
-# test[matrix(c(1:3, 1:3),ncol=2)] <- c(4,5,6)
 
 dXkm.s <- spdX*(1/n.per.yr) # "small" (per-time-step) change in X
 dYkm.s <- spdY*(1/n.per.yr) # "small" (per-time-step) change in Y
