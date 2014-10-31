@@ -63,7 +63,7 @@ tYrs <- rep(1:n.yrs, each=n.per.yr) # reference to the year # that lines up with
 spdX <- disaggregate(spdX0, 3) # fine spatial resolution for longitudinal climate speed
 spdY <- disaggregate(spdY0, 3) # fine spatial resolution for latitudinal climate speed
 ang <- disaggregate(spatGrad.aspect, 3) # final spatial resolution for the angle of climate velocity
-sst.ann.s <- disaggregate(sst.ann, 3) # "small" grid size for annual sea surface temperature
+sst.ann.s <- disaggregate(sst.ann, 3, method="bilinear") # "small" grid size for annual sea surface temperature
 
 # Create empty bricks to hold trajectory lon/ lat at each time step
 trajLon <- brick(array(NA, dim=dim(sst.ann)*c(n.per.ll,n.per.ll,n.per.yr)), xmn=-190, xmx=-40, ymn=20, ymx=65) # empty lon brick
@@ -148,9 +148,9 @@ for(i in step.index){
 	
 	t.temp <- subset(sst.ann.s, t.yr)
 	start.temp <- setValues(t.temp, extract(t.temp, dest.LL))
-	
-	t.temp.coarse <- aggregate(t.temp, n.per.ll)
-	start.temp.coarse <- aggregate(start.temp, n.per.ll)
+	#
+	# t.temp.coarse <- aggregate(t.temp, n.per.ll)
+	# start.temp.coarse <- aggregate(start.temp, n.per.ll)
 	
 	# Extract the longitude and latitude of starting location
 	start.lon <- subset(trajLon, i-1) # longitude of the trajectory at the start of this time step (end of last time step)
