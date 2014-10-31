@@ -35,7 +35,6 @@ sst.mu2 <- sst.mu # TODO Can probably just keep sst.mu and redefine its projecti
 crs(sst.mu2) <- "+proj=lcc +lat_1=65 +lat_2=20 +lon_0=0 +ellps=WGS84" # The terrain() function requires that the projection be defined. As far as I can tell, the +lon_0 value in the projection doesn't affect the aspect calculation via terrain, so I'm not worrying about it. using the aspect() function was returning a lot of "no slope" values, so I don't want to use it.
 spatGrad.aspect <- terrain(sst.mu2, opt="aspect", unit="degrees") # direction of spatial gradient
 
-save(sst.mu, spatGrad.aspect, spatGrad.slope, timeTrend, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Results/HadISST_tempGrads.RData") # TODO I don't want to rewrite this .RData file every time I run this script during testing. What I do with this might depend on how much of this script I turn into separate functions, etc. So for now leaving it here.
 
 # ===========================
 # = Calculate Climate Speed =
@@ -65,26 +64,8 @@ spdY <- disaggregate(spdY0, 3) # fine spatial resolution for latitudinal climate
 ang <- disaggregate(spatGrad.aspect, 3) # final spatial resolution for the angle of climate velocity
 
 sst.ann.s0 <- disaggregate(sst.ann, 3, method="bilinear") # "small" grid size for annual sea surface temperature
-sst.ann.s2 <- disaggregate(sst.ann, 3)
-sst.ann.s3 <- reclassify(sst.ann.s2, cbind(-Inf, Inf, 1))
-
-heat.cols <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(256)
-dev.new(width=7, height=3.5)
-plot(subset(sst.ann, 1), main="coarse resolution, no interpolation", col=heat.cols)
-
-dev.new(width=7, height=3.5)
-plot(subset(sst.ann.s0, 1), main="bilinear interpolation\n(islands and coastlines inundated)", col=heat.cols)
-
-dev.new(width=7, height=3.5)
-plot(subset(sst.ann.s2, 1), main="constant interpolation\n(land vs. water intact, but repetition = problem for neighbor search)", col=heat.cols)
-
-dev.new(width=7, height=3.5)
-plot(subset(sst.ann.s0*sst.ann.s3, 1), main="bilinear interpoltion *'s NA's of constant interpolation\n(best of both worlds?)", col=heat.cols)
-
-dev.new(width=7, height=3.5)
-plot((subset(sst.ann.s0*sst.ann.s3, 1)-subset(sst.ann.s2, 1))!=0, main="red where temp in bilinear interp is different from constant case\n(so all those blue spots along coasts were potential problems)", col=heat.cols)
-
-
+sst.ann.s3 <- reclassify(disaggregate(sst.ann, 3), cbind(-Inf, Inf, 1))
+sst.ann.s <- sst.ann.s0*sst.ann.s3 # this is ONLY used for nearest (rook) neighbor searching along coast when proposed trajectory goes to land; OK, actually, it'll be advantageous to use 
 
 # Create empty bricks to hold trajectory lon/ lat at each time step
 trajLon <- brick(array(NA, dim=dim(sst.ann)*c(n.per.ll,n.per.ll,n.per.yr)), xmn=-190, xmx=-40, ymn=20, ymx=65) # empty lon brick
@@ -109,12 +90,12 @@ dest.LL <- cbind(lons.s, lats.s) # same as starting LL, but will be updated each
 # A few functions to prepare for trajectory adjustment (or to be used in said process)
 focal.min <- function(r.min){ # where is the smallest value in the rook focus?
 	# calculate smallest (or biggest) temperature in the focal region, do smallestFocalTemp - temp, and find which is smallest *and* is also negative. This is going to be tough. Might have to do this in the other function, later.
-	fw.mat <- matrix(c(NA,1,NA,1,NA,1,NA,1,NA),ncol=3) # focal weight matrix
+	# fw.mat <- matrix(c(NA,1,NA,1,NA,1,NA,1,NA),ncol=3) # focal weight matrix
 	focal(r.min, w=fw.mat, which.min, pad=TRUE) # focal raster cell# containing smallest value
 }
 
 focal.max <- function(r.max){ # where is the biggest value in the rook focus?
-	fw.mat <- matrix(c(NA,1,NA,1,NA,1,NA,1,NA),ncol=3) # focal weight matrix
+	# fw.mat <- matrix(c(NA,1,NA,1,NA,1,NA,1,NA),ncol=3) # focal weight matrix
 	focal(r.max, w=fw.mat, which.max, pad=TRUE) # focal raster cell# containing biggest value
 }
 
@@ -126,22 +107,24 @@ focal2cell <- function(f){ # convert the focal raster cell# to parent raster cel
 }
 
 # Function to adjust the proposed destination of the trajectory, if it needs it.
-adjDest <- function(start.vel, start.temp, prop.temp, startCell, propCell){
-	
+adjDest <- function(startVel, startTemp, propTemp, startCell, propCell, propLL){
 	# Find coolest and warmest rook neighbors (location and temperature)
-	coolFocal <- focal.min(start.temp) # gets the cell# within the focal matrix around start.temp
+	coolFocal <- focal.min(startTemp) # gets the cell# within the focal matrix around startTemp
 	coolCell <- focal2cell(coolFocal) # get convert the cell # in the focal (3x3) raster to the cell# in the full raster
-	coolTemp <- setValues(start.temp, extract(start.temp,values(coolCell))) # temp of coolest rook neighbor
+	coolTemp <- setValues(startTemp, extract(startTemp,values(coolCell))) # temp of coolest rook neighbor
 	
-	warmFocal <- focal.max(start.temp) # gets the cell # within the focal matrix
+	warmFocal <- focal.max(startTemp) # gets the cell # within the focal matrix
 	warmCell <- focal2cell(warmFocal) # convert focal cell # to full-raster cell#
-	warmTemp <- setValues(start.temp, extract(start.temp,values(warmCell))) # temp of warmest rook neighbor
+	warmTemp <- setValues(startTemp, extract(startTemp,values(warmCell))) # temp of warmest rook neighbor
+	
+	posVel <- is.finite(startVel)&startVel>0
+	negVel <- is.finite(startVel)&startVel<0
 	
 	# Define logical rasters associated with each possible categorical outcome (to which category does each cell belong?)
-	belAdj <- is.na(prop.temp) & !is.na(start.temp) # logical: does the destination need to be adjusted?
+	belAdj <- !is.finite(propTemp) & is.finite(startTemp) # logical: does the destination need to be adjusted?
 	belProp <- !belAdj # logical: is the proposed trajectory OK?
-	belCool <- belAdj & start.vel<0 & coolTemp<start.temp # logical: should+can we reject the prop & find cooler neighbor?
-	belWarm <- belAdj & start.vel>0 & warmTemp>start.temp # logical: should+can we reject the prop & find warmer neighbor?
+	belCool <- belAdj & posVel & coolTemp<startTemp # logical: should+can we reject the prop & find cooler neighbor?
+	belWarm <- belAdj & negVel & warmTemp>startTemp # logical: should+can we reject the prop & find warmer neighbor?
 	belStart <- belAdj & !(belCool|belWarm) # logical: needs adj, but can't find warmer/cooler rook? (this is coastal sink)
 	
 	# A cell should not be TRUE in more than one of the bel___ rasters; if it does, my logic is flawed
@@ -156,12 +139,15 @@ adjDest <- function(start.vel, start.temp, prop.temp, startCell, propCell){
 	# This applies the appropriate adjustment to each proprosed trajectory that needs adjusting (values are cell#)
 	destCell <- belProp*propCell + belStart*startCell + belCool*coolCell + belWarm*warmCell # checked/adjusted destination cell
 	
-	return(destCell)
+	destLL <- propLL
+	destLL[values(belAdj),] <- xyFromCell(destCell, values(destCell))[values(belAdj),]
+	
+	return(list(cell=destCell, LL=destLL))
 }
 
 
 
-
+fw.mat <- matrix(c(NA,1,NA,1,NA,1,NA,1,NA),ncol=3) # focal weight matrix; called inside focal.min/max
 
 sst.pb <- txtProgressBar(min=2, max=max(step.index), style=3)
 for(i in step.index){
@@ -169,54 +155,45 @@ for(i in step.index){
 	
 	t.temp <- subset(sst.ann.s, t.yr)
 	start.temp <- setValues(t.temp, extract(t.temp, dest.LL))
-	#
-	# t.temp.coarse <- aggregate(t.temp, n.per.ll)
-	# start.temp.coarse <- aggregate(start.temp, n.per.ll)
 	
 	# Extract the longitude and latitude of starting location
 	start.lon <- subset(trajLon, i-1) # longitude of the trajectory at the start of this time step (end of last time step)
 	start.lat <- subset(trajLat, i-1) # latitude of the trajectory at the start of this time step (end of last time step)
 	start.LL <- cbind(values(start.lon), values(start.lat)) # format starting LL
 	start.cell <- setValues(start.temp, cellFromXY(start.temp, start.LL)) # change LL to cell#
-	
+		
 	# Calculate the longitude and latitude of proposed destination
 	prop.lon <- start.lon + dest.dX/111.325*cos(start.lat) # calculate the proposed longitude from speeds and starting LL
 	prop.lat <- start.lat + dest.dY/111.325 # calculate the proposed latitude from speeds and starting latitude
-	prop.LL <- cbind(values(prop.lon), values(prop.lat)) # format proposed LL
-	prop.cell <- setValues(start.temp, cellFromXY(start.temp, prop.LL)) # change LL to cell#; could do prop.temps, but haven't subset yet
+	prop.LL <- cbind(values(prop.lon), values(prop.lat)) # format proposed LL	
+	prop.LL[is.na(values(dest.dX)),] <- cbind(values(start.lon), values(start.lat))[is.na(values(dest.dX)),] # if the velocity is NA, it's not going anywhere; but still need to keep track of the location of the cell.
+	
+	prop.cell <- setValues(start.temp, cellFromXY(start.temp, prop.LL)) # change LL to cell#; could do prop.temps, but haven't subset yet	
 	
 	# Extract cell# and X/Y speeds of proposed cell
 	prop.temp <- setValues(t.temp, extract(start.temp, prop.LL)) # the temperature in the proposed location (used to determine if destination is on land)
-	# prop.dX <- extract(dXkm.s, prop.LL, cellnumbers=TRUE) # extract X speed and cell # of proposed cell
-	# prop.dY <- extract(dYkm.s, prop.LL) # extract Y speed of proposed cell (cell numbers are the same for ex.dX and ex.dY)
 	
 	# Where necessary, adjust the proposed destination to avoid land via rook-search for warmest/ coolest neighbor
-	destCell <- adjDest(
-		start.vel=dest.dX, # note that this is the destination velocity from the previous time step (thus, starting velocity)
-		start.temp=start.temp, 
-		prop.temp=prop.temp, 
+	dest.cell.LL <- adjDest(
+		startVel=dest.dX, # note that this is the destination velocity from the previous time step (thus, starting velocity)
+		startTemp=start.temp, 
+		propTemp=prop.temp, 
 		startCell=start.cell, 
-		propCell=prop.cell
+		propCell=prop.cell,
+		propLL=prop.LL
 	)
-	# TODO get destination latitude and longitude? Yes, for trajLon and trajLat
-	dest.LL <- xyFromCell(start.temp, destCell)
-	dest.lon <- xFromCell()
-	# dest.lat <- 
-		
+	dest.cell <- dest.cell.LL$cell
+	dest.LL <- dest.cell.LL$LL
+	dest.lon <- dest.LL[,1]
+	dest.lat <- dest.LL[,2]
+	
 	# Update dest speeds to reflect those in proposed cell
-	# TODO Need to change use destination lat/lon instead of prop.lat/lon
-	dest.dX <- setValues(dest.dX, prop.dX[,2])
-	dest.dY <- setValues(dest.dY, prop.dY)
+	dest.dX <- setValues(dXkm.s, extract(dXkm.s, dest.LL)) # use setValues() to preserve raster class and structure
+	dest.dY <- setValues(dXkm.s, extract(dYkm.s, dest.LL)) # note that the 1st object in setValues doesn't matter aside from its extent()
 	
 	# Update the destination LL in the trajectories (not rounded to correspond to cell)
-	# TODO change t.X/Y.lon/lat to dest.lon/lat
-	trajLon <- setValues(trajLon, t.X.lon, layer=i)
-	trajLat <- setValues(trajLat, t.Y.lat, layer=i)
-	
-	# Extract LL of cell corresponding to proposed location
-	# TODO I think new.LL is now pointless, delete?
-	new.LL <- xyFromCell(dXkm.s, ex.dX[,1])
-	
+	trajLon <- setValues(trajLon, dest.lon, layer=i)
+	trajLat <- setValues(trajLat, dest.lat, layer=i)
 	
 	setTxtProgressBar(sst.pb, i)
 }
@@ -224,3 +201,7 @@ for(i in step.index){
 
 
 
+save(sst.mu, spatGrad.aspect, spatGrad.slope, timeTrend, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Results/HadISST_tempGrads.RData") # TODO I don't want to rewrite this .RData file every time I run this script during testing. What I do with this might depend on how much of this script I turn into separate functions, etc. So for now leaving it here.
+
+save(trajLon, trajLat, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Results/HadISST_trajectories.RData")
+save.image("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Results/HadISST_trajectoriesImage.RData")
