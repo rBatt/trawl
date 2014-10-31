@@ -63,61 +63,29 @@ tYrs <- rep(1:n.yrs, each=n.per.yr) # reference to the year # that lines up with
 spdX <- disaggregate(spdX0, 3) # fine spatial resolution for longitudinal climate speed
 spdY <- disaggregate(spdY0, 3) # fine spatial resolution for latitudinal climate speed
 ang <- disaggregate(spatGrad.aspect, 3) # final spatial resolution for the angle of climate velocity
-# TODO Need to disaggregate the sst.ann; but I might not need to change the spatial resolution, because I should already be set up to index the right year regardless of the size of the time step thanks to the relationship between tYrs and step.index
+sst.ann.s <- disaggregate(sst.ann, 3) # "small" grid size for annual sea surface temperature
 
 # Create empty bricks to hold trajectory lon/ lat at each time step
 trajLon <- brick(array(NA, dim=dim(sst.ann)*c(n.per.ll,n.per.ll,n.per.yr)), xmn=-190, xmx=-40, ymn=20, ymx=65) # empty lon brick
 lons <- seq(xmin(trajLon), xmax(trajLon), length.out=ncol(trajLon)) # longitude values (X values)
-trajLon <- setValues(trajLon, rep(lons, nrow(trajLon)), layer=1) # update first year (layer) of brick to give starting lon
+lons.s <- rep(lons, nrow(trajLon)) # "small" (finer resolution) lons
+trajLon <- setValues(trajLon, lons.s, layer=1) # update first year (layer) of brick to give starting lon
 
 trajLat <- brick(array(NA, dim=dim(sst.ann)*c(n.per.ll,n.per.ll,n.per.yr)), xmn=-190, xmx=-40, ymn=20, ymx=65) # empty lat brick
 lats <- seq(ymax(trajLat), ymin(trajLat), length.out=ncol(trajLat)) # latitude values (Y values)
-trajLat <- setValues(trajLat, rep(lats, each=nrow(trajLat)), layer=1) # update first year (layer) of brick to give starting lat
+lats.s <- rep(lats, each=nrow(trajLat)) # "small" (finer resolution) lats
+trajLat <- setValues(trajLat, lats.s, layer=1) # update first year (layer) of brick to give starting lat
 
 # Define appropriate resolution for velocities
 dXkm.s <- spdX*(1/n.per.yr) # "small" (per-time-step) change in X
 dYkm.s <- spdY*(1/n.per.yr) # "small" (per-time-step) change in Y
 
-# Set initial values for destination velocities
+# Set initial values for destination velocities and locations
 dest.dX <- dXkm.s # the X speed in the previous destination location (updated at the end of each time step)
 dest.dY <- dYkm.s # the Y speed in the previous destination location
+dest.LL <- cbind(lons.s, lats.s) # same as starting LL, but will be updated each iteration after adjDest
 
-# Function to adjust the proposed destination of the trajectory, if it needs it.
-adjDest <- function(start.vel, start.temp, prop.temp, startCell, propCell){
-	
-	# Find coolest and warmest rook neighbors (location and temperature)
-	# TODO change the definition of coolFocal to use focal.min()
-	coolFocal <- focal(start.temp, w=fw.mat, which.min, pad=TRUE) # gets the cell# within the focal matrix around start.temp
-	coolCell <- focal2cell(coolFocal) # get convert the cell # in the focal (3x3) raster to the cell# in the full raster
-	coolTemp <- matrix(extract(start.temp,c(as.matrix(coolCell))), ncol=ncol(start.temp)) # temp of coolest rook neighbor
-	
-	# TODO change the definition of warmFocal to use focal.max()
-	warmFocal <- focal(start.temp, w=fw.mat, which.max, pad=TRUE) # gets the cell # within the focal matrix
-	warmCell <- focal2cell(warmFocal) # convert focal cell # to full-raster cell#
-	warmTemp <- matrix(extract(start.temp,c(as.matrix(warmCell))), ncol=ncol(start.temp)) # temp of warmest rook neighbor
-	
-	# Define logical rasters associated with each possible categorical outcome (to which category does each cell belong?)
-	belAdj <- is.na(prop.temp) & !is.na(start.temp) # logical: does the destination need to be adjusted?
-	belProp <- !belAdj # logical: is the proposed trajectory OK?
-	belCool <- belAdj & start.vel<0 & coolTemp<start.temp # logical: should+can we reject the prop & find cooler neighbor?
-	belWarm <- belAdj & start.vel>0 & warmTemp>start.temp # logical: should+can we reject the prop & find warmer neighbor?
-	belStart <- belAdj & !(belCool|belWarm) # logical: needs adj, but can't find warmer/cooler rook? (this is coastal sink)
-	
-	# A cell should not be TRUE in more than one of the bel___ rasters; if it does, my logic is flawed
-	sumBelongs <- belProp+belCool+belWarm+belStart # the number adjustment outcomes to which each cell belongs
-	stopifnot(is.na(sumBelongs)|sumBelongs<=1) # check to ensure that *at most* 1 adjustment is made to each proposed trajectory
-	
-	# Rasters can be easily added, and it is easy to define a cell as T/F/NA
-	# T/F are interpreted as 1/0
-	# A cell should not be TRUE in more than one of the bel___ rasters (see check above)
-	# This provides means to do easy conditional replacement/ matching
-	# Multiply each category of outcome w/ the appropriate logic, add products
-	# This applies the appropriate adjustment to each proprosed trajectory that needs adjusting (values are cell#)
-	destCell <- belProp*propCell + belStart*startCell + belCool*coolCell + belWarm*warmCell # checked/adjusted destination cell
-	
-	return(destCell)
-}
-
+# A few functions to prepare for trajectory adjustment (or to be used in said process)
 focal.min <- function(r.min){ # where is the smallest value in the rook focus?
 	# calculate smallest (or biggest) temperature in the focal region, do smallestFocalTemp - temp, and find which is smallest *and* is also negative. This is going to be tough. Might have to do this in the other function, later.
 	fw.mat <- matrix(c(NA,1,NA,1,NA,1,NA,1,NA),ncol=3) # focal weight matrix
@@ -136,42 +104,82 @@ focal2cell <- function(f){ # convert the focal raster cell# to parent raster cel
 	f.cell+f.conv # convert
 }
 
+# Function to adjust the proposed destination of the trajectory, if it needs it.
+adjDest <- function(start.vel, start.temp, prop.temp, startCell, propCell){
+	
+	# Find coolest and warmest rook neighbors (location and temperature)
+	coolFocal <- focal.min(start.temp) # gets the cell# within the focal matrix around start.temp
+	coolCell <- focal2cell(coolFocal) # get convert the cell # in the focal (3x3) raster to the cell# in the full raster
+	coolTemp <- setValues(start.temp, extract(start.temp,values(coolCell))) # temp of coolest rook neighbor
+	
+	warmFocal <- focal.max(start.temp) # gets the cell # within the focal matrix
+	warmCell <- focal2cell(warmFocal) # convert focal cell # to full-raster cell#
+	warmTemp <- setValues(start.temp, extract(start.temp,values(warmCell))) # temp of warmest rook neighbor
+	
+	# Define logical rasters associated with each possible categorical outcome (to which category does each cell belong?)
+	belAdj <- is.na(prop.temp) & !is.na(start.temp) # logical: does the destination need to be adjusted?
+	belProp <- !belAdj # logical: is the proposed trajectory OK?
+	belCool <- belAdj & start.vel<0 & coolTemp<start.temp # logical: should+can we reject the prop & find cooler neighbor?
+	belWarm <- belAdj & start.vel>0 & warmTemp>start.temp # logical: should+can we reject the prop & find warmer neighbor?
+	belStart <- belAdj & !(belCool|belWarm) # logical: needs adj, but can't find warmer/cooler rook? (this is coastal sink)
+	
+	# A cell should not be TRUE in more than one of the bel___ rasters; if it does, my logic is flawed
+	sumBelongs <- values(belProp+belCool+belWarm+belStart) # the number adjustment outcomes to which each cell belongs
+	stopifnot(is.na(sumBelongs)|sumBelongs<=1) # check to ensure that *at most* 1 adjustment is made to each proposed trajectory
+	
+	# Rasters can be easily added, and it is easy to define a cell as T/F/NA
+	# T/F are interpreted as 1/0
+	# A cell should not be TRUE in more than one of the bel___ rasters (see check above)
+	# This provides means to do easy conditional replacement/ matching
+	# Multiply each category of outcome w/ the appropriate logic, add products
+	# This applies the appropriate adjustment to each proprosed trajectory that needs adjusting (values are cell#)
+	destCell <- belProp*propCell + belStart*startCell + belCool*coolCell + belWarm*warmCell # checked/adjusted destination cell
+	
+	return(destCell)
+}
+
+
 
 
 
 sst.pb <- txtProgressBar(min=2, max=max(step.index), style=3)
 for(i in step.index){
 	t.yr <- tYrs[i]
-	t.temps <- subset(sst.ann, t.yr) # TODO need to change this to not reference the origin of the trajectory, but to reference the updated location of the trajectory. So do this, but wrap in the LL determined after adjDest (would be prop.LL if the proposed location is OK)
-	# TODO Also, t.temps is current at too coarse of a spatial resolution; fix in earlier part of code where other rasters are disaggregate()'ed
+	
+	t.temp <- subset(sst.ann.s, t.yr)
+	start.temp <- setValues(t.temp, extract(t.temp, dest.LL))
+	
+	t.temp.coarse <- aggregate(t.temp, n.per.ll)
+	start.temp.coarse <- aggregate(start.temp, n.per.ll)
 	
 	# Extract the longitude and latitude of starting location
 	start.lon <- subset(trajLon, i-1) # longitude of the trajectory at the start of this time step (end of last time step)
 	start.lat <- subset(trajLat, i-1) # latitude of the trajectory at the start of this time step (end of last time step)
 	start.LL <- cbind(values(start.lon), values(start.lat)) # format starting LL
-	start.cell <- cellFromXY(t.temps, start.LL) # change LL to cell#
+	start.cell <- setValues(start.temp, cellFromXY(start.temp, start.LL)) # change LL to cell#
 	
 	# Calculate the longitude and latitude of proposed destination
 	prop.lon <- start.lon + dest.dX/111.325*cos(start.lat) # calculate the proposed longitude from speeds and starting LL
 	prop.lat <- start.lat + dest.dY/111.325 # calculate the proposed latitude from speeds and starting latitude
 	prop.LL <- cbind(values(prop.lon), values(prop.lat)) # format proposed LL
-	prop.cell <- cellFromXY(t.temps, prop.LL) # change LL to cell#; could do prop.temps, but haven't subset yet
+	prop.cell <- setValues(start.temp, cellFromXY(start.temp, prop.LL)) # change LL to cell#; could do prop.temps, but haven't subset yet
 	
 	# Extract cell# and X/Y speeds of proposed cell
-	prop.temps <- extract(t.temps, prop.LL) # the temperature in the proposed location (used to determine if destination is on land)
-	prop.dX <- extract(dXkm.s, prop.LL, cellnumbers=TRUE) # extract X speed and cell # of proposed cell
-	prop.dY <- extract(dYkm.s, prop.LL) # extract Y speed of proposed cell (cell numbers are the same for ex.dX and ex.dY)
+	prop.temp <- setValues(t.temp, extract(start.temp, prop.LL)) # the temperature in the proposed location (used to determine if destination is on land)
+	# prop.dX <- extract(dXkm.s, prop.LL, cellnumbers=TRUE) # extract X speed and cell # of proposed cell
+	# prop.dY <- extract(dYkm.s, prop.LL) # extract Y speed of proposed cell (cell numbers are the same for ex.dX and ex.dY)
 	
 	# Where necessary, adjust the proposed destination to avoid land via rook-search for warmest/ coolest neighbor
 	destCell <- adjDest(
-		start.vel=dest.dX, 
-		start.temp=t.temps, 
-		prop.temp=prop.temps, 
+		start.vel=dest.dX, # note that this is the destination velocity from the previous time step (thus, starting velocity)
+		start.temp=start.temp, 
+		prop.temp=prop.temp, 
 		startCell=start.cell, 
 		propCell=prop.cell
 	)
 	# TODO get destination latitude and longitude? Yes, for trajLon and trajLat
-	# dest.lon <- 
+	dest.LL <- xyFromCell(start.temp, destCell)
+	dest.lon <- xFromCell()
 	# dest.lat <- 
 		
 	# Update dest speeds to reflect those in proposed cell
