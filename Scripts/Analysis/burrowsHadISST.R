@@ -22,6 +22,7 @@ invisible(sapply(paste(stat.location, list.files(stat.location), sep="/"), sourc
 # ==================================
 # = Get the temporal trend for SST =
 # ==================================
+# TODO It seems like the temporal trend should be calculated at a finer temporal scale, and that there shouldn't be just 1 climate velocity for the entire time period. I will certainly need to do this calculation for different starting times, as the trawl time series start at different times.
 timeTrend <- stackApply(sst.ann, indices=rep(1,length(sst)), fun=sstTimeSlope)
 
 
@@ -46,11 +47,6 @@ climSpeed <- timeTrend/spatGrad.slope # climate speed in km/yr
 spdX0 <- climSpeed*sin(spatGrad.aspect) # in km/yr (to the east)
 spdY0 <- climSpeed*cos(spatGrad.aspect) # in km/yr (to the north)
 
-# heat.cols <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(256)
-# plot(climSpeed0, col=heat.cols)
-# plot(spdX0, col=heat.cols)
-# plot(spdY0, col=heat.cols)
-
 
 # ==========================
 # = Calculate Trajectories =
@@ -66,7 +62,6 @@ tYrs <- rep(1:n.yrs, each=n.per.yr) # reference to the year # that lines up with
 spdX <- disaggregate(spdX0, 3) # fine spatial resolution for longitudinal climate speed
 spdY <- disaggregate(spdY0, 3) # fine spatial resolution for latitudinal climate speed
 ang <- disaggregate(spatGrad.aspect, 3) # final spatial resolution for the angle of climate velocity
-
 
 # Create empty bricks to hold trajectory lon/ lat at each time step
 trajLon <- brick(array(NA, dim=dim(sst.ann)*c(n.per.ll,n.per.ll,n.per.yr)), xmn=-190, xmx=-40, ymn=20, ymx=65)
@@ -85,24 +80,59 @@ dest.dX <- dXkm.s # the X speed in the previous location (updated at each time s
 dest.dY <- dYkm.s # they Y speed in the previous location
 
 
-
-
-
-
+# ===========
+# = Testing =
+# ===========
 test <- raster(matrix(c(rep(NA,6), 1, 2, NA, 3:9), ncol=4))
 test.dest <- raster(matrix(c(rep(NA,6), NA, 2, NA, NA, 4:9), ncol=4))
 fw.mat <- matrix(c(NA,1,NA,1,NA,1,NA,1,NA),ncol=3) # focal weight matrix
-test.f <- focal(test, w=fw.mat, which.min) # gets the cell # within the focal matrix
 
-adjDest <- function(start.vel, stop.vel, r.prop){
-	# if start.vel is !is.na(start.vel)
-	naStart.cell <- as.matrix(Which(is.na(test), cells=TRUE))
-	setValues(test, rep(3, length(naStart.cell)), naStart.cell)
+coolFocal <- focal(test, w=fw.mat, which.min, pad=TRUE) # gets the cell # within the focal matrix
+coolNeigh.cell <- focal2cell(coolFocal)
+coolNeigh <- matrix(extract(test,c(as.matrix(coolNeigh.cell))), ncol=ncol(test))
+
+warmFocal <- focal(test, w=fw.mat, which.max, pad=TRUE) # gets the cell # within the focal matrix
+warmNeigh.cell <- focal2cell(warmFocal)
+warmNeigh <- matrix(extract(test,c(as.matrix(warmNeigh.cell))), ncol=ncol(test))
+
+
+ctest <- raster(matrix(c(rep(NA,6), 1, 2, NA, 1, rep(1:2, 3)), ncol=4))
+r1 <- raster(matrix(rep(10, 16), ncol=4))
+r2 <- raster(matrix(rep(-33, 16), ncol=4))
+ctest.refLayers <- stack(r1, r2)
+
+belongs1 <- ctest==1
+belongs2 <- ctest==2
+
+ct.comb <- subset(ctest.refLayers,1)*belongs1 + subset(ctest.refLayers,2)*belongs2
+
+
+# ===============
+# = End Testing =
+# ===============
+
+# Function to adjust the proposed destination of the trajectory, if it needs it.
+adjDest <- function(start.vel, start.temp, prop.temp, startCell, propCell){
 	
-	# need to figure out which cells need the focal min, and which need the focal max
-	# by the time I do that, I might as well also figure out which cells need adjusting at all (based on non-na to na prop)
+	# Find coolest and warmest rook neighbors (location and temperature)
+	coolFocal <- focal(start.temp, w=fw.mat, which.min, pad=TRUE) # gets the cell # within the focal matrix around start.temp
+	coolCell <- focal2cell(coolFocal)
+	coolTemp <- matrix(extract(start.temp,c(as.matrix(coolCell))), ncol=ncol(start.temp)) # temp of coolest rook neighbor
 	
-	# Maybe the best approach is to do all cases separately, then create an empty raster, do the logical tests on the appropriate rasters, then fill in the empty raster 1 part at a time (each part is a different logical test, like "prop is OK", or "prop not OK, location is a sink", "prop not OK, find warmer", and finally, "prop not OK, find colder"). Note that if you can't find the colder/ warmer (respectively), then that's what denotes the sink. So there has to be a logical test to determine which scenario is needed (basically, findWarmer <- velocity < 0; findCooler <- velocity > 0). Note sure what to do about the case where velocity == 0 case ... shouldn't happen, because then the prop == current location, and neither should be NA (or both should be NA).
+	warmFocal <- focal(start.temp, w=fw.mat, which.max, pad=TRUE) # gets the cell # within the focal matrix
+	warmCell <- focal2cell(warmFocal)
+	warmTemp <- matrix(extract(start.temp,c(as.matrix(warmCell))), ncol=ncol(start.temp)) # temp of warmest rook neighbor
+	
+	# Define logical rasters associated with each possible categorical outcome (to which category does each cell belong?)
+	belAdj <- is.na(prop.temp) & !is.na(start.temp) # logical: does the destination need to be adjusted?
+	belProp <- !belAdj # logical: is the proposed trajectory OK?
+	belCool <- belAdj & start.vel<0 & coolTemp<start.temp # logical: should+can we reject the prop & find cooler neighbor?
+	belWarm <- belAdj & start.vel>0 & warmTemp>start.temp # logical: should+can we reject the prop & find warmer neighbor?
+	belStart <- belAdj & !(belCool|belWarm) # logical: does it need adjusting, but can't/shouldn't find a warmer or cooler rook?
+	
+	destCell <- belProp*propCell + belStart*startCell + belCool*coolCell + belWarm*warmCell
+	
+	return(destCell)
 	
 	
 }
@@ -110,12 +140,12 @@ adjDest <- function(start.vel, stop.vel, r.prop){
 focal.min <- function(r.min){ # where is the smallest value in the rook focus?
 	# calculate smallest (or biggest) temperature in the focal region, do smallestFocalTemp - temp, and find which is smallest *and* is also negative. This is going to be tough. Might have to do this in the other function, later.
 	fw.mat <- matrix(c(NA,1,NA,1,NA,1,NA,1,NA),ncol=3) # focal weight matrix
-	focal(r.min, w=fw.mat, which.min) # focal raster cell# containing smallest value
+	focal(r.min, w=fw.mat, which.min, pad=TRUE) # focal raster cell# containing smallest value
 }
 
 focal.max <- function(r.max){ # where is the biggest value in the rook focus?
 	fw.mat <- matrix(c(NA,1,NA,1,NA,1,NA,1,NA),ncol=3) # focal weight matrix
-	focal(r.max, w=fw.mat, which.max) # focal raster cell# containing biggest value
+	focal(r.max, w=fw.mat, which.max, pad=TRUE) # focal raster cell# containing biggest value
 }
 
 focal2cell <- function(f){ # convert the focal raster cell# to parent raster cell#
@@ -131,34 +161,37 @@ focal2cell <- function(f){ # convert the focal raster cell# to parent raster cel
 sst.pb <- txtProgressBar(min=2, max=max(step.index), style=3)
 for(i in step.index){
 	t.yr <- tYrs[i]
-	t.temps <- subset(sst.ann, t.yr)
+	t.temps <- subset(sst.ann, t.yr) # TODO need to change this to not reference the origin of the trajectory, but to reference the updated location of the trajectory. So do this, but wrap in the LL determined after adjDest (would be prop.LL if the proposed location is OK)
+	
+	# Extract the longitude and latitude of starting location
+	start.lon <- subset(trajLon, i-1) # longitude of the trajectory at the start of this time step (end of last time step)
+	start.lat <- subset(trajLat, i-1) # latitude of the trajectory at the start of this time step (end of last time step)
+	start.LL <- cbind(values(start.lon), values(start.lat)) # format starting LL
+	start.cell <- cellFromXY(t.temps, start.LL) # change LL to cell#
 	
 	# Calculate the longitude and latitude of proposed destination
-	prop.lon <- subset(trajLon, i-1) + t.dest.dX/111.325*cos(subset(trajLat, i-1))
-	prop.lat <- subset(trajLat, i-1) + t.dest.dY/111.325
+	prop.lon <- start.lon + dest.dX/111.325*cos(start.lat) # calculate the proposed longitude from speeds and starting LL
+	prop.lat <- start.lat + dest.dY/111.325 # calculate the proposed latitude from speeds and starting latitude
+	prop.LL <- cbind(values(prop.lon), values(prop.lat)) # format proposed LL
+	prop.cell <- cellFromXY(t.temps, prop.LL) # change LL to cell#; could do prop.temps, but haven't subset yet
 	
 	# Extract cell# and X/Y speeds of proposed cell
-	prop.LL <- cbind(values(prop.lon), values(prop.lat)) # format proposed LL
+	prop.temps <- extract(t.temps, prop.LL) # the temperature in the proposed location (used mainly to determine if )
 	prop.dX <- extract(dXkm.s, prop.LL, cellnumbers=TRUE) # extract X speed and cell # of proposed cell
 	prop.dY <- extract(dYkm.s, prop.LL) # extract Y speed of proposed cell (cell numbers are the same for ex.dX and ex.dY)
 	
 	# Insert check to make sure not crossing boundary
-	# If the destination X velocity is NA, so too is the Y velocity, probably; could probably just check for either
-	failProp <- !is.na(dest.dX) & is.na(prop.dX[,2])
-	
-	
-	if(!is.na(dest.dX) & is.na(prop.dX[,2])){ # if moving from cell with non-NA to NA velocity ...
-		if(dest.dX>0){ # if the velocity was positive, search for lowest temp non-diagonal neighbor
-			# need to get non-diagonal focal temperatures, find the index of the lowest temp
-		}else{
-			# if the velocity is negative, then find the highest temp
-		}
-		# need
-	}
+	destCell <- adjDest(
+		start.vel=dest.dX, 
+		start.temp=t.temps, 
+		prop.temp=prop.temps, 
+		startCell=start.cell, 
+		propCell=prop.cell
+	)
 	
 	# Update dest speeds to reflect those in proposed cell
 	dest.dX <- setValues(dest.dX, prop.dX[,2])
-	dest.dY <- setValues(t.dest.dY, prop.dY)
+	dest.dY <- setValues(dest.dY, prop.dY)
 	
 	# Update the destination LL in the trajectories (not rounded to correspond to cell)
 	trajLon <- setValues(trajLon, t.X.lon, layer=i)
@@ -170,21 +203,6 @@ for(i in step.index){
 	
 	setTxtProgressBar(sst.pb, i)
 }
-
-
-
-
-# Create a raster for each of lat and lon values
-
-# Create TrajArrive brick w/ # layers = # years
-	# 
-
-
-# Calculate x and y displacements in km
-
-# Convert displacements
-
-
 
 
 
