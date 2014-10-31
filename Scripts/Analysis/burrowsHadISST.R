@@ -63,7 +63,28 @@ tYrs <- rep(1:n.yrs, each=n.per.yr) # reference to the year # that lines up with
 spdX <- disaggregate(spdX0, 3) # fine spatial resolution for longitudinal climate speed
 spdY <- disaggregate(spdY0, 3) # fine spatial resolution for latitudinal climate speed
 ang <- disaggregate(spatGrad.aspect, 3) # final spatial resolution for the angle of climate velocity
-sst.ann.s <- disaggregate(sst.ann, 3, method="bilinear") # "small" grid size for annual sea surface temperature
+
+sst.ann.s0 <- disaggregate(sst.ann, 3, method="bilinear") # "small" grid size for annual sea surface temperature
+sst.ann.s2 <- disaggregate(sst.ann, 3)
+sst.ann.s3 <- reclassify(sst.ann.s2, cbind(-Inf, Inf, 1))
+
+heat.cols <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(256)
+dev.new(width=7, height=3.5)
+plot(subset(sst.ann, 1), main="coarse resolution, no interpolation", col=heat.cols)
+
+dev.new(width=7, height=3.5)
+plot(subset(sst.ann.s0, 1), main="bilinear interpolation\n(islands and coastlines inundated)", col=heat.cols)
+
+dev.new(width=7, height=3.5)
+plot(subset(sst.ann.s2, 1), main="constant interpolation\n(land vs. water intact, but repetition = problem for neighbor search)", col=heat.cols)
+
+dev.new(width=7, height=3.5)
+plot(subset(sst.ann.s0*sst.ann.s3, 1), main="bilinear interpoltion *'s NA's of constant interpolation\n(best of both worlds?)", col=heat.cols)
+
+dev.new(width=7, height=3.5)
+plot((subset(sst.ann.s0*sst.ann.s3, 1)-subset(sst.ann.s2, 1))!=0, main="red where temp in bilinear interp is different from constant case\n(so all those blue spots along coasts were potential problems)", col=heat.cols)
+
+
 
 # Create empty bricks to hold trajectory lon/ lat at each time step
 trajLon <- brick(array(NA, dim=dim(sst.ann)*c(n.per.ll,n.per.ll,n.per.yr)), xmn=-190, xmx=-40, ymn=20, ymx=65) # empty lon brick
