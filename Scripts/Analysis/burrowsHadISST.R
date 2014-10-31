@@ -79,38 +79,6 @@ dYkm.s <- spdY*(1/n.per.yr) # "small" (per-time-step) change in Y
 dest.dX <- dXkm.s # the X speed in the previous location (updated at each time step)
 dest.dY <- dYkm.s # they Y speed in the previous location
 
-
-# ===========
-# = Testing =
-# ===========
-test <- raster(matrix(c(rep(NA,6), 1, 2, NA, 3:9), ncol=4))
-test.dest <- raster(matrix(c(rep(NA,6), NA, 2, NA, NA, 4:9), ncol=4))
-fw.mat <- matrix(c(NA,1,NA,1,NA,1,NA,1,NA),ncol=3) # focal weight matrix
-
-coolFocal <- focal(test, w=fw.mat, which.min, pad=TRUE) # gets the cell # within the focal matrix
-coolNeigh.cell <- focal2cell(coolFocal)
-coolNeigh <- matrix(extract(test,c(as.matrix(coolNeigh.cell))), ncol=ncol(test))
-
-warmFocal <- focal(test, w=fw.mat, which.max, pad=TRUE) # gets the cell # within the focal matrix
-warmNeigh.cell <- focal2cell(warmFocal)
-warmNeigh <- matrix(extract(test,c(as.matrix(warmNeigh.cell))), ncol=ncol(test))
-
-
-ctest <- raster(matrix(c(rep(NA,6), 1, 2, NA, 1, rep(1:2, 3)), ncol=4))
-r1 <- raster(matrix(rep(10, 16), ncol=4))
-r2 <- raster(matrix(rep(-33, 16), ncol=4))
-ctest.refLayers <- stack(r1, r2)
-
-belongs1 <- ctest==1
-belongs2 <- ctest==2
-
-ct.comb <- subset(ctest.refLayers,1)*belongs1 + subset(ctest.refLayers,2)*belongs2
-
-
-# ===============
-# = End Testing =
-# ===============
-
 # Function to adjust the proposed destination of the trajectory, if it needs it.
 adjDest <- function(start.vel, start.temp, prop.temp, startCell, propCell){
 	
