@@ -45,11 +45,9 @@ spdX0 <- climSpeed*sin(spatGrad.aspect) # in km/yr (to the east)
 spdY0 <- climSpeed*cos(spatGrad.aspect) # in km/yr (to the north)
 
 
-# ==========================
-# = Calculate Trajectories =
-# ==========================
-# Set up a series of initial values and options
-
+# ====================================================
+# = Define Initial Values for Trajectory Calculation =
+# ====================================================
 # Define spatial and temporal resolution of trajectory iteration
 n.per.yr <- 2 # number of time steps per year (burrows used 10)
 n.per.ll <- 3 # sqrt(number of cells per 1 degree grid cell) (burrows used 10)
@@ -87,68 +85,13 @@ dest.dX <- dXkm.s # the X speed in the previous destination location (updated at
 dest.dY <- dYkm.s # the Y speed in the previous destination location
 dest.LL <- cbind(lons.s, lats.s) # same as starting LL, but will be updated each iteration after adjDest
 
-# A few functions to prepare for trajectory adjustment (or to be used in said process)
-focal.min <- function(r.min){ # where is the smallest value in the rook focus?
-	# calculate smallest (or biggest) temperature in the focal region, do smallestFocalTemp - temp, and find which is smallest *and* is also negative. This is going to be tough. Might have to do this in the other function, later.
-	# fw.mat <- matrix(c(NA,1,NA,1,NA,1,NA,1,NA),ncol=3) # focal weight matrix
-	focal(r.min, w=fw.mat, which.min, pad=TRUE) # focal raster cell# containing smallest value
-}
-
-focal.max <- function(r.max){ # where is the biggest value in the rook focus?
-	# fw.mat <- matrix(c(NA,1,NA,1,NA,1,NA,1,NA),ncol=3) # focal weight matrix
-	focal(r.max, w=fw.mat, which.max, pad=TRUE) # focal raster cell# containing biggest value
-}
-
-focal2cell <- function(f){ # convert the focal raster cell# to parent raster cell#
-	f.cell <- setValues(f, 1:length(f)) # cell #'s for raster
-	f.ncol <- ncol(f) # number of columns in raster
-	f.conv <- reclassify(f, cbind(c(4,6,2,8),c(-1,1,-f.ncol,f.ncol))) # convert focal cell# to raster cell# (assumes 3x3 focal)
-	f.cell+f.conv # convert
-}
-
-# Function to adjust the proposed destination of the trajectory, if it needs it.
-adjDest <- function(startVel, startTemp, propTemp, startCell, propCell, propLL){
-	# Find coolest and warmest rook neighbors (location and temperature)
-	coolFocal <- focal.min(startTemp) # gets the cell# within the focal matrix around startTemp
-	coolCell <- focal2cell(coolFocal) # get convert the cell # in the focal (3x3) raster to the cell# in the full raster
-	coolTemp <- setValues(startTemp, extract(startTemp,values(coolCell))) # temp of coolest rook neighbor
-	
-	warmFocal <- focal.max(startTemp) # gets the cell # within the focal matrix
-	warmCell <- focal2cell(warmFocal) # convert focal cell # to full-raster cell#
-	warmTemp <- setValues(startTemp, extract(startTemp,values(warmCell))) # temp of warmest rook neighbor
-	
-	posVel <- is.finite(startVel)&startVel>0
-	negVel <- is.finite(startVel)&startVel<0
-	
-	# Define logical rasters associated with each possible categorical outcome (to which category does each cell belong?)
-	belAdj <- !is.finite(propTemp) & is.finite(startTemp) # logical: does the destination need to be adjusted?
-	belProp <- !belAdj # logical: is the proposed trajectory OK?
-	belCool <- belAdj & posVel & coolTemp<startTemp # logical: should+can we reject the prop & find cooler neighbor?
-	belWarm <- belAdj & negVel & warmTemp>startTemp # logical: should+can we reject the prop & find warmer neighbor?
-	belStart <- belAdj & !(belCool|belWarm) # logical: needs adj, but can't find warmer/cooler rook? (this is coastal sink)
-	
-	# A cell should not be TRUE in more than one of the bel___ rasters; if it does, my logic is flawed
-	sumBelongs <- values(belProp+belCool+belWarm+belStart) # the number adjustment outcomes to which each cell belongs
-	stopifnot(is.na(sumBelongs)|sumBelongs<=1) # check to ensure that *at most* 1 adjustment is made to each proposed trajectory
-	
-	# Rasters can be easily added, and it is easy to define a cell as T/F/NA
-	# T/F are interpreted as 1/0
-	# A cell should not be TRUE in more than one of the bel___ rasters (see check above)
-	# This provides means to do easy conditional replacement/ matching
-	# Multiply each category of outcome w/ the appropriate logic, add products
-	# This applies the appropriate adjustment to each proprosed trajectory that needs adjusting (values are cell#)
-	destCell <- belProp*propCell + belStart*startCell + belCool*coolCell + belWarm*warmCell # checked/adjusted destination cell
-	
-	destLL <- propLL
-	destLL[values(belAdj),] <- xyFromCell(destCell, values(destCell))[values(belAdj),]
-	
-	return(list(cell=destCell, LL=destLL))
-}
-
-
-
+# Focal weight matrix: this is used by focal.min and focal.max when called within adjDest (faster to define globally than to continually recreate matrix thousands of times)
 fw.mat <- matrix(c(NA,1,NA,1,NA,1,NA,1,NA),ncol=3) # focal weight matrix; called inside focal.min/max
 
+
+# ====================================================
+# = Begin the iterative construction of trajectories =
+# ====================================================
 sst.pb <- txtProgressBar(min=2, max=max(step.index), style=3)
 for(i in step.index){
 	t.yr <- tYrs[i]
@@ -199,9 +142,20 @@ for(i in step.index){
 }
 
 
+# ===========================
+# = Categorize Trajectories =
+# ===========================
+# TODO Need to categorize trajectories according to Burrows
 
 
+# ===========================
+# = Save Trajectory Results =
+# ===========================
+# Save a few objects used specifically for a couple figures I made (in plotHadISST.R)
 save(sst.mu, spatGrad.aspect, spatGrad.slope, timeTrend, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Results/HadISST_tempGrads.RData") # TODO I don't want to rewrite this .RData file every time I run this script during testing. What I do with this might depend on how much of this script I turn into separate functions, etc. So for now leaving it here.
 
+# Save the trajectory locations
 save(trajLon, trajLat, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Results/HadISST_trajectories.RData")
+
+# Save the full image
 save.image("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Results/HadISST_trajectoriesImage.RData")
