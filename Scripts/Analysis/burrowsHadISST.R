@@ -49,20 +49,20 @@ spdY0 <- climSpeed*cos(spatGrad.aspect) # in km/yr (to the north)
 # = Define Initial Values for Trajectory Calculation =
 # ====================================================
 # Define spatial and temporal resolution of trajectory iteration
-n.per.yr <- 2 # number of time steps per year (burrows used 10)
-n.per.ll <- 3 # sqrt(number of cells per 1 degree grid cell) (burrows used 10)
+n.per.yr <- 3 # number of time steps per year (burrows used 10)
+n.per.ll <- 4 # sqrt(number of cells per 1 degree grid cell) (burrows used 10)
 
 n.yrs <- dim(sst.ann)[3] # number of years
 step.index <- seq(2, n.yrs*n.per.yr, length.out=n.yrs*n.per.yr-1) # time counter for loop
 tYrs <- rep(1:n.yrs, each=n.per.yr) # reference to the year # that lines up with step.index
 
 # Expand rasters to a higher resolution
-spdX <- disaggregate(spdX0, 3) # fine spatial resolution for longitudinal climate speed
-spdY <- disaggregate(spdY0, 3) # fine spatial resolution for latitudinal climate speed
-ang <- disaggregate(spatGrad.aspect, 3) # final spatial resolution for the angle of climate velocity
+spdX <- disaggregate(spdX0, n.per.ll) # fine spatial resolution for longitudinal climate speed
+spdY <- disaggregate(spdY0, n.per.ll) # fine spatial resolution for latitudinal climate speed
+ang <- disaggregate(spatGrad.aspect, n.per.ll) # final spatial resolution for the angle of climate velocity
 
-sst.ann.s0 <- disaggregate(sst.ann, 3, method="bilinear") # "small" grid size for annual sea surface temperature
-sst.ann.s3 <- reclassify(disaggregate(sst.ann, 3), cbind(-Inf, Inf, 1))
+sst.ann.s0 <- disaggregate(sst.ann, n.per.ll, method="bilinear") # "small" grid size for annual sea surface temperature
+sst.ann.s3 <- reclassify(disaggregate(sst.ann, n.per.ll), cbind(-Inf, Inf, 1))
 sst.ann.s <- sst.ann.s0*sst.ann.s3 # this is ONLY used for nearest (rook) neighbor searching along coast when proposed trajectory goes to land; OK, actually, it'll be advantageous to use 
 
 # Create empty bricks to hold trajectory lon/ lat at each time step
