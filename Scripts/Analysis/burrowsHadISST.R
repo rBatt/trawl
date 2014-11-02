@@ -23,7 +23,8 @@ invisible(sapply(paste(stat.location, list.files(stat.location), sep="/"), sourc
 # = Get the temporal trend for SST =
 # ==================================
 # TODO It seems like the temporal trend should be calculated at a finer temporal scale, and that there shouldn't be just 1 climate velocity for the entire time period. I will certainly need to do this calculation for different starting times, as the trawl time series start at different times.
-timeTrend <- stackApply(sst.ann, indices=rep(1,length(sst)), fun=sstTimeSlope)
+timeTrend <- stackApply(sst.ann, indices=rep(1,length(sst)), fun=timeSlope)
+
 
 
 # ============================
