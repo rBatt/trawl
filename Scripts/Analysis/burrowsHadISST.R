@@ -36,57 +36,83 @@ crs(sst.mu2) <- "+proj=lcc +lat_1=65 +lat_2=20 +lon_0=0 +ellps=WGS84" # The terr
 spatGrad.aspect <- terrain(sst.mu2, opt="aspect", unit="radians") # direction of spatial gradient
 
 
-# ===========================
-# = Calculate Climate Speed =
-# ===========================
-climSpeed <- timeTrend/spatGrad.slope # climate speed in km/yr
-
-spdX0 <- climSpeed*sin(spatGrad.aspect) # in km/yr (to the east)
-spdY0 <- climSpeed*cos(spatGrad.aspect) # in km/yr (to the north)
-
-
-# ====================================================
-# = Define Initial Values for Trajectory Calculation =
-# ====================================================
+# ================================
+# = Define Trajectory Resolution =
+# ================================
 # Define spatial and temporal resolution of trajectory iteration
-n.per.yr <- 3 # number of time steps per year (burrows used 10)
-n.per.ll <- 4 # sqrt(number of cells per 1 degree grid cell) (burrows used 10)
+n.per.yr <- 2 # number of time steps per year (burrows used 10)
+n.per.ll <- 2 # sqrt(number of cells per 1 degree grid cell) (burrows used 10)
 
 n.yrs <- dim(sst.ann)[3] # number of years
 step.index <- seq(2, n.yrs*n.per.yr, length.out=n.yrs*n.per.yr-1) # time counter for loop
 tYrs <- rep(1:n.yrs, each=n.per.yr) # reference to the year # that lines up with step.index
 
-# Expand rasters to a higher resolution
-spdX <- disaggregate(spdX0, n.per.ll) # fine spatial resolution for longitudinal climate speed
-spdY <- disaggregate(spdY0, n.per.ll) # fine spatial resolution for latitudinal climate speed
+
+# ===========================
+# = Calculate Climate Speed =
+# ===========================
+# Climate velocity and its angle, high resolution
+climV <- disaggregate(timeTrend/spatGrad.slope, n.per.ll)*(1/n.per.yr)  # climate speed in km/yr
 ang <- disaggregate(spatGrad.aspect, n.per.ll) # final spatial resolution for the angle of climate velocity
 
+# Calculate X and Y velocities
+dXkm <- climV*sin(ang) # the X speed (km/yr to the east)
+dYkm <- climV*cos(ang) # the Y speed (km/yr to the north)
+
+
+# ============================
+# = Get full lon, lat, cell# =
+# ============================
+lons <- setValues(ang, rep(seq(xmin(ang), xmax(ang), length.out=ncol(ang)), nrow(ang)))
+lats <- setValues(ang, rep(seq(ymax(ang), ymin(ang), length.out=ncol(ang)), nrow(ang)))
+
+
+# ===================================
+# = Get the rook velocities, angles =
+# ===================================
+rookV <- stack(adjV(4), adjV(6), adjV(2), adjV(8)) # these are the velocities for each of the 4 possible directions a trajectory can go when the calculated velocity would make it go from sea to land; which of the 4 directions chosen depends on the sign of the velocity, 
+rookAng <- stack(adjAng(4), adjAng(6), adjAng(2), adjAng(8)) # the angle, in radians, for the rook directions
+# cellNum <- setValues(ang, 1:length(ang))
+
+
+# ==============================================
+# = Calculate X&Y rook velocities, limit to 1º =
+# ==============================================
+dXkm.rook0 <- rookV*sin(rookAng)
+dYkm.rook0 <- rookV*cos(rookAng)
+
+conv.fact.lon <- 111.325*cos(lats/180*pi) # this value is used inside limitV(), but is defined here to reduce computation time
+dXkm.rook <- limitV(dXkm.rook0)
+dYkm.rook <- limitV(dYkm.rook0, dir="lat")
+
+
+# ====================================================
+# = Define Initial Values for Trajectory Calculation =
+# ====================================================
+# Set initial values for destination velocities and locations
+destV <- climV
+destAng <- ang
+dest.dX <- dXkm # the X speed in the previous destination location (updated at the end of each time step)
+dest.dY <- dYkm # the Y speed in the previous destination location
+dest.dX.rook <- dXkm.rook
+dest.dY.rook <- dYkm.rook
+dest.LL <- cbind(lons, lats) # same as starting LL, but will be updated each iteration after adjDest
+
+
+# Expand sst to higher resolution, while avoiding extra NA's and repeated values in the rook
 sst.ann.s0 <- disaggregate(sst.ann, n.per.ll, method="bilinear") # "small" grid size for annual sea surface temperature
 sst.ann.s3 <- reclassify(disaggregate(sst.ann, n.per.ll), cbind(-Inf, Inf, 1))
-sst.ann.s <- sst.ann.s0*sst.ann.s3 # this is ONLY used for nearest (rook) neighbor searching along coast when proposed trajectory goes to land; OK, actually, it'll be advantageous to use 
+sst.ann.s <- sst.ann.s0*sst.ann.s3 # this is ONLY used for nearest (rook) neighbor searching along coast when proposed trajectory goes to land; OK, actually, it'll be advantageous to use .. didn't finish this thought. I think I use it elsewhere, or was thinking about using it elsewhere. I think instead I just started using terrain() instead of aspect().
 
 # Create empty bricks to hold trajectory lon/ lat at each time step
 trajLon <- brick(array(NA, dim=dim(sst.ann)*c(n.per.ll,n.per.ll,n.per.yr)), xmn=-190, xmx=-40, ymn=20, ymx=65) # empty lon brick
-lons <- seq(xmin(trajLon), xmax(trajLon), length.out=ncol(trajLon)) # longitude values (X values)
-lons.s <- rep(lons, nrow(trajLon)) # "small" (finer resolution) lons
-trajLon <- setValues(trajLon, lons.s, layer=1) # update first year (layer) of brick to give starting lon
+trajLon <- setValues(trajLon, lons, layer=1) # update first year (layer) of brick to give starting lon
 
 trajLat <- brick(array(NA, dim=dim(sst.ann)*c(n.per.ll,n.per.ll,n.per.yr)), xmn=-190, xmx=-40, ymn=20, ymx=65) # empty lat brick
-lats <- seq(ymax(trajLat), ymin(trajLat), length.out=ncol(trajLat)) # latitude values (Y values)
-lats.s <- rep(lats, each=nrow(trajLat)) # "small" (finer resolution) lats
-trajLat <- setValues(trajLat, lats.s, layer=1) # update first year (layer) of brick to give starting lat
-
-# Define appropriate resolution for velocities
-dXkm.s <- spdX*(1/n.per.yr) # "small" (per-time-step) change in X
-dYkm.s <- spdY*(1/n.per.yr) # "small" (per-time-step) change in Y
-
-# Set initial values for destination velocities and locations
-dest.dX <- dXkm.s # the X speed in the previous destination location (updated at the end of each time step)
-dest.dY <- dYkm.s # the Y speed in the previous destination location
-dest.LL <- cbind(lons.s, lats.s) # same as starting LL, but will be updated each iteration after adjDest
+trajLat <- setValues(trajLat, lats, layer=1) # update first year (layer) of brick to give starting lat
 
 # Focal weight matrix: this is used by focal.min and focal.max when called within adjDest (faster to define globally than to continually recreate matrix thousands of times)
-fw.mat <- matrix(c(NA,1,NA,1,NA,1,NA,1,NA),ncol=3) # focal weight matrix; called inside focal.min/max
+fw.mat <- matrix(c(NA,1,NA,1,NA,1,NA,1,NA),ncol=3) # focal weight matrix; called inside focal.min/max()
 
 
 # ====================================================
@@ -106,6 +132,7 @@ for(i in step.index){
 	start.cell <- setValues(start.temp, cellFromXY(start.temp, start.LL)) # change LL to cell#
 		
 	# Calculate the longitude and latitude of proposed destination
+	# TODO with new approach to rook, adjDest() just needs to add rook velocities instead of dest.dX or dest.dY
 	prop.lon <- start.lon + dest.dX/111.325*cos(start.lat/180*pi) # calculate the proposed longitude from speeds and starting LL
 	prop.lat <- start.lat + dest.dY/111.325 # calculate the proposed latitude from speeds and starting latitude
 	prop.LL <- cbind(values(prop.lon), values(prop.lat)) # format proposed LL	
@@ -132,8 +159,8 @@ for(i in step.index){
 	dest.lat <- dest.LL[,2]
 	
 	# Update dest speeds to reflect those in proposed cell
-	dest.dX <- setValues(dXkm.s, extract(dXkm.s, dest.LL)) # use setValues() to preserve raster class and structure
-	dest.dY <- setValues(dXkm.s, extract(dYkm.s, dest.LL)) # note that the 1st object in setValues doesn't matter aside from its extent()
+	dest.dX <- setValues(dXkm, extract(dXkm, dest.LL)) # use setValues() to preserve raster class and structure
+	dest.dY <- setValues(dXkm, extract(dYkm, dest.LL)) # note that the 1st object in setValues doesn't matter aside from its extent()
 	
 	# Update the destination LL in the trajectories (not rounded to correspond to cell)
 	trajLon <- setValues(trajLon, dest.lon, layer=i)
