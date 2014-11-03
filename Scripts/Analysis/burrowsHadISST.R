@@ -33,7 +33,7 @@ spatGrad.slope <- slope(sst.mu, latlon=TRUE)
 
 sst.mu2 <- sst.mu # TODO Can probably just keep sst.mu and redefine its projection; shouldn't affect other calcs on sst.mu, but might be minor optimization improvement to not (essentially) duplicated the object in memory. If so, should maybe redefine it from start, just to ensure consistency.
 crs(sst.mu2) <- "+proj=lcc +lat_1=65 +lat_2=20 +lon_0=0 +ellps=WGS84" # The terrain() function requires that the projection be defined. As far as I can tell, the +lon_0 value in the projection doesn't affect the aspect calculation via terrain, so I'm not worrying about it. using the aspect() function was returning a lot of "no slope" values, so I don't want to use it.
-spatGrad.aspect <- terrain(sst.mu2, opt="aspect", unit="degrees") # direction of spatial gradient
+spatGrad.aspect <- terrain(sst.mu2, opt="aspect", unit="radians") # direction of spatial gradient
 
 
 # ===========================
@@ -106,7 +106,7 @@ for(i in step.index){
 	start.cell <- setValues(start.temp, cellFromXY(start.temp, start.LL)) # change LL to cell#
 		
 	# Calculate the longitude and latitude of proposed destination
-	prop.lon <- start.lon + dest.dX/111.325*cos(start.lat) # calculate the proposed longitude from speeds and starting LL
+	prop.lon <- start.lon + dest.dX/111.325*cos(start.lat/180*pi) # calculate the proposed longitude from speeds and starting LL
 	prop.lat <- start.lat + dest.dY/111.325 # calculate the proposed latitude from speeds and starting latitude
 	prop.LL <- cbind(values(prop.lon), values(prop.lat)) # format proposed LL	
 	prop.LL[is.na(values(dest.dX)),] <- cbind(values(start.lon), values(start.lat))[is.na(values(dest.dX)),] # if the velocity is NA, it's not going anywhere; but still need to keep track of the location of the cell.
@@ -125,6 +125,7 @@ for(i in step.index){
 		propCell=prop.cell,
 		propLL=prop.LL
 	)
+	# TODO forgot a detail: the rook neighbor isn't the dest cell; it defines a new angle that the trajectory should move in. To quote: "If a cooler or warmer cell was found then the trajectory was moved along in the direction to that cell (phi) at a speed given by (V/cos(phi-theta)), and limited to a maximum displacement of 1º of latitude or longitude".
 	dest.cell <- dest.cell.LL$cell
 	dest.LL <- dest.cell.LL$LL
 	dest.lon <- dest.LL[,1]
