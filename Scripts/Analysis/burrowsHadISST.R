@@ -94,11 +94,11 @@ ssf7.vals <- ssf7.vals*pick.ssf7
 spatSlope <- ss0.vals + ss03.vals + ssf7.vals + sst.mu2*(sst2NA) # last term makes sure we didn't average-in velocities for places that we don't even have temperature
 
 # Plot to show where we had problematic NA's from each of the spatial slope rasters
-par(mfrow=c(2,2))
-plot(is.finite(sst.mu2)&!is.finite(spatSlope0))
-plot(is.finite(sst.mu2)&!is.finite(spatSlope.03))
-plot(is.finite(sst.mu2)&!is.finite(spatSlope.f7))
-plot(is.finite(sst.mu2)&!is.finite(spatSlope))
+# par(mfrow=c(2,2))
+# plot(is.finite(sst.mu2)&!is.finite(spatSlope0))
+# plot(is.finite(sst.mu2)&!is.finite(spatSlope.03))
+# plot(is.finite(sst.mu2)&!is.finite(spatSlope.f7))
+# plot(is.finite(sst.mu2)&!is.finite(spatSlope))
 
 
 # ===============================
@@ -142,18 +142,18 @@ saf7.vals <- saf7.vals*pick.saf7
 # Now tally up the final spatial gradient
 spatAng <- sa0.vals + sa03.vals + saf7.vals + sst.mu2*(sst2NA) # last term makes sure we didn't average-in velocities for places that we don't even have temperature
 
-par(mfrow=c(2,2))
-plot(spatAng0)
-plot(spatAng.03)
-plot(spatAng.f7)
-plot(spatAng)
-
-
-par(mfrow=c(2,2))
-plot(is.finite(spatSlope)&!is.finite(spatAng0))
-plot(is.finite(spatSlope)&!is.finite(spatAng.03))
-plot(is.finite(spatSlope)&!is.finite(spatAng.f7))
-plot(is.finite(spatSlope)&!is.finite(spatAng))
+# par(mfrow=c(2,2))
+# plot(spatAng0)
+# plot(spatAng.03)
+# plot(spatAng.f7)
+# plot(spatAng)
+#
+#
+# par(mfrow=c(2,2))
+# plot(is.finite(spatSlope)&!is.finite(spatAng0))
+# plot(is.finite(spatSlope)&!is.finite(spatAng.03))
+# plot(is.finite(spatSlope)&!is.finite(spatAng.f7))
+# plot(is.finite(spatSlope)&!is.finite(spatAng))
 
 
 #
