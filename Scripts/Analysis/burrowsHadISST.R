@@ -96,7 +96,7 @@ dest.dX <- dXkm # the X speed in the previous destination location (updated at t
 dest.dY <- dYkm # the Y speed in the previous destination location
 dest.dX.rook <- dXkm.rook
 dest.dY.rook <- dYkm.rook
-dest.LL <- cbind(lons, lats) # same as starting LL, but will be updated each iteration after adjDest
+dest.LL <- cbind(values(lons), values(lats)) # same as starting LL, but will be updated each iteration after adjDest
 
 
 # Expand sst to higher resolution, while avoiding extra NA's and repeated values in the rook
@@ -106,10 +106,10 @@ sst.ann.s <- sst.ann.s0*sst.ann.s3 # this is ONLY used for nearest (rook) neighb
 
 # Create empty bricks to hold trajectory lon/ lat at each time step
 trajLon <- brick(array(NA, dim=dim(sst.ann)*c(n.per.ll,n.per.ll,n.per.yr)), xmn=-190, xmx=-40, ymn=20, ymx=65) # empty lon brick
-trajLon <- setValues(trajLon, lons, layer=1) # update first year (layer) of brick to give starting lon
+trajLon <- setValues(trajLon, values(lons), layer=1) # update first year (layer) of brick to give starting lon
 
 trajLat <- brick(array(NA, dim=dim(sst.ann)*c(n.per.ll,n.per.ll,n.per.yr)), xmn=-190, xmx=-40, ymn=20, ymx=65) # empty lat brick
-trajLat <- setValues(trajLat, lats, layer=1) # update first year (layer) of brick to give starting lat
+trajLat <- setValues(trajLat, values(lats), layer=1) # update first year (layer) of brick to give starting lat
 
 # Focal weight matrix: this is used by focal.min and focal.max when called within adjDest (faster to define globally than to continually recreate matrix thousands of times)
 fw.mat <- matrix(c(NA,1,NA,1,NA,1,NA,1,NA),ncol=3) # focal weight matrix; called inside focal.min/max()
