@@ -81,8 +81,8 @@ rookAng <- stack(adjAng(4), adjAng(6), adjAng(2), adjAng(8)) # the angle, in rad
 dXkm.rook0 <- rookV*sin(rookAng)
 dYkm.rook0 <- rookV*cos(rookAng)
 
-conv.fact.lon <- 111.325*cos(lats/180*pi) # this value is used inside limitV(), but is defined here to reduce computation time
-dXkm.rook <- limitV(dXkm.rook0)
+conv.fact.lon.init <- 111.325*cos(lats/180*pi) # this value is used inside limitV(), but is defined here to reduce computation time
+dXkm.rook <- limitV(dXkm.rook0, dir="lon", conv.fact.lon=conv.fact.lon.init)
 dYkm.rook <- limitV(dYkm.rook0, dir="lat")
 
 
@@ -133,6 +133,7 @@ for(i in step.index){
 		
 	# Calculate the longitude and latitude of proposed destination
 	# TODO with new approach to rook, adjDest() just needs to add rook velocities instead of dest.dX or dest.dY
+	# TODO need to limit velocities before I do adjDest
 	prop.lon <- start.lon + dest.dX/111.325*cos(start.lat/180*pi) # calculate the proposed longitude from speeds and starting LL
 	prop.lat <- start.lat + dest.dY/111.325 # calculate the proposed latitude from speeds and starting latitude
 	prop.LL <- cbind(values(prop.lon), values(prop.lat)) # format proposed LL	
