@@ -113,7 +113,7 @@ spatAng0[is.nan(spatAng0)] <- NA
 # Note!: Can't just do the average of the angles, like I did with the slopes, because you run into circular problems.
 # Instead I'm doing the spatial averaging of the water temperatures, then taking those angles
 spatAng.03 <- terrain(disaggregate(sloFill(sst.mu, 3, 3), n.per.ll), opt="aspect", unit="radians") # 
-spatAng.f7 <- sloFill(terrain(sst.mu0, opt="aspect", unit="radians"), 7, 7) # to fill in the remaining NA's, do a spatial averaging of the spatial slopes that were calculated from the bilinearly interpolated sst's (to be used most sparingly b/c it's on the largest grid, and b/c it required initial bilinear interpolation before slope was even calculated)
+spatAng.f7 <- terrain(sloFill(sst.mu0, 7, 7), opt="aspect", unit="radians") # to fill in the remaining NA's, do a spatial averaging of the spatial slopes that were calculated from the bilinearly interpolated sst's (to be used most sparingly b/c it's on the largest grid, and b/c it required initial bilinear interpolation before slope was even calculated)
 
 # Set up Logic for what's NA in each of the slope rasters, as well as what's NA in the sst raster
 sst2NA <- !is.finite(sst.mu2)
@@ -146,7 +146,7 @@ par(mfrow=c(2,2))
 plot(spatAng0)
 plot(spatAng.03)
 plot(spatAng.f7)
-plot(spatAng))
+plot(spatAng)
 
 
 par(mfrow=c(2,2))
