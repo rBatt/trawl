@@ -105,6 +105,10 @@ sst.ann.s0 <- disaggregate(sst.ann, n.per.ll, method="bilinear") # "small" grid 
 sst.ann.s3 <- reclassify(disaggregate(sst.ann, n.per.ll), cbind(-Inf, Inf, 1))
 sst.ann.s <- sst.ann.s0*sst.ann.s3 # this is ONLY used for nearest (rook) neighbor searching along coast when proposed trajectory goes to land; OK, actually, it'll be advantageous to use .. didn't finish this thought. I think I use it elsewhere, or was thinking about using it elsewhere. I think instead I just started using terrain() instead of aspect().
 
+# TODO I'm running into a problem where the coastal velocities are NA b/c the slopes there aren't defined; but temperature trajectories start there, and this is the place where they run into the coast
+# sum(is.na(values(climV))&!is.na(values(subset(sst.ann.s,1))))
+# plot(is.na(climV)&!is.na(subset(sst.ann.s,1)))
+
 # Create empty bricks to hold trajectory lon/ lat at each time step
 trajLon <- brick(array(NA, dim=dim(sst.ann)*c(n.per.ll,n.per.ll,n.per.yr)), xmn=-190, xmx=-40, ymn=20, ymx=65) # empty lon brick
 trajLon <- setValues(trajLon, values(lons), layer=1) # update first year (layer) of brick to give starting lon
@@ -152,12 +156,16 @@ for(i in step.index){
 	dest.cell.LL <- adjDest(
 		startLon=start.lon,
 		startLat=start.lat,
+		startCell=start.cell, 
 		startVel=destV, # note that this is the destination velocity from the previous time step (thus, starting velocity)
 		startTemp=start.temp, 
+		
 		propTemp=prop.temp, 
-		startCell=start.cell, 
 		propCell=prop.cell,
-		propLL=prop.LL
+		propLL=prop.LL, 
+		
+		rook.dLon=dest.dX.rook/111.325*cos(start.lat/180*pi),
+		rook.dLat=dest.dY.rook/111.325
 	)
 	# TODO forgot a detail: the rook neighbor isn't the dest cell; it defines a new angle that the trajectory should move in. To quote: "If a cooler or warmer cell was found then the trajectory was moved along in the direction to that cell (phi) at a speed given by (V/cos(phi-theta)), and limited to a maximum displacement of 1º of latitude or longitude".
 	dest.cell <- dest.cell.LL$cell
