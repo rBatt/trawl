@@ -64,7 +64,7 @@ dYkm <- climV*cos(ang) # the Y speed (km/yr to the north)
 # = Get full lon, lat, cell# =
 # ============================
 lons <- setValues(ang, rep(seq(xmin(ang), xmax(ang), length.out=ncol(ang)), nrow(ang)))
-lats <- setValues(ang, rep(seq(ymax(ang), ymin(ang), length.out=ncol(ang)), nrow(ang)))
+lats <- setValues(ang, rep(seq(ymax(ang), ymin(ang), length.out=ncol(ang)), each=nrow(ang)))
 
 
 # ===================================
@@ -90,8 +90,9 @@ dYkm.rook <- limitV(dYkm.rook0, dir="lat")
 # = Define Initial Values for Trajectory Calculation =
 # ====================================================
 # Set initial values for destination velocities and locations
-destV <- climV
-destAng <- ang
+destV <- climV # TODO delete? is this needed? maybe was only needed if I wasn't going to calculate all the rook velocities ahead of time
+# TODO O wait, destV might be needed b/c I'm not sure if I'm comfortable testing for the sign of velocity using dest.dX in adjDest(); should probably use destV. But I still don't think I need destAng.
+destAng <- ang # TODO delete? is this needed? same reasoning as for destV
 dest.dX <- dXkm # the X speed in the previous destination location (updated at the end of each time step)
 dest.dY <- dYkm # the Y speed in the previous destination location
 dest.dX.rook <- dXkm.rook
@@ -130,12 +131,15 @@ for(i in step.index){
 	start.lat <- subset(trajLat, i-1) # latitude of the trajectory at the start of this time step (end of last time step)
 	start.LL <- cbind(values(start.lon), values(start.lat)) # format starting LL
 	start.cell <- setValues(start.temp, cellFromXY(start.temp, start.LL)) # change LL to cell#
+	start.conv.factor.lon <- 111.325*cos(lats/180*pi) # used in limitV()
 		
 	# Calculate the longitude and latitude of proposed destination
 	# TODO with new approach to rook, adjDest() just needs to add rook velocities instead of dest.dX or dest.dY
-	# TODO need to limit velocities before I do adjDest
-	prop.lon <- start.lon + dest.dX/111.325*cos(start.lat/180*pi) # calculate the proposed longitude from speeds and starting LL
-	prop.lat <- start.lat + dest.dY/111.325 # calculate the proposed latitude from speeds and starting latitude
+	# TODO need to limit velocities before I do adjDest; NO, because Burrows just uses small time step to minimize this effect, otherwise could just limit velocities from the start, definitely don't need to do this every iteration
+	prop.dLon <- dest.dX/111.325*cos(start.lat/180*pi)
+	prop.dLat <- dest.dY/111.325
+	prop.lon <- start.lon + prop.dLon # calculate the proposed longitude from speeds and starting LL
+	prop.lat <- start.lat + prop.dLat # calculate the proposed latitude from speeds and starting latitude
 	prop.LL <- cbind(values(prop.lon), values(prop.lat)) # format proposed LL	
 	prop.LL[is.na(values(dest.dX)),] <- cbind(values(start.lon), values(start.lat))[is.na(values(dest.dX)),] # if the velocity is NA, it's not going anywhere; but still need to keep track of the location of the cell.
 	
@@ -146,7 +150,9 @@ for(i in step.index){
 	
 	# Where necessary, adjust the proposed destination to avoid land via rook-search for warmest/ coolest neighbor
 	dest.cell.LL <- adjDest(
-		startVel=dest.dX, # note that this is the destination velocity from the previous time step (thus, starting velocity)
+		startLon=start.lon,
+		startLat=start.lat,
+		startVel=destV, # note that this is the destination velocity from the previous time step (thus, starting velocity)
 		startTemp=start.temp, 
 		propTemp=prop.temp, 
 		startCell=start.cell, 
@@ -162,6 +168,10 @@ for(i in step.index){
 	# Update dest speeds to reflect those in proposed cell
 	dest.dX <- setValues(dXkm, extract(dXkm, dest.LL)) # use setValues() to preserve raster class and structure
 	dest.dY <- setValues(dXkm, extract(dYkm, dest.LL)) # note that the 1st object in setValues doesn't matter aside from its extent()
+	# TODO Update these destinations!
+	dest.dX.rook
+	dest.dY.rook
+	destV
 	
 	# Update the destination LL in the trajectories (not rounded to correspond to cell)
 	trajLon <- setValues(trajLon, dest.lon, layer=i)
