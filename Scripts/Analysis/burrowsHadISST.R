@@ -19,23 +19,6 @@ stat.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/StatFunctions
 invisible(sapply(paste(stat.location, list.files(stat.location), sep="/"), source, .GlobalEnv))
 
 
-# ==================================
-# = Get the temporal trend for SST =
-# ==================================
-# TODO It seems like the temporal trend should be calculated at a finer temporal scale, and that there shouldn't be just 1 climate velocity for the entire time period. I will certainly need to do this calculation for different starting times, as the trawl time series start at different times.
-timeTrend <- stackApply(sst.ann, indices=rep(1,nlayers(sst.ann)), fun=timeSlope)
-
-
-# ============================
-# = Get the spatial gradient =
-# ============================
-spatGrad.slope <- slope(sst.mu, latlon=TRUE)
-
-sst.mu2 <- sst.mu # TODO Can probably just keep sst.mu and redefine its projection; shouldn't affect other calcs on sst.mu, but might be minor optimization improvement to not (essentially) duplicated the object in memory. If so, should maybe redefine it from start, just to ensure consistency.
-crs(sst.mu2) <- "+proj=lcc +lat_1=65 +lat_2=20 +lon_0=0 +ellps=WGS84" # The terrain() function requires that the projection be defined. As far as I can tell, the +lon_0 value in the projection doesn't affect the aspect calculation via terrain, so I'm not worrying about it. using the aspect() function was returning a lot of "no slope" values, so I don't want to use it.
-spatGrad.aspect <- terrain(sst.mu2, opt="aspect", unit="radians") # direction of spatial gradient
-
-
 # ================================
 # = Define Trajectory Resolution =
 # ================================
@@ -48,11 +31,129 @@ step.index <- seq(2, n.yrs*n.per.yr, length.out=n.yrs*n.per.yr-1) # time counter
 tYrs <- rep(1:n.yrs, each=n.per.yr) # reference to the year # that lines up with step.index
 
 
+# ==================================================
+# = High Res & Correct Projection for Temperatures =
+# ==================================================
+# Expand sst to higher resolution, while avoiding extra NA's and repeated values in the rook
+sst.ann.s0 <- disaggregate(sst.ann, n.per.ll, method="bilinear") # "small" grid size for annual sea surface temperature
+sst.ann.s3 <- reclassify(disaggregate(sst.ann, n.per.ll), cbind(-Inf, Inf, 1))
+sst.ann <- sst.ann.s0*sst.ann.s3 # redefining sst.ann, now want to use this for everything
+
+sst.mu0 <- stackApply(sst.ann.s0, indices=rep(1, length(sst.ann)), fun=mean)
+sst.mu2 <- stackApply(sst.ann, indices=rep(1, length(sst.ann)), fun=mean)
+crs(sst.mu) <- "+proj=lcc +lat_1=65 +lat_2=20 +lon_0=0 +ellps=WGS84" # need projection for terrain()
+crs(sst.mu0) <- "+proj=lcc +lat_1=65 +lat_2=20 +lon_0=0 +ellps=WGS84" # need projection for terrain()
+crs(sst.mu2) <- "+proj=lcc +lat_1=65 +lat_2=20 +lon_0=0 +ellps=WGS84" # need projection for terrain()
+
+
+# ==================================
+# = Get the temporal trend for SST =
+# ==================================
+# TODO It seems like the temporal trend should be calculated at a finer temporal scale, and that there shouldn't be just 1 climate velocity for the entire time period. I will certainly need to do this calculation for different starting times, as the trawl time series start at different times.
+timeTrend <- stackApply(sst.ann, indices=rep(1,nlayers(sst.ann)), fun=timeSlope)
+
+
+# =========================
+# = Get the spatial slope =
+# =========================
+# Get the spatial gradient from the original course sst, then disaggregate; this is the simplest form
+spatSlope0 <- disaggregate(slope(sst.mu, latlon=TRUE), n.per.ll) # spatial gradient, then disaggregate
+spatSlope0[is.nan(spatSlope0)] <- NA # turn NaN's to NA's
+
+# Problem: above spatial gradient has NA's where there are SST's
+# Solution: spatial averaging to fill in gaps
+spatSlope.f <- slope(sst.mu0, latlon=TRUE) # spatial slopes taken from a fine spatial resolution
+spatSlope.03 <- sloFill(spatSlope0, 3, 3) # do a spatial average of simple slope to get slopes for most of the problematic NA's in spatSlope0
+spatSlope.f7 <- sloFill(spatSlope.f, 7, 7) # to fill in the remaining NA's, do a spatial averaging of the spatial slopes that were calculated from the bilinearly interpolated sst's (to be used most sparingly b/c it's on the largest grid, and b/c it required initial bilinear interpolation before slope was even calculated)
+
+# Set up Logic for what's NA in each of the slope rasters, as well as what's NA in the sst raster
+sst2NA <- !is.finite(sst.mu2)
+ss0NA <- !is.finite(spatSlope0)
+ss03NA <- !is.finite(spatSlope.03)
+ssf7NA <- !is.finite(spatSlope.f7)
+
+# Set up logic for which slope raster to use
+pick.ss0 <- !ss0NA & !sst2NA
+pick.ss03 <- ss0NA & !sst2NA & !ss03NA
+pick.ssf7 <- ss0NA & !sst2NA & ss03NA & !ssf7NA
+
+# Annoying: 0*NA = NA, so have to change NA's to 0's before adding up slopes (adding is a way of adding values to a subset)
+ss0.vals <- spatSlope0
+ss0.vals[is.na(ss0.vals)] <- 0
+ss0.vals <- ss0.vals*pick.ss0
+
+ss03.vals <- spatSlope.03
+ss03.vals[is.na(ss03.vals)] <- 0
+ss03.vals <- ss03.vals*pick.ss03
+
+ssf7.vals <- spatSlope.f7
+ssf7.vals[is.na(ssf7.vals)] <- 0
+ssf7.vals <- ssf7.vals*pick.ssf7
+
+# Now tally up the final spatial gradient
+spatSlope <- ss0.vals + ss03.vals + ssf7.vals + sst.mu2*(sst2NA) # last term makes sure we didn't average-in velocities for places that we don't even have temperature
+
+# Plot to show where we had problematic NA's from each of the spatial slope rasters
+par(mfrow=c(2,2))
+plot(is.finite(sst.mu2)&!is.finite(spatSlope0))
+plot(is.finite(sst.mu2)&!is.finite(spatSlope.03))
+plot(is.finite(sst.mu2)&!is.finite(spatSlope.f7))
+plot(is.finite(sst.mu2)&!is.finite(spatSlope))
+
+
+# ===============================
+# = Calcualte the spatial angle =
+# ===============================
+# Calculate the angle of the spatial slope
+spatAng0 <- disaggregate(terrain(sst.mu, opt="aspect", unit="radians"), n.per.ll) # direction of spatial gradient
+spatAng0[is.nan(spatAng0)] <- NA
+
+# Problem: above spatial gradient has NA's where there are SST's
+# Solution: spatial averaging to fill in gaps
+# Note!: Can't just do the average of the angles, like I did with the slopes, because you run into circular problems.
+# Instead I'm doing the spatial averaging of the water temperatures, then taking those angles
+spatAng.03 <- terrain(disaggregate(sloFill(sst.mu, 3, 3), n.per.ll), opt="aspect", unit="radians") # 
+spatAng.f7 <- terrain(sloFill(sst.mu0, 7, 7), opt="aspect", unit="radians") # to fill in the remaining NA's, do a spatial averaging of the spatial slopes that were calculated from the bilinearly interpolated sst's (to be used most sparingly b/c it's on the largest grid, and b/c it required initial bilinear interpolation before slope was even calculated)
+
+# Set up Logic for what's NA in each of the slope rasters, as well as what's NA in the sst raster
+sst2NA <- !is.finite(sst.mu2)
+sa0NA <- !is.finite(spatAng0)
+sa03NA <- !is.finite(spatAng.03)
+saf7NA <- !is.finite(spatAng.f7)
+
+# Set up logic for which slope raster to use
+pick.sa0 <- !sa0NA & !sst2NA
+pick.sa03 <- sa0NA & !sst2NA & !sa03NA
+pick.saf7 <- sa0NA & !sst2NA & sa03NA & !saf7NA
+
+# Annoying: 0*NA = NA, so have to change NA's to 0's before adding up slopes (adding is a way of adding values to a subset)
+sa0.vals <- spatAng0
+sa0.vals[is.na(sa0.vals)] <- 0
+sa0.vals <- sa0.vals*pick.sa0
+
+sa03.vals <- spatAng.03
+sa03.vals[is.na(sa03.vals)] <- 0
+sa03.vals <- sa03.vals*pick.sa03
+
+saf7.vals <- spatAng.f7
+saf7.vals[is.na(saf7.vals)] <- 0
+saf7.vals <- saf7.vals*pick.saf7
+
+# Now tally up the final spatial gradient
+spatAng <- sa0.vals + sa03.vals + saf7.vals + sst.mu2*(sst2NA) # last term makes sure we didn't average-in velocities for places that we don't even have temperature
+
+par(mfrow=c(2,2))
+plot(is.finite(spatSlope)&!is.finite(spatAng0))
+plot(is.finite(spatSlope)&!is.finite(spatAng.03))
+plot(is.finite(spatSlope)&!is.finite(spatAng.f7))
+plot(is.finite(spatSlope)&!is.finite(spatAng))
+
+
 # ===========================
 # = Calculate Climate Speed =
 # ===========================
 # Climate velocity and its angle, high resolution
-climV <- disaggregate(timeTrend/spatGrad.slope, n.per.ll)*(1/n.per.yr)  # climate speed in km/yr
+climV <- (timeTrend/spatGrad.slope)*(1/n.per.yr) #disaggregate(timeTrend/spatGrad.slope, n.per.ll)*(1/n.per.yr)  # climate speed in km/yr
 ang <- disaggregate(spatGrad.aspect, n.per.ll) # final spatial resolution for the angle of climate velocity
 
 # Calculate X and Y velocities
@@ -100,14 +201,11 @@ dest.dY.rook <- dYkm.rook
 dest.LL <- cbind(values(lons), values(lats)) # same as starting LL, but will be updated each iteration after adjDest
 
 
-# Expand sst to higher resolution, while avoiding extra NA's and repeated values in the rook
-sst.ann.s0 <- disaggregate(sst.ann, n.per.ll, method="bilinear") # "small" grid size for annual sea surface temperature
-sst.ann.s3 <- reclassify(disaggregate(sst.ann, n.per.ll), cbind(-Inf, Inf, 1))
-sst.ann.s <- sst.ann.s0*sst.ann.s3 # this is ONLY used for nearest (rook) neighbor searching along coast when proposed trajectory goes to land; OK, actually, it'll be advantageous to use .. didn't finish this thought. I think I use it elsewhere, or was thinking about using it elsewhere. I think instead I just started using terrain() instead of aspect().
 
 # TODO I'm running into a problem where the coastal velocities are NA b/c the slopes there aren't defined; but temperature trajectories start there, and this is the place where they run into the coast
 # sum(is.na(values(climV))&!is.na(values(subset(sst.ann.s,1))))
 # plot(is.na(climV)&!is.na(subset(sst.ann.s,1)))
+plot(is.na(spatGrad.slope02)&!is.na(subset(sst.ann.s,1)))
 
 # Create empty bricks to hold trajectory lon/ lat at each time step
 trajLon <- brick(array(NA, dim=dim(sst.ann)*c(n.per.ll,n.per.ll,n.per.yr)), xmn=-190, xmx=-40, ymn=20, ymx=65) # empty lon brick
