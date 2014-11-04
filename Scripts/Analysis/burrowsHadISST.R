@@ -93,23 +93,6 @@ ssf7.vals <- ssf7.vals*pick.ssf7
 # Now tally up the final spatial gradient
 spatSlope <- ss0.vals + ss03.vals + ssf7.vals + sst.mu2*(sst2NA) # last term makes sure we didn't average-in velocities for places that we don't even have temperature
 
-png("~/Desktop/spatSlope_fills_vals.png", res=150, width=7, height=7, units="in")
-par(mfrow=c(2,2))
-plot(spatSlope0, main="spatSlope0")
-plot(spatSlope.03, main="spatSlope.03")
-plot(spatSlope.f7, main="spatSlope.f7")
-plot(spatSlope, main="spatSlope")
-dev.off()
-
-# Plot to show where we had problematic NA's from each of the spatial slope rasters
-png("~/Desktop/spatSlope_fills_whereMiss.png", res=150, width=7, height=7, units="in")
-par(mfrow=c(2,2))
-plot(is.finite(sst.mu2)&!is.finite(spatSlope0))
-plot(is.finite(sst.mu2)&!is.finite(spatSlope.03))
-plot(is.finite(sst.mu2)&!is.finite(spatSlope.f7))
-plot(is.finite(sst.mu2)&!is.finite(spatSlope))
-dev.off()
-
 
 # ===============================
 # = Calcualte the spatial angle =
@@ -151,63 +134,6 @@ saf7.vals <- saf7.vals*pick.saf7
 
 # Now tally up the final spatial gradient
 spatAng <- sa0.vals + sa03.vals + saf7.vals + sst.mu2*(sst2NA) # last term makes sure we didn't average-in velocities for places that we don't even have temperature
-
-png("~/Desktop/spatAng_fills_vals.png", res=150, width=7, height=7, units="in")
-par(mfrow=c(2,2))
-plot(spatAng0, main="spatAng0")
-plot(spatAng.03, main="spatAng.03")
-plot(spatAng.f7, main="spatAng.f7")
-plot(spatAng, main="spatAng")
-dev.off()
-
-# Plot to show where we had problematic NA's from each of the spatial slope rasters
-png("~/Desktop/spatAng_fills_whereMiss.png", res=150, width=7, height=7, units="in")
-par(mfrow=c(2,2))
-plot(is.finite(sst.mu2)&!is.finite(spatAng0))
-plot(is.finite(sst.mu2)&!is.finite(spatAng.03))
-plot(is.finite(sst.mu2)&!is.finite(spatAng.f7))
-plot(is.finite(sst.mu2)&!is.finite(spatAng))
-dev.off()
-
-
-#
-#
-# # Calculate the angle of the spatial slope
-# spatAng0 <- disaggregate(terrain(sst.mu, opt="aspect", unit="radians"), n.per.ll) # direction of spatial gradient
-# spatAng0[is.nan(spatAng0)] <- NA
-#
-# # Problem: above spatial gradient has NA's where there are SST's
-# # Solution: spatial averaging to fill in gaps
-# spatAng.f <- terrain(sst.mu0, opt="aspect", unit="radians") # spatial angles taken from a fine spatial resolution
-# spatAng.03 <- angFill(spatAng0, 3, 3) # do a spatial average of simple slope to get slopes for most of the problematic NA's in spatAng0
-# spatAng.f7 <- angFill(spatAng.f, 7, 7) # to fill in the remaining NA's, do a spatial averaging of the spatial slopes that were calculated from the bilinearly interpolated sst's (to be used most sparingly b/c it's on the largest grid, and b/c it required initial bilinear interpolation before slope was even calculated)
-#
-# # Set up Logic for what's NA in each of the slope rasters, as well as what's NA in the sst raster
-# sst2NA <- !is.finite(sst.mu2)
-# sa0NA <- !is.finite(spatAng0)
-# sa03NA <- !is.finite(spatAng.03)
-# saf7NA <- !is.finite(spatAng.f7)
-#
-# # Set up logic for which slope raster to use
-# pick.sa0 <- !sa0NA & !sst2NA
-# pick.sa03 <- sa0NA & !sst2NA & !sa03NA
-# pick.saf7 <- sa0NA & !sst2NA & sa03NA & !saf7NA
-#
-# # Annoying: 0*NA = NA, so have to change NA's to 0's before adding up slopes (adding is a way of adding values to a subset)
-# sa0.vals <- spatAng0
-# sa0.vals[is.na(sa0.vals)] <- 0
-# sa0.vals <- sa0.vals*pick.sa0
-#
-# sa03.vals <- spatAng.03
-# sa03.vals[is.na(sa03.vals)] <- 0
-# sa03.vals <- sa03.vals*pick.sa03
-#
-# saf7.vals <- spatAng.f7
-# saf7.vals[is.na(saf7.vals)] <- 0
-# saf7.vals <- saf7.vals*pick.saf7
-#
-# # Now tally up the final spatial gradient
-# spatAng <- sa0.vals + sa03.vals + saf7.vals + sst.mu2*(sst2NA) # last term makes sure we didn't average-in velocities for places that we don't even have temperature
 
 
 # ===========================
