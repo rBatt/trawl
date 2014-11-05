@@ -10,7 +10,9 @@ library(SDMTools)
 # = Load Data =
 # =============
 load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/HadISST.RData")
-
+sst.mu0 <- sst.mu
+sst.ann0 <- sst.ann
+rm(list=c("sst.mu","sst.ann"))
 
 # =============================
 # = Load statistics functions =
@@ -26,7 +28,7 @@ invisible(sapply(paste(stat.location, list.files(stat.location), sep="/"), sourc
 n.per.yr <- 2 # number of time steps per year (burrows used 10)
 n.per.ll <- 2 # sqrt(number of cells per 1 degree grid cell) (burrows used 10)
 
-n.yrs <- dim(sst.ann)[3] # number of years
+n.yrs <- dim(sst.ann0)[3] # number of years
 step.index <- seq(2, n.yrs*n.per.yr, length.out=n.yrs*n.per.yr-1) # time counter for loop
 tYrs <- rep(1:n.yrs, each=n.per.yr) # reference to the year # that lines up with step.index
 
@@ -35,14 +37,14 @@ tYrs <- rep(1:n.yrs, each=n.per.yr) # reference to the year # that lines up with
 # = High Res & Correct Projection for Temperatures =
 # ==================================================
 # Expand sst to higher resolution, while avoiding extra NA's and repeated values in the rook
-sst.ann.s0 <- disaggregate(sst.ann, n.per.ll, method="bilinear") # "small" grid size for annual sea surface temperature
-sst.ann.s3 <- reclassify(disaggregate(sst.ann, n.per.ll), cbind(-Inf, Inf, 1))
+sst.ann.s0 <- disaggregate(sst.ann0, n.per.ll, method="bilinear") # "small" grid size for annual sea surface temperature
+sst.ann.s3 <- reclassify(disaggregate(sst.ann0, n.per.ll), cbind(-Inf, Inf, 1))
 sst.ann <- sst.ann.s0*sst.ann.s3 # redefining sst.ann, now want to use this for everything
 
-sst.mu0 <- stackApply(sst.ann.s0, indices=rep(1, length(sst.ann)), fun=mean)
+sst.mu.s0 <- stackApply(sst.ann.s0, indices=rep(1, length(sst.ann)), fun=mean)
 sst.mu2 <- stackApply(sst.ann, indices=rep(1, length(sst.ann)), fun=mean)
-crs(sst.mu) <- "+proj=lcc +lat_1=65 +lat_2=20 +lon_0=0 +ellps=WGS84" # need projection for terrain()
 crs(sst.mu0) <- "+proj=lcc +lat_1=65 +lat_2=20 +lon_0=0 +ellps=WGS84" # need projection for terrain()
+crs(sst.mu.s0) <- "+proj=lcc +lat_1=65 +lat_2=20 +lon_0=0 +ellps=WGS84" # need projection for terrain()
 crs(sst.mu2) <- "+proj=lcc +lat_1=65 +lat_2=20 +lon_0=0 +ellps=WGS84" # need projection for terrain()
 
 
@@ -57,12 +59,12 @@ timeTrend <- stackApply(sst.ann, indices=rep(1,nlayers(sst.ann)), fun=timeSlope)
 # = Get the spatial slope =
 # =========================
 # Get the spatial gradient from the original course sst, then disaggregate; this is the simplest form
-spatSlope0 <- disaggregate(slope(sst.mu, latlon=TRUE), n.per.ll) # spatial gradient, then disaggregate
+spatSlope0 <- disaggregate(slope(sst.mu0, latlon=TRUE), n.per.ll) # spatial gradient, then disaggregate
 spatSlope0[is.nan(spatSlope0)] <- NA # turn NaN's to NA's
 
 # Problem: above spatial gradient has NA's where there are SST's
 # Solution: spatial averaging to fill in gaps
-spatSlope.f <- slope(sst.mu0, latlon=TRUE) # spatial slopes taken from a fine spatial resolution
+spatSlope.f <- slope(sst.mu.s0, latlon=TRUE) # spatial slopes taken from a fine spatial resolution
 spatSlope.03 <- sloFill(spatSlope0, 3, 3) # do a spatial average of simple slope to get slopes for most of the problematic NA's in spatSlope0
 spatSlope.f7 <- sloFill(spatSlope.f, 7, 7) # to fill in the remaining NA's, do a spatial averaging of the spatial slopes that were calculated from the bilinearly interpolated sst's (to be used most sparingly b/c it's on the largest grid, and b/c it required initial bilinear interpolation before slope was even calculated)
 
@@ -98,7 +100,7 @@ spatSlope <- ss0.vals + ss03.vals + ssf7.vals + sst.mu2*(sst2NA) # last term mak
 # = Calcualte the spatial angle =
 # ===============================
 # Calculate the angle of the spatial slope
-spatAng0 <- disaggregate(terrain(sst.mu, opt="aspect", unit="radians"), n.per.ll) # direction of spatial gradient
+spatAng0 <- disaggregate(terrain(sst.mu0, opt="aspect", unit="radians"), n.per.ll) # direction of spatial gradient
 spatAng0[is.nan(spatAng0)] <- NA
 
 # Problem: above spatial gradient has NA's where there are SST's
@@ -106,11 +108,9 @@ spatAng0[is.nan(spatAng0)] <- NA
 # Note!: Can't just do the average of the angles, like I did with the slopes, because you run into circular problems.
 # Instead I'm doing the spatial averaging of the water temperatures, then taking those angles
 # spatAng.03 <- terrain(disaggregate(sloFill(sst.mu, 3, 3), n.per.ll), opt="aspect", unit="radians") #
-# spatAng.f7 <- sloFill(terrain(sst.mu0, opt="aspect", unit="radians"), 7, 7) # to fill in the remaining NA's, do a spatial averaging of the spatial slopes that were calculated from the bilinearly interpolated sst's (to be used most sparingly b/c it's on the largest grid, and b/c it required initial bilinear interpolation before slope was even calculated)
-spatAng.03 <- angFill(disaggregate(terrain(sst.mu, opt="aspect", unit="radians"), n.per.ll), 3, 3)
-spatAng.f7 <- angFill(terrain(sst.mu0, opt="aspect", unit="radians"), 7, 7) #angFill(terrain(sst.mu0, opt="aspect", unit="radians"), 7, 7)
-
-
+# spatAng.f7 <- sloFill(terrain(sst.mu.s0, opt="aspect", unit="radians"), 7, 7) # to fill in the remaining NA's, do a spatial averaging of the spatial slopes that were calculated from the bilinearly interpolated sst's (to be used most sparingly b/c it's on the largest grid, and b/c it required initial bilinear interpolation before slope was even calculated)
+spatAng.03 <- angFill(disaggregate(terrain(sst.mu0, opt="aspect", unit="radians"), n.per.ll), 3, 3)
+spatAng.f7 <- angFill(terrain(sst.mu.s0, opt="aspect", unit="radians"), 7, 7) #angFill(terrain(sst.mu.s0, opt="aspect", unit="radians"), 7, 7)
 
 # Set up Logic for what's NA in each of the slope rasters, as well as what's NA in the sst raster
 sst2NA <- !is.finite(sst.mu2)
@@ -140,12 +140,43 @@ saf7.vals <- saf7.vals*pick.saf7
 spatAng <- sa0.vals + sa03.vals + saf7.vals + sst.mu2*(sst2NA) # last term makes sure we didn't average-in velocities for places that we don't even have temperature
 
 
+# ==============================================
+# = Define Great Lakes Region Extent and Cells =
+# ==============================================
+# These will need to be removed – I don't want to calculate velocities here b/c there really aren't enough cells
+# extentGL <- drawExtent()
+# extentGL
+# class       : Extent
+# xmin        : -91.84594
+# xmax        : -75.69788
+# ymin        : 40.2384
+# ymax        : 49.70159
+extentGL <- extent(-91.84594, -75.69788, 40.23840, 49.70159)
+cellsGL <- cellsFromExtent(spatSlope, extent=extentGL)
+
+
+# ====================================
+# = Trim/ create mean and annual sst =
+# ====================================
+# Trim to make GL extent NA for annual sst
+sst.yrly <- sst.ann
+sst.yrly[cellsGL] <- NA
+
+# Trim to make GL extent NA for annual sst
+sst.mu <- sst.mu2
+sst.mu[cellsGL] <- NA
+
+
+
 # ===========================
 # = Calculate Climate Speed =
 # ===========================
 # Climate velocity and its angle, high resolution
-climV <- (timeTrend/spatGrad.slope)*(1/n.per.yr) #disaggregate(timeTrend/spatGrad.slope, n.per.ll)*(1/n.per.yr)  # climate speed in km/yr
-ang <- disaggregate(spatGrad.aspect, n.per.ll) # final spatial resolution for the angle of climate velocity
+climV <- (timeTrend/spatSlope)*(1/n.per.yr) #disaggregate(timeTrend/spatGrad.slope, n.per.ll)*(1/n.per.yr)  # climate speed in km/yr
+climV[cellsGL] <- NA
+
+ang <- spatAng # disaggregate(spatAng, n.per.ll) # final spatial resolution for the angle of climate velocity
+ang[cellsGL] <- NA
 
 # Calculate X and Y velocities
 dXkm <- climV*sin(ang) # the X speed (km/yr to the east)
@@ -192,17 +223,11 @@ dest.dY.rook <- dYkm.rook
 dest.LL <- cbind(values(lons), values(lats)) # same as starting LL, but will be updated each iteration after adjDest
 
 
-
-# TODO I'm running into a problem where the coastal velocities are NA b/c the slopes there aren't defined; but temperature trajectories start there, and this is the place where they run into the coast
-# sum(is.na(values(climV))&!is.na(values(subset(sst.ann.s,1))))
-# plot(is.na(climV)&!is.na(subset(sst.ann.s,1)))
-plot(is.na(spatGrad.slope02)&!is.na(subset(sst.ann.s,1)))
-
 # Create empty bricks to hold trajectory lon/ lat at each time step
-trajLon <- brick(array(NA, dim=dim(sst.ann)*c(n.per.ll,n.per.ll,n.per.yr)), xmn=-190, xmx=-40, ymn=20, ymx=65) # empty lon brick
+trajLon <- brick(array(NA, dim=dim(sst.ann0)*c(n.per.ll,n.per.ll,n.per.yr)), xmn=-190, xmx=-40, ymn=20, ymx=65) # empty lon brick
 trajLon <- setValues(trajLon, values(lons), layer=1) # update first year (layer) of brick to give starting lon
 
-trajLat <- brick(array(NA, dim=dim(sst.ann)*c(n.per.ll,n.per.ll,n.per.yr)), xmn=-190, xmx=-40, ymn=20, ymx=65) # empty lat brick
+trajLat <- brick(array(NA, dim=dim(sst.ann0)*c(n.per.ll,n.per.ll,n.per.yr)), xmn=-190, xmx=-40, ymn=20, ymx=65) # empty lat brick
 trajLat <- setValues(trajLat, values(lats), layer=1) # update first year (layer) of brick to give starting lat
 
 # Focal weight matrix: this is used by focal.min and focal.max when called within adjDest (faster to define globally than to continually recreate matrix thousands of times)
