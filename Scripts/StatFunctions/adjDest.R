@@ -1,8 +1,22 @@
-
+focal2dL <- function(f, dL){
+	# f contains the focal rook matches
+	# dL contains either latitude or longitude velocities associated with those rook directions
+	v4 <- (f==4L)*subset(dL, 1)
+	v6 <- (f==6L)*subset(dL, 2)
+	v2 <- (f==2L)*subset(dL, 3)
+	v8 <- (f==8L)*subset(dL, 4)
+	v4+v6+v2+v8
+}
 # Function to adjust the proposed destination of the trajectory, if it needs it.
 adjDest <- function(startVel, startTemp, propTemp, startCell, propCell, propLL){
 	# Find coolest and warmest rook neighbors (location and temperature)
 	coolFocal <- focal.min(startTemp) # gets the cell# within the focal matrix around startTemp
+	cool.dLon <- focal2dL(f=coolFocal, dL=rook.dLon)
+	cool.dLat <- focal2dL(f=coolFocal, dL=rook.dLat)
+	coolLon <- startLon + cool.dLon
+	coolLat <- startLat + cool.dLat
+	coolLL <- cbind(values(coolLon), values(coolLat))
+	coolCell <- 
 	coolCell <- focal2cell(coolFocal) # get convert the cell # in the focal (3x3) raster to the cell# in the full raster
 	coolTemp <- setValues(startTemp, extract(startTemp,values(coolCell))) # temp of coolest rook neighbor
 	
