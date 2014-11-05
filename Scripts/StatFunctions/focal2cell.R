@@ -5,3 +5,4 @@ focal2cell <- function(f){ # convert the focal raster cell# to parent raster cel
 	f.conv <- reclassify(f, cbind(c(4,6,2,8),c(-1,1,-f.ncol,f.ncol))) # convert focal cell# to raster cell# (assumes 3x3 focal)
 	f.cell+f.conv # convert
 }
+# TODO might need to add 5
