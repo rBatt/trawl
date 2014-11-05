@@ -151,6 +151,8 @@ spatAng <- sa0.vals + sa03.vals + saf7.vals + sst.mu2*(sst2NA) # last term makes
 # xmax        : -75.69788
 # ymin        : 40.2384
 # ymax        : 49.70159
+# See the extent coordinates in the map in the comment of this commit:
+# https://github.com/rBatt/trawl/commit/7d14ea798861957e2d4d02cf8df41e6824a19103?diff=unified
 extentGL <- extent(-91.84594, -75.69788, 40.23840, 49.70159)
 cellsGL <- cellsFromExtent(spatSlope, extent=extentGL)
 
@@ -215,7 +217,7 @@ dYkm.rook <- limitV(dYkm.rook0, dir="lat")
 # Set initial values for destination velocities and locations
 destV <- climV # TODO delete? is this needed? maybe was only needed if I wasn't going to calculate all the rook velocities ahead of time
 # TODO O wait, destV might be needed b/c I'm not sure if I'm comfortable testing for the sign of velocity using dest.dX in adjDest(); should probably use destV. But I still don't think I need destAng.
-destAng <- ang # TODO delete? is this needed? same reasoning as for destV
+# destAng <- ang # TODO delete? is this needed? same reasoning as for destV
 dest.dX <- dXkm # the X speed in the previous destination location (updated at the end of each time step)
 dest.dY <- dYkm # the Y speed in the previous destination location
 dest.dX.rook <- dXkm.rook
@@ -241,16 +243,16 @@ sst.pb <- txtProgressBar(min=2, max=max(step.index), style=3)
 for(i in step.index){
 	t.yr <- tYrs[i]
 	
-	t.temp <- subset(sst.ann.s, t.yr)
+	t.temp <- subset(sst.yrly, t.yr)
 	start.temp <- setValues(t.temp, extract(t.temp, dest.LL))
 	
 	# Extract the longitude and latitude of starting location
 	start.lon <- subset(trajLon, i-1) # longitude of the trajectory at the start of this time step (end of last time step)
 	start.lat <- subset(trajLat, i-1) # latitude of the trajectory at the start of this time step (end of last time step)
 	start.LL <- cbind(values(start.lon), values(start.lat)) # format starting LL
-	start.cell <- setValues(start.temp, cellFromXY(start.temp, start.LL)) # change LL to cell#
+	# start.cell <- setValues(start.temp, cellFromXY(start.temp, start.LL)) # change LL to cell#
 	start.conv.factor.lon <- 111.325*cos(lats/180*pi) # used in limitV()
-		
+	
 	# Calculate the longitude and latitude of proposed destination
 	# TODO with new approach to rook, adjDest() just needs to add rook velocities instead of dest.dX or dest.dY
 	# TODO need to limit velocities before I do adjDest; NO, because Burrows just uses small time step to minimize this effect, otherwise could just limit velocities from the start, definitely don't need to do this every iteration
@@ -261,29 +263,29 @@ for(i in step.index){
 	prop.LL <- cbind(values(prop.lon), values(prop.lat)) # format proposed LL	
 	prop.LL[is.na(values(dest.dX)),] <- cbind(values(start.lon), values(start.lat))[is.na(values(dest.dX)),] # if the velocity is NA, it's not going anywhere; but still need to keep track of the location of the cell.
 	
-	prop.cell <- setValues(start.temp, cellFromXY(start.temp, prop.LL)) # change LL to cell#; could do prop.temps, but haven't subset yet	
+	# prop.cell <- setValues(start.temp, cellFromXY(start.temp, prop.LL)) # change LL to cell#; could do prop.temps, but haven't subset yet
 	
 	# Extract cell# and X/Y speeds of proposed cell
 	prop.temp <- setValues(t.temp, extract(start.temp, prop.LL)) # the temperature in the proposed location (used to determine if destination is on land)
 	
 	# Where necessary, adjust the proposed destination to avoid land via rook-search for warmest/ coolest neighbor
-	dest.cell.LL <- adjDest(
+	dest.LL <- adjDest(
 		startLon=start.lon,
 		startLat=start.lat,
-		startCell=start.cell, 
+		# startCell=start.cell,
 		startVel=destV, # note that this is the destination velocity from the previous time step (thus, starting velocity)
 		startTemp=start.temp, 
 		
 		propTemp=prop.temp, 
-		propCell=prop.cell,
+		# propCell=prop.cell,
 		propLL=prop.LL, 
 		
 		rook.dLon=dest.dX.rook/111.325*cos(start.lat/180*pi),
 		rook.dLat=dest.dY.rook/111.325
 	)
 	# TODO forgot a detail: the rook neighbor isn't the dest cell; it defines a new angle that the trajectory should move in. To quote: "If a cooler or warmer cell was found then the trajectory was moved along in the direction to that cell (phi) at a speed given by (V/cos(phi-theta)), and limited to a maximum displacement of 1º of latitude or longitude".
-	dest.cell <- dest.cell.LL$cell
-	dest.LL <- dest.cell.LL$LL
+	# dest.cell <- dest.cell.LL$cell
+	# dest.LL <- dest.cell.LL$LL
 	dest.lon <- dest.LL[,1]
 	dest.lat <- dest.LL[,2]
 	
