@@ -195,7 +195,8 @@ lats <- setValues(ang, rep(seq(ymax(ang), ymin(ang), length.out=ncol(ang)), each
 # ===================================
 # = Get the rook velocities, angles =
 # ===================================
-rookV <- stack(adjV(4), adjV(6), adjV(2), adjV(8)) # these are the velocities for each of the 4 possible directions a trajectory can go when the calculated velocity would make it go from sea to land; which of the 4 directions chosen depends on the sign of the velocity, 
+rookV <- stack(adjV(4), adjV(6), adjV(2), adjV(8)) # these are the velocities for each of the 4 possible directions a trajectory can go when the calculated velocity would make it go from sea to land; which of the 4 directions chosen depends on the sign of the velocity,
+# rookV[is.na(rookV)] <- 0 # set NA's to 0 because these values will eventually just be added to other longitudes and latitudes, and if these velocities are NA,
 rookAng <- stack(adjAng(4), adjAng(6), adjAng(2), adjAng(8)) # the angle, in radians, for the rook directions
 # cellNum <- setValues(ang, 1:length(ang))
 
@@ -209,6 +210,10 @@ dYkm.rook0 <- rookV*cos(rookAng)
 conv.fact.lon.init <- 111.325*cos(lats/180*pi) # this value is used inside limitV(), but is defined here to reduce computation time
 dXkm.rook <- limitV(dXkm.rook0, dir="lon", conv.fact.lon=conv.fact.lon.init)
 dYkm.rook <- limitV(dYkm.rook0, dir="lat")
+
+# Changes NA rook velocities to 0, because they'll be added to starting lon/lat (after conversion from km to degrees)
+dXkm.rook[is.na(dXkm.rook)] <- 0
+dYkm.rook[is.na(dYkm.rook)] <- 0
 
 
 # ====================================================
