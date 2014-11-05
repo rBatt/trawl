@@ -24,72 +24,43 @@ focal2dL <- function(f, dL){
 # 	rook.dLat=dest.dY.rook/111.325
 # )
 
-dev.new()
-par(mfrow=c(2,2))
-plot(is.finite(sst.mu2)&!is.finite(spatAng0))
-plot(is.finite(sst.mu2)&!is.finite(spatAng.03))
-plot(is.finite(sst.mu2)&!is.finite(spatAng.f7))
-plot(is.finite(sst.mu2)&!is.finite(spatAng))
-
-par(mfrow=c(2,2))
-plot(is.finite(sst.mu2)&!is.finite(spatSlope0))
-plot(is.finite(sst.mu2)&!is.finite(spatSlope.03))
-plot(is.finite(sst.mu2)&!is.finite(spatSlope.f7))
-plot(is.finite(sst.mu2)&!is.finite(spatSlope))
-
-plot(is.finite(sst.mu2)&!is.finite(climV))
-
-
-par(mfrow=c(2,2))
-plot(is.finite(sst.mu2)&!is.finite(subset(rook.dLon,1)))
-plot(is.finite(sst.mu2)&!is.finite(subset(rook.dLon,2)))
-plot(is.finite(sst.mu2)&!is.finite(subset(rook.dLon,3)))
-plot(is.finite(sst.mu2)&!is.finite(subset(rook.dLon,4)))
-
-par(mfrow=c(2,2))
-plot(is.finite(sst.mu2)&!is.finite(subset(rook.dLat,1)))
-plot(is.finite(sst.mu2)&!is.finite(subset(rook.dLat,2)))
-plot(is.finite(sst.mu2)&!is.finite(subset(rook.dLat,3)))
-plot(is.finite(sst.mu2)&!is.finite(subset(rook.dLat,4)))
-
-par(mfrow=c(2,2))
-plot(is.finite(sst.mu2)&!is.finite(cool.dLon), main="cool.dLon")
-plot(is.finite(sst.mu2)&!is.finite(cool.dLat), main="cool.dLat")
-plot(is.finite(sst.mu2)&!is.finite(warm.dLon), main="warm.dLon")
-plot(is.finite(sst.mu2)&!is.finite(warm.dLat), main="warm.dLat")
-
-par(mfrow=c(2,2))
-plot(is.finite(sst.mu2)&!is.finite(coolLon), main="coolLon")
-plot(is.finite(sst.mu2)&!is.finite(coolLat), main="coolLat")
-plot(is.finite(sst.mu2)&!is.finite(warmLon), main="warmLon")
-plot(is.finite(sst.mu2)&!is.finite(warmLat), main="warmLat")
-
-
-par(mfrow=c(2,2))
-plot(is.finite(startVel)&!is.finite(coolLon), main="coolLon")
-plot(is.finite(startVel)&!is.finite(coolLat), main="coolLat")
-plot(is.finite(startVel)&!is.finite(warmLon), main="warmLon")
-plot(is.finite(startVel)&!is.finite(warmLat), main="warmLat")
-
-par(mfrow=c(2,2))
-plot(is.finite(startLon)&!is.finite(coolLon), main="coolLon")
-plot(is.finite(startLat)&!is.finite(coolLat), main="coolLat")
-plot(is.finite(startLon)&!is.finite(warmLon), main="warmLon")
-plot(is.finite(startLat)&!is.finite(warmLat), main="warmLat")
-
 
 # Function to adjust the proposed destination of the trajectory, if it needs it.
 adjDest <- function(startLon, startLat, startCell, startVel, startTemp, propTemp, propCell, propLL, rook.dLon, rook.dLat){
-	# Find coolest and warmest rook neighbors (location and temperature)
+
+	# ===============================
+	# = Find coolest rook neighbors =
+	# ===============================
+	# Find the neighbors
 	coolFocal <- focal.min(startTemp) # gets the cell# within the focal matrix around startTemp
-	cool.dLon <- focal2dL(f=coolFocal, dL=rook.dLon)
-	cool.dLat <- focal2dL(f=coolFocal, dL=rook.dLat)
-	coolLon <- startLon + cool.dLon
-	coolLat <- startLat + cool.dLat
-	coolLL <- cbind(values(coolLon), values(coolLat))
-	coolCell <- cellFromXY(startTemp, coolLL)
-	coolTemp <- setValues(startTemp, extract(startTemp,coolCell)) # temp of coolest rook neighbor
+	cool.dLon <- focal2dL(f=coolFocal, dL=rook.dLon) # change neighbor location into a velocity in the X direction
+	cool.dLat <- focal2dL(f=coolFocal, dL=rook.dLat) # same, but in the Y direction
+	coolLon <- startLon + cool.dLon # add the X velocity to the starting X location
+	coolLat <- startLat + cool.dLat # same, but Y
+	coolLL <- cbind(values(coolLon), values(coolLat)) # combine the new lon/lats into a matrix
+	coolCell <- cellFromXY(startTemp, coolLL) # use the lon/lat matrix of new location to get new cell#'s
+	coolTemp <- setValues(startTemp, extract(startTemp,coolCell)) # use new cell#'s to get new temperatures (of coolest neighbor)
 	
+	# Fix bad cools by selecting center of chosen rook
+	# Because the conversion of neighbor location into a velocity includes a phi-theta, a rook match to the north
+	# for a cell originally headed to the west will produce a velocity to the northwest
+	# this causes a problem if, e.g., the starting cell was on the wester border, or if (more generally) the cell to the NW is on land etc.
+	# I am going to correct for this by just using the rook cell as the new destination
+	coolProblem <- is.na(coolTemp)&!is.na(startTemp)
+	if(any(values(coolProblem))){ # if there any problematic cool destinations, then ...
+		coolCorrectCell <- focal2cell(coolFocal)[coolProblem] # get the new destination cell # from the rook focal cell #
+		coolCell[values(coolProblem)] <- coolCorrectCell # replace the old cool cell#'s with the corrected ones
+		coolTemp <- setValues(startTemp, extract(startTemp,coolCell)) # update temperatures to corrected rook location
+		coolCorrectLL <- xyFromCell(coolTemp, coolCorrectCell) # get corrected rook lon/lat (this is the lon/lat at the center of the rook)
+		coolLL[values(coolProblem),] <- coolCorrectLL # update the lon/lat to corrected values
+	}
+	
+	
+	# ================================
+	# = Find warming rooks neighbors =
+	# ================================
+	# see cool for detailed notes
+	# find warm neighbors
 	warmFocal <- focal.max(startTemp) # gets the cell# within the focal matrix around startTemp
 	warm.dLon <- focal2dL(f=warmFocal, dL=rook.dLon)
 	warm.dLat <- focal2dL(f=warmFocal, dL=rook.dLat)
@@ -99,7 +70,19 @@ adjDest <- function(startLon, startLat, startCell, startVel, startTemp, propTemp
 	warmCell <- cellFromXY(startTemp, warmLL)
 	warmTemp <- setValues(startTemp, extract(startTemp,warmCell)) # temp of warmest rook neighbor
 	
+	# Fix bad warms by selecting center of chosen rook
+	warmProblem <- is.na(warmTemp)&!is.na(startTemp)
+	if(any(values(warmProblem))){
+		warmCorrectCell <- focal2cell(warmFocal)[warmProblem]
+		warmCell[values(warmProblem)] <- warmCorrectCell
+		warmTemp <- setValues(startTemp, extract(startTemp,warmCell))
+		warmCorrectLL <- xyFromCell(warmTemp, warmCorrectCell)
+		warmLL[values(warmProblem),] <- warmCorrectLL
+	}
 	
+	# ===============================================
+	# = Logic for correcting a proposed destination =
+	# ===============================================
 	posVel <- is.finite(startVel)&startVel>0
 	negVel <- is.finite(startVel)&startVel<0
 	
@@ -110,6 +93,9 @@ adjDest <- function(startLon, startLat, startCell, startVel, startTemp, propTemp
 	belWarm <- belAdj & negVel & warmTemp>startTemp # logical: should+can we reject the prop & find warmer neighbor?
 	belStart <- belAdj & !(belCool|belWarm) # logical: needs adj, but can't find warmer/cooler rook? (this is coastal sink)
 	
+	# =================
+	# = A quick check =
+	# =================
 	# A cell should not be TRUE in more than one of the bel___ rasters; if it does, my logic is flawed
 	sumBelongs <- values(belProp+belCool+belWarm+belStart) # the number adjustment outcomes to which each cell belongs
 	stopifnot(all(is.na(sumBelongs)|sumBelongs<=1)) # check to ensure that *at most* 1 adjustment is made to each proposed trajectory
@@ -122,13 +108,17 @@ adjDest <- function(startLon, startLat, startCell, startVel, startTemp, propTemp
 	# This applies the appropriate adjustment to each proprosed trajectory that needs adjusting (values are cell#)
 	# destCell <- belProp*propCell + belStart*startCell + belCool*coolCell + belWarm*warmCell # checked/adjusted destination cell
 	
+	# ================================================
+	# = OK, get the (corrected) destination lon/ lat =
+	# ================================================
 	destLL <- propLL
 	destLL[values(belCool),] <- coolLL[values(belCool),]
 	destLL[values(belWarm),] <- warmLL[values(belCool),]
-	destLL[values(belStart),] <- cbind(values(startLon), values(startLat))[values(belCool),]
+	destLL[values(belStart),] <- cbind(values(startLon), values(startLat))[values(belStart),]
 	
-	# destLL[values(belAdj),] <- xyFromCell(destCell, values(destCell))[values(belAdj),]
 	
-	# return(list(cell=destCell, LL=destLL))
+	# ===============================
+	# = Return destination lon/ lat =
+	# ===============================
 	return(destLL)
 }
