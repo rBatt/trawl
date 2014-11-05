@@ -5,6 +5,7 @@
 # Note: climV and ang are defined outside the functions
 adjV <- function(rDir){
 	switch(as.character(rDir),
+		"5"=0,
 		"4"=climV/cos(pi/2-ang),
 		"6"=climV/cos(1.5*pi-ang),
 		"2"=climV/cos(0-ang),
@@ -13,6 +14,7 @@ adjV <- function(rDir){
 }
 adjAng <- function(rDir){
 	switch(as.character(rDir),
+		"5"=0,
 		"4"=setValues(ang,pi/2),
 		"6"=setValues(ang,1.5*pi),
 		"2"=setValues(ang,0),
