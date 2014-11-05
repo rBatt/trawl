@@ -139,21 +139,6 @@ saf7.vals <- saf7.vals*pick.saf7
 # Now tally up the final spatial gradient
 spatAng <- sa0.vals + sa03.vals + saf7.vals + sst.mu2*(sst2NA) # last term makes sure we didn't average-in velocities for places that we don't even have temperature
 
-png("~/Desktop/spatAng_fills_vals.png", res=150, width=7, height=7, units="in")
-par(mfrow=c(2,2))
-plot(spatAng0, main="spatAng0")
-plot(spatAng.03, main="spatAng.03")
-plot(spatAng.f7, main="spatAng.f7")
-plot(spatAng, main="spatAng")
-dev.off()
-
-png("~/Desktop/spatAng_fills_whereMiss.png", res=150, width=7, height=7, units="in")
-par(mfrow=c(2,2))
-plot(is.finite(sst.mu2)&!is.finite(spatAng0), main="sst available, but no spatAng0")
-plot(is.finite(sst.mu2)&!is.finite(spatAng.03), main="sst available, but no spatAng.03")
-plot(is.finite(sst.mu2)&!is.finite(spatAng.f7), main="sst available, but no spatAng.f7")
-plot(is.finite(sst.mu2)&!is.finite(spatAng), main="sst available, but no spatAng")
-dev.off()
 
 # ===========================
 # = Calculate Climate Speed =
