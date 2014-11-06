@@ -15,8 +15,8 @@ adjV <- function(rDir){
 adjAng <- function(rDir){
 	switch(as.character(rDir),
 		"5"=0,
-		"4"=setValues(ang,pi/2),
-		"6"=setValues(ang,1.5*pi),
+		"4"=setValues(ang,3*pi/2),
+		"6"=setValues(ang,pi/2),
 		"2"=setValues(ang,0),
 		"8"=setValues(ang,pi)
 		)
