@@ -41,6 +41,13 @@ adjDest <- function(startLon, startLat, startCell, startVel, startTemp, propTemp
 	coolCell <- cellFromXY(startTemp, coolLL) # use the lon/lat matrix of new location to get new cell#'s
 	coolTemp <- setValues(startTemp, extract(startTemp,coolCell)) # use new cell#'s to get new temperatures (of coolest neighbor)
 	
+	# par(mfrow=c(2,2))
+	# plot(is.finite(startLon)&!is.finite(coolLon), main="coolLon")
+	# plot(is.finite(startLat)&!is.finite(coolLat), main="coolLat")
+	#
+	#  minLon <- which.min(coolLL[,1])
+
+	
 	# Fix bad cools by selecting center of chosen rook
 	# Because the conversion of neighbor location into a velocity includes a phi-theta, a rook match to the north
 	# for a cell originally headed to the west will produce a velocity to the northwest
