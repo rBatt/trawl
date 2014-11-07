@@ -10,8 +10,8 @@ library(SDMTools)
 # = Load Data =
 # =============
 load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/HadISST.RData")
-sst.mu0 <- sst.mu
-sst.ann0 <- sst.ann
+sst.mu0 <- raster.nan2na(sst.mu)
+sst.ann0 <- raster.nan2na(sst.ann)
 rm(list=c("sst.mu","sst.ann"))
 
 # =============================
@@ -213,6 +213,7 @@ dXkm.rook <- limitV(rookV, dir="lon", conv.fact.lon=conv.fact.lon.init)
 dYkm.rook <- limitV(rookV, dir="lat")
 
 # Changes NA rook velocities to 0, because they'll be added to starting lon/lat (after conversion from km to degrees)
+# I don't think any of these should be NA, though
 dXkm.rook[is.na(dXkm.rook)] <- 0
 dYkm.rook[is.na(dYkm.rook)] <- 0
 
@@ -257,7 +258,7 @@ for(i in step.index){
 	start.lon <- subset(trajLon, i-1) # longitude of the trajectory at the start of this time step (end of last time step)
 	start.lat <- subset(trajLat, i-1) # latitude of the trajectory at the start of this time step (end of last time step)
 	start.LL <- cbind(values(start.lon), values(start.lat)) # format starting LL
-	# start.cell <- setValues(start.temp, cellFromXY(start.temp, start.LL)) # change LL to cell#
+	start.cell <- setValues(start.temp, cellFromXY(start.temp, start.LL)) # change LL to cell#
 	start.conv.factor.lon <- 111.325*cos(lats/180*pi) # used in limitV()
 	
 	# Calculate the longitude and latitude of proposed destination
@@ -279,7 +280,7 @@ for(i in step.index){
 	dest.LL <- adjDest(
 		startLon=start.lon,
 		startLat=start.lat,
-		# startCell=start.cell,
+		startCell=values(start.cell),
 		startVel=destV, # note that this is the destination velocity from the previous time step (thus, starting velocity)
 		startTemp=start.temp, 
 		
