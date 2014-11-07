@@ -2,11 +2,13 @@
 focal2dL <- function(f, dL){
 	# f contains the focal rook matches
 	# dL contains either latitude or longitude velocities associated with those rook directions
+	# If none of those matches, the value of the sum at the end will be 0; so works for NA's and for focal 5 (b/c 5 would mean 0 velocity and the NA's don't matter, but 0 works)
 	v4 <- (f==4L)*subset(dL, 1)
 	v6 <- (f==6L)*subset(dL, 2)
 	v2 <- (f==2L)*subset(dL, 3)
 	v8 <- (f==8L)*subset(dL, 4)
-	v4+v6+v2+v8
+	# v4+v6+v2+v8
+	 abs(v6) + abs(v2) + -1*abs(v8) + -1*abs(v4)
 }
 
 # dest.cell.LL <- adjDest(
@@ -33,6 +35,7 @@ adjDest <- function(startLon, startLat, startCell, startVel, startTemp, propTemp
 	# ===============================
 	# Find the neighbors
 	coolFocal <- focal.min(startTemp) # gets the cell# within the focal matrix around startTemp
+	# coolMin <- getF.min(startTemp)
 	cool.dLon <- focal2dL(f=coolFocal, dL=rook.dLon) # change neighbor location into a velocity in the X direction
 	cool.dLat <- focal2dL(f=coolFocal, dL=rook.dLat) # same, but in the Y direction
 	coolLon <- startLon + cool.dLon # add the X velocity to the starting X location
@@ -41,18 +44,28 @@ adjDest <- function(startLon, startLat, startCell, startVel, startTemp, propTemp
 	coolCell <- cellFromXY(startTemp, coolLL) # use the lon/lat matrix of new location to get new cell#'s
 	coolTemp <- setValues(startTemp, extract(startTemp,coolCell)) # use new cell#'s to get new temperatures (of coolest neighbor)
 	
-	# par(mfrow=c(2,2))
-	# plot(is.finite(startLon)&!is.finite(coolLon), main="coolLon")
-	# plot(is.finite(startLat)&!is.finite(coolLat), main="coolLat")
-	#
-	#  minLon <- which.min(coolLL[,1])
+	
+	cProb <- values(is.na(coolTemp)&!is.na(startTemp))
+	cProb.cell <- coolCell[cProb]
+	extract(coolFocal, cProb.cell)
+	extract(coolMin, cProb.cell)
+	extract(startTemp, cProb.cell)
 
+
+	par(mfrow=c(2,2))
+	plot(is.finite(startLon)&(coolLon>xmax(startLon) | coolLon<xmin(startLon)), main="coolLon")
+	plot(is.finite(startLat)&(coolLat>ymax(startLat) | coolLat<ymin(startLat)), main="coolLat")
+	plot(is.finite(startTemp)&is.na(coolTemp), main="cool Temp")
+
+	 minLon <- which.min(coolLL[,1])
+	
+	table(values(coolFocal)[values(coolFocal)>1&values(coolFocal)<9])
 	
 	# Fix bad cools by selecting center of chosen rook
-	# Because the conversion of neighbor location into a velocity includes a phi-theta, a rook match to the north
-	# for a cell originally headed to the west will produce a velocity to the northwest
-	# this causes a problem if, e.g., the starting cell was on the wester border, or if (more generally) the cell to the NW is on land etc.
-	# I am going to correct for this by just using the rook cell as the new destination
+	# I cannot figure out why some of these destinations are NA
+	# However, when making the correction, the correct cell is always 301  cells later; in the resolution I'm using this is the row below the problem cell, then 1 column to the right
+	# So this is basically converting a 2 to a 6, or a 4 to an 8
+	# These are possibly cases where something was added to the latitude (choosing a 2) instead of longitude (meant 6?)
 	coolProblem <- is.na(coolTemp)&!is.na(startTemp)
 	if(any(values(coolProblem))){ # if there any problematic cool destinations, then ...
 		coolCorrectCell <- focal2cell(coolFocal)[coolProblem] # get the new destination cell # from the rook focal cell #
@@ -61,6 +74,34 @@ adjDest <- function(startLon, startLat, startCell, startVel, startTemp, propTemp
 		coolCorrectLL <- xyFromCell(coolTemp, coolCorrectCell) # get corrected rook lon/lat (this is the lon/lat at the center of the rook)
 		coolLL[values(coolProblem),] <- coolCorrectLL # update the lon/lat to corrected values
 	}
+	
+	extract(startLon, coolCorrectCell)
+	extract(cool.dLon, coolCorrectCell)
+	extract(startLat, coolCorrectCell)
+	extract(cool.dLat, coolCorrectCell)
+	
+	extract(startLon, cProb.cell)
+	extract(cool.dLon, cProb.cell)
+	extract(startLat, cProb.cell)
+	extract(cool.dLat, cProb.cell)
+	
+	blah <- cbind(
+		coolFocal=extract(coolFocal, cProb.cell),
+		
+		startLon=extract(startLon, cProb.cell),
+		cool.dLon=extract(cool.dLon, cProb.cell),
+		coolLon=extract(coolLon, cProb.cell),
+		correctLon=extract(startLon, coolCorrectCell),
+	
+		startLat=extract(startLat, cProb.cell),
+		cool.dLat=extract(cool.dLat, cProb.cell),
+		coolLat=extract(coolLat, cProb.cell),
+		correctLat=extract(startLat, coolCorrectCell)
+	)
+	
+	extract(startTemp, cellFromXY(startTemp, blah[,c("startLon","startLat")]))
+	extract(startTemp, cellFromXY(startTemp, blah[,c("coolLon","coolLat")]))
+	extract(startTemp, cellFromXY(startTemp, blah[,c("correctLon","correctLat")]))
 	
 	
 	# ================================
@@ -77,16 +118,22 @@ adjDest <- function(startLon, startLat, startCell, startVel, startTemp, propTemp
 	warmCell <- cellFromXY(startTemp, warmLL)
 	warmTemp <- setValues(startTemp, extract(startTemp,warmCell)) # temp of warmest rook neighbor
 	
-	# Fix bad warms by selecting center of chosen rook
-	warmProblem <- is.na(warmTemp)&!is.na(startTemp)
-	if(any(values(warmProblem))){
-		warmCorrectCell <- focal2cell(warmFocal)[warmProblem]
-		warmCell[values(warmProblem)] <- warmCorrectCell
-		warmTemp <- setValues(startTemp, extract(startTemp,warmCell))
-		warmCorrectLL <- xyFromCell(warmTemp, warmCorrectCell)
-		warmLL[values(warmProblem),] <- warmCorrectLL
-	}
 	
+	# par(mfrow=c(2,2))
+	plot(is.finite(startLon)&(warmLon>xmax(startLon) | warmLon<xmin(startLon)), main="coolLon")
+	plot(is.finite(startLat)&(warmLat>ymax(startLat) | warmLat<ymin(startLat)), main="coolLat")
+	
+	
+	# Fix bad warms by selecting center of chosen rook
+	# warmProblem <- is.na(warmTemp)&!is.na(startTemp)
+# 	if(any(values(warmProblem))){
+# 		warmCorrectCell <- focal2cell(warmFocal)[warmProblem]
+# 		warmCell[values(warmProblem)] <- warmCorrectCell
+# 		warmTemp <- setValues(startTemp, extract(startTemp,warmCell))
+# 		warmCorrectLL <- xyFromCell(warmTemp, warmCorrectCell)
+# 		warmLL[values(warmProblem),] <- warmCorrectLL
+# 	}
+#
 	# ===============================================
 	# = Logic for correcting a proposed destination =
 	# ===============================================
