@@ -1,7 +1,7 @@
 
 # Convert between 2 angle conventions, one where "up" is 0º and angle increases clockwise, and other where "right" is 0º and angle increases counterclockwise
-rcos <- function(x, ...){cos(x)}
-rsin <- function(x, ...){sin(x)}
+# rcos <- function(x, ...){cos(x)}
+# rsin <- function(x, ...){sin(x)}
 
 convAng <- function(x, ...){
 	cosx <- base:::cos(x)
@@ -35,17 +35,17 @@ convAng <- function(x, ...){
 
 	angle
 }
-
-plot(convAng(spatAng)/pi*180, col=circular.colors(256))
-
-convAng(275/180*pi)/pi*180 # get 175, makes sense
-convAng(175/180*pi)/pi*180 # get 275; same formula converts the opposite way, too
-
-convAng(60/180*pi)/pi*180 # get 30, makes sense
-convAng(30/180*pi)/pi*180 # get 60
-
-convAng(120/180*pi)/pi*180 # get 330, makes sense
-convAng(330/180*pi)/pi*180 # get 120
-
-convAng(120/180*pi)/pi*180 # get 330, makes sense
-convAng(330/180*pi)/pi*180 # get 120
+#
+# plot(convAng(spatAng)/pi*180, col=circular.colors(256))
+#
+# convAng(275/180*pi)/pi*180 # get 175, makes sense
+# convAng(175/180*pi)/pi*180 # get 275; same formula converts the opposite way, too
+#
+# convAng(60/180*pi)/pi*180 # get 30, makes sense
+# convAng(30/180*pi)/pi*180 # get 60
+#
+# convAng(120/180*pi)/pi*180 # get 330, makes sense
+# convAng(330/180*pi)/pi*180 # get 120
+#
+# convAng(120/180*pi)/pi*180 # get 330, makes sense
+# convAng(330/180*pi)/pi*180 # get 120
