@@ -343,7 +343,7 @@ for(i in step.index){
 		adjLat <- fromLat+climV.adj$dLat # change in latitude for each rook direction
 	
 		neighs <- cbind(neighs0, # store all of the above variables together so they can be conveniently searched w/ ddply()
-			badPropCell=rep(badProp.cell, each=table(neighs0[,1])), # the destination of the bad proposal
+			badPropCell=badProp.cell[neighs0[,1]], # the destination of the bad proposal
 			fromTemp=fromTemp,
 			toTemp=toTemp,
 			toDir=toDir,
@@ -407,11 +407,44 @@ for(i in step.index){
 # ===========================
 trajEnd <- subset(trajStop, nlayers(trajStop))
 trajStart <- subset(trajStart, 2)
-uniStart <- rowSums(table(c(cellVals), c(startLoc))>0)
-uniStop <- rowSums(table(c(cellVals), c(stopLoc))>0)
-apply(stopLoc, 1, function(x)length(unique(x)))
-# TODO Need to categorize trajectories according to Burrows
+uniStart0 <- table(c(cellVals), c(startLoc))
+uniStart <- rowSums(uniStart0)>0)
 
+tblt <- function(x){
+	tabulate(x, nbin=ncell(start.temp))
+}
+
+finalStops <- tblt(stopLoc[,ncol(stopLoc)])
+
+nStops000 <- apply(stopLoc, 1, tblt)
+nStops00 <- pmin(nStops000, 1)
+nStops0 <- rowSums(nStops00, na.rm=TRUE)
+nStops <- matrix(c(1:ncell(start.temp), nStops0), ncol=2)
+
+
+nEnd <- setValues(climV, finalStops)
+nFlow <- setValues(climV, nStops0)-nEnd
+
+
+n.denom <- nFlow+nEnd+1
+n.end <- nEnd/n.denom
+n.ft <- nFlow/n.denom
+n.start <- 1/n.denom
+
+# plot(n.end==0, main="Source") # Source
+# plot(n.end>0.45 & n.start<0.15) # Sink
+# plot(n.ft>0.7 & n.end>0) # Corridor
+# plot(n.end>n.start & !(n.ft>0.7 & n.end>0) & !(n.end>0.45 & n.start<0.15)) # Divergence
+# plot(n.end<n.start & !(n.ft>0.7 & n.end>0) & !(n.end>0.45 & n.start<0.15)) # Convergence
+
+
+#
+# source.logic <- n.end==0
+# sink.logic <- n.end>0.45 & n.start<0.15
+# corridor.logic <- n.ft>0.7 & n.end>0
+# divergence.logic <- n.end>n.start & !corridor.logic & !sink.logic
+# convergence.logic <- n.start>n.end & !corridor.logic & !source.logic
+# balance.logic <- n.start==n.end & !corridor.logic
 
 # ===========================
 # = Save Trajectory Results =
