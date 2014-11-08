@@ -3,7 +3,8 @@
 # = Load Packages =
 # =================
 library(raster)
-library(SDMTools)
+# library(SDMTools)
+library(plyr)
 
 
 # =============
@@ -187,8 +188,12 @@ dYkm <- climV*cos(ang) # the Y speed (km/yr to the north)
 # ============================
 # = Get full lon, lat, cell# =
 # ============================
-lons <- setValues(ang, rep(seq(xmin(ang), xmax(ang), length.out=ncol(ang)), nrow(ang)))
-lats <- setValues(ang, rep(seq(ymax(ang), ymin(ang), length.out=ncol(ang)), each=nrow(ang)))
+# lons <- setValues(ang, rep(seq(xmin(ang), xmax(ang), length.out=ncol(ang)), nrow(ang)))
+# lats <- setValues(ang, rep(seq(ymax(ang), ymin(ang), length.out=ncol(ang)), each=nrow(ang)))
+
+lls <- xyFromCell(ang, 1:ncell(ang))
+lons <- setValues(ang, lls[,1])
+lats <- setValues(ang, lls[,2])
 
 
 # ===================================
@@ -250,10 +255,12 @@ fw.mat <- matrix(c(NA,1,NA,1,1,1,NA,1,NA),ncol=3) # focal weight matrix; called 
 sst.pb <- txtProgressBar(min=2, max=max(step.index), style=3)
 for(i in step.index){
 	t.yr <- tYrs[i]
-	
 	t.temp <- subset(sst.yrly, t.yr)
-	start.temp <- setValues(t.temp, extract(t.temp, dest.LL))
 	
+	# ===================================================
+	# = Starting values for trajectory (this time step) =
+	# ===================================================
+	start.temp <- setValues(t.temp, extract(t.temp, dest.LL))
 	# Extract the longitude and latitude of starting location
 	start.lon <- subset(trajLon, i-1) # longitude of the trajectory at the start of this time step (end of last time step)
 	start.lat <- subset(trajLat, i-1) # latitude of the trajectory at the start of this time step (end of last time step)
@@ -261,49 +268,99 @@ for(i in step.index){
 	start.cell <- setValues(start.temp, cellFromXY(start.temp, start.LL)) # change LL to cell#
 	start.conv.factor.lon <- 111.325*cos(lats/180*pi) # used in limitV()
 	
+	
+	# =================================
+	# = Proposed trajectory locations =
+	# =================================
 	# Calculate the longitude and latitude of proposed destination
-	# TODO with new approach to rook, adjDest() just needs to add rook velocities instead of dest.dX or dest.dY
-	# TODO need to limit velocities before I do adjDest; NO, because Burrows just uses small time step to minimize this effect, otherwise could just limit velocities from the start, definitely don't need to do this every iteration
-	prop.dLon <- dest.dX/111.325*cos(start.lat/180*pi)
+	prop.dLon <- dest.dX/111.325*cos(start.lat/180*pi) # convert horizontal km/timeStep speed into dLon/timeStep
 	prop.dLat <- dest.dY/111.325
 	prop.lon <- start.lon + prop.dLon # calculate the proposed longitude from speeds and starting LL
 	prop.lat <- start.lat + prop.dLat # calculate the proposed latitude from speeds and starting latitude
 	prop.LL <- cbind(values(prop.lon), values(prop.lat)) # format proposed LL	
-	prop.LL[is.na(values(dest.dX)),] <- cbind(values(start.lon), values(start.lat))[is.na(values(dest.dX)),] # if the velocity is NA, it's not going anywhere; but still need to keep track of the location of the cell.
+	prop.LL[is.na(values(dest.dX)),] <- cbind(values(start.lon), values(start.lat))[is.na(values(dest.dX)),] # if the velocity is NA, it's not going anywhere; but still need to keep track of the location of the cell.	
+	prop.cell <- setValues(start.temp, cellFromXY(start.temp, prop.LL)) # change LL to cell#; could do prop.temps, but haven't subset yet
+	prop.temp <- setValues(t.temp, extract(t.temp, prop.LL)) # the temperature in the proposed location (used to determine if destination is on land)
 	
-	# prop.cell <- setValues(start.temp, cellFromXY(start.temp, prop.LL)) # change LL to cell#; could do prop.temps, but haven't subset yet
+	# =============================
+	# = Bad proposed destinations =
+	# =============================
+	badProp <- !is.finite(prop.temp) & is.finite(start.temp) # Bad Proposal = the proposed temp missing, but not starting temp
+	badProp.cell <- values(prop.cell)[values(badProp)] # destination cell#'s for bad proposals
+	badProp.start.cell <- values(start.cell)[values(badProp)] # starting cell#'s for bad proposed trajectory
 	
-	# Extract cell# and X/Y speeds of proposed cell
-	prop.temp <- setValues(t.temp, extract(start.temp, prop.LL)) # the temperature in the proposed location (used to determine if destination is on land)
 	
-	# Where necessary, adjust the proposed destination to avoid land via rook-search for warmest/ coolest neighbor
-	dest.LL <- adjDest(
-		startLon=start.lon,
-		startLat=start.lat,
-		startCell=values(start.cell),
-		startVel=destV, # note that this is the destination velocity from the previous time step (thus, starting velocity)
-		startTemp=start.temp, 
-		
-		propTemp=prop.temp, 
-		# propCell=prop.cell,
-		propLL=prop.LL, 
-		
-		rook.dLon=dest.dX.rook/111.325*cos(start.lat/180*pi),
-		rook.dLat=dest.dY.rook/111.325
+	# ==========================================
+	# = Adjust trajectories with bad proposals =
+	# ==========================================
+	catDir <- function(x){ # converting dest-start cell#'s into rook directions
+		x0 <- integer(length(x))
+		x0[x==-1] <- 4
+		x0[x==1] <- 6
+		x0[x==-ncol(t.temp)] <- 2
+		x0[x==ncol(t.temp)] <- 8
+		x0[x==0] <- 5
+		x0
+	}
+	
+	neighs0 <- adjacent(t.temp, badProp.start.cell, sorted=TRUE, id=TRUE, include=TRUE) # what are the neighboring cell#'s?
+	# Note: this previous step with adjactent() is extremely important but potentially confusing
+		# Remember that in some cases a raster cell represents a true lon/lat, whereas in other cases it just represents the lon/lat of a trajectory at the beginning of the time series
+		# the t.temp is not important
+		# what is important is that I am searching for neighboring cell#'s, not for neighboring temperatures of specific cells
+		# the distinction is that in the raster, a cell doesn't necessarily have a spatial relationship to its neighbors after the first time step, so I can't search for neighboring temperatures *directly*, i have to find the neighboring cells, then reference a temperature raster that has the spatial relationship of cells intact (t.temp)
+	nfrom <- neighs0[,"from"] # starting cell #
+	nto <- neighs0[,"to"] # rook cell#'s around the starting cell
+	
+	# A bunch of values to keep track of while adjusting the trajectory using rook neighbors
+	# Note: in relation to previous statement about maintaining spatial relationships when appropriate
+		# notice that the "from" and "to" temperatures are taken from t.temp, which has the spatial relationship intact
+		# if I wanted to get the velocities of neighbors, it would NOT work to reference dest.dX, e.g., because the raster neighbors in dest.dX were only spatial neighbors at the first time step, and now they may or may not be next to each b/c the trajectories evolve
+	fromTemp <- extract(t.temp, neighs0[,"from"]) # temperature of the starting cells that had bad proposed destinations
+	toTemp <- extract(t.temp, nto) # temperature of the potential rook destinations (NOT proposed destinations)
+	toDir <- catDir(nto-nfrom) # the rook direction
+	delTemp <- toTemp-fromTemp # the change in temperature between the rook destination and the starting cell
+	fromV <- extract(climV, neighs0[,"from"]) # the velocity in the starting cell
+	fromAng <- extract(ang, neighs0[,"from"]) # the angle of the velocity in the starting cell
+	delTemp.adj <- delTemp*sign(fromV) # find cooler for +vel, warmer for -vel; flip sign of dTemp if -vel, so I can just use which.min() for all
+	toAng <- adjAng(toDir) # the angle (0 is north) corresponding to each rook direction
+	delAng <- toAng-fromAng # the change in angle between the rook direction and the original angle of the spatial velocity
+	fromLon <- extract(start.lon, neighs0[,"from"]) # starting lons
+	fromLat <- extract(start.lat, neighs0[,"from"]) # starting lats
+	climSpeed <- abs(fromV/cos(delAng)) # the "raw" (will have to be converted to degrees and limited) speed for adjusted traj
+	
+	climV.adj <- convV(climSpeed, toDir, lat=fromLat, n.per.ll=n.per.ll) # convert speed into lon/lat components in degrees, and limit magnitude
+	adjLon <- fromLon+climV.adj$dLon # change in longitude for each rook direction
+	adjLat <- fromLat+climV.adj$dLat # change in latitude for each rook direction
+	
+	neighs <- cbind(neighs0, # store all of the above variables together so they can be conveniently searched w/ ddply()
+		badPropCell=rep(badProp.cell, each=table(neighs0[,1])), # the destination of the bad proposal
+		fromTemp=fromTemp,
+		toTemp=toTemp,
+		toDir=toDir,
+		delTemp=delTemp,
+		fromV=fromV, 
+		fromAng=fromAng,
+		delTemp.adj=delTemp.adj,
+		fromLon=fromLon,
+		fromLat=fromLat,
+		adjLon=fromLon+climV.adj$dLon,
+		adjLat=fromLat+climV.adj$dLat
 	)
-	# TODO forgot a detail: the rook neighbor isn't the dest cell; it defines a new angle that the trajectory should move in. To quote: "If a cooler or warmer cell was found then the trajectory was moved along in the direction to that cell (phi) at a speed given by (V/cos(phi-theta)), and limited to a maximum displacement of 1º of latitude or longitude".
-	# dest.cell <- dest.cell.LL$cell
-	# dest.LL <- dest.cell.LL$LL
+	
+	adjTraj <- ddply(as.data.frame(neighs), c("id"), function(x)x[which.min(x[,"delTemp.adj"]),]) # the rows of neighs corresponding to the rook matches
+	
+	# =====================
+	# = Final Destination =
+	# =====================
+	dest.LL <- prop.LL # in many cases, the proposed location is OK, and will be the destination
+	dest.LL[values(badProp),] <- adjTraj[, c("adjLon","adjLat")] # where the proposal were bad, replace them with adjusted trajectory destinations
 	dest.lon <- dest.LL[,1]
 	dest.lat <- dest.LL[,2]
 	
-	# Update dest speeds to reflect those in proposed cell
+	# Update dest speeds to reflect those in the final destination cell
 	dest.dX <- setValues(dXkm, extract(dXkm, dest.LL)) # use setValues() to preserve raster class and structure
 	dest.dY <- setValues(dXkm, extract(dYkm, dest.LL)) # note that the 1st object in setValues doesn't matter aside from its extent()
-	# TODO Update these destinations!
-	dest.dX.rook
-	dest.dY.rook
-	destV
 	
 	# Update the destination LL in the trajectories (not rounded to correspond to cell)
 	trajLon <- setValues(trajLon, dest.lon, layer=i)
