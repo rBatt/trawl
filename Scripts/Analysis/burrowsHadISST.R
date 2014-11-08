@@ -238,11 +238,16 @@ dest.LL <- cbind(values(lons), values(lats)) # same as starting LL, but will be 
 
 
 # Create empty bricks to hold trajectory lon/ lat at each time step
-trajLon <- brick(array(NA, dim=dim(sst.ann0)*c(n.per.ll,n.per.ll,n.per.yr)), xmn=-190, xmx=-40, ymn=20, ymx=65) # empty lon brick
+emptyBrick <- brick(array(NA, dim=dim(sst.ann0)*c(n.per.ll,n.per.ll,n.per.yr)), xmn=-190, xmx=-40, ymn=20, ymx=65)
+trajLon <- emptyBrick # empty lon brick
 trajLon <- setValues(trajLon, values(lons), layer=1) # update first year (layer) of brick to give starting lon
 
-trajLat <- brick(array(NA, dim=dim(sst.ann0)*c(n.per.ll,n.per.ll,n.per.yr)), xmn=-190, xmx=-40, ymn=20, ymx=65) # empty lat brick
+trajLat <- emptyBrick # empty lat brick
 trajLat <- setValues(trajLat, values(lats), layer=1) # update first year (layer) of brick to give starting lat
+
+# Create empty brick to hold the number of trajectories starting and stopping in each cell
+trajStart <- emptyBrick
+trajStop <- emptyBrick
 
 # Focal weight matrix: this is used by focal.min and focal.max when called within adjDest (faster to define globally than to continually recreate matrix thousands of times)
 # fw.mat <- matrix(c(NA,1,NA,1,NA,1,NA,1,NA),ncol=3) # focal weight matrix; called inside focal.min/max()
@@ -365,6 +370,20 @@ for(i in step.index){
 	# Update the destination LL in the trajectories (not rounded to correspond to cell)
 	trajLon <- setValues(trajLon, dest.lon, layer=i)
 	trajLat <- setValues(trajLat, dest.lat, layer=i)
+	
+	
+	# =========================================
+	# = Count starting and stopping locations =
+	# =========================================
+	sumStart <- integer(ncell(start.temp))
+	tableStart <- c(table(cellFromXY(start.temp, start.LL)))
+	sumStart[as.integer(names(tableStop))] <- tableStart
+	trajStart <- setValues(trajStart, sumStart, layer=i)
+	
+	sumStop <- integer(ncell(start.temp))
+	tableStop <- c(table(cellFromXY(start.temp, dest.LL)))
+	sumStop[as.integer(names(tableStop))] <- tableStop
+	trajStop <- setValues(trajStop, sumStop, layer=i)
 	
 	setTxtProgressBar(sst.pb, i)
 }
