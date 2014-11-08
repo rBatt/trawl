@@ -253,6 +253,9 @@ trajStop <- emptyBrick
 # fw.mat <- matrix(c(NA,1,NA,1,NA,1,NA,1,NA),ncol=3) # focal weight matrix; called inside focal.min/max()
 # fw.mat <- matrix(c(NA,1,NA,1,1,1,NA,1,NA),ncol=3) # focal weight matrix; called inside focal.min/max()
 
+cellVals <- matrix(rep(1:ncell(climV), length(step.index)), ncol=length(step.index))
+startLoc <- matrix(rep(NA, ncell(climV)*length(step.index)), ncol=length(step.index))
+stopLoc <- matrix(rep(NA, ncell(climV)*length(step.index)), ncol=length(step.index))
 
 # ====================================================
 # = Begin the iterative construction of trajectories =
@@ -298,68 +301,73 @@ for(i in step.index){
 	# ==========================================
 	# = Adjust trajectories with bad proposals =
 	# ==========================================
-	catDir <- function(x){ # converting dest-start cell#'s into rook directions
-		x0 <- integer(length(x))
-		x0[x==-1] <- 4
-		x0[x==1] <- 6
-		x0[x==-ncol(t.temp)] <- 2
-		x0[x==ncol(t.temp)] <- 8
-		x0[x==0] <- 5
-		x0
+	if(any(values(badProp))){
+		catDir <- function(x){ # converting dest-start cell#'s into rook directions
+			x0 <- integer(length(x))
+			x0[x==-1] <- 4
+			x0[x==1] <- 6
+			x0[x==-ncol(t.temp)] <- 2
+			x0[x==ncol(t.temp)] <- 8
+			x0[x==0] <- 5
+			x0
+		}
+	
+		neighs0 <- adjacent(t.temp, badProp.start.cell, sorted=TRUE, id=TRUE, include=TRUE) # what are the neighboring cell#'s?
+		# Note: this previous step with adjactent() is extremely important but potentially confusing
+			# Remember that in some cases a raster cell represents a true lon/lat, whereas in other cases it just represents the lon/lat of a trajectory at the beginning of the time series
+			# the t.temp is not important
+			# what is important is that I am searching for neighboring cell#'s, not for neighboring temperatures of specific cells
+			# the distinction is that in the raster, a cell doesn't necessarily have a spatial relationship to its neighbors after the first time step, so I can't search for neighboring temperatures *directly*, i have to find the neighboring cells, then reference a temperature raster that has the spatial relationship of cells intact (t.temp)
+		nfrom <- neighs0[,"from"] # starting cell #
+		nto <- neighs0[,"to"] # rook cell#'s around the starting cell
+	
+		# A bunch of values to keep track of while adjusting the trajectory using rook neighbors
+		# Note: in relation to previous statement about maintaining spatial relationships when appropriate
+			# notice that the "from" and "to" temperatures are taken from t.temp, which has the spatial relationship intact
+			# if I wanted to get the velocities of neighbors, it would NOT work to reference dest.dX, e.g., because the raster neighbors in dest.dX were only spatial neighbors at the first time step, and now they may or may not be next to each b/c the trajectories evolve
+		fromTemp <- extract(t.temp, neighs0[,"from"]) # temperature of the starting cells that had bad proposed destinations
+		toTemp <- extract(t.temp, nto) # temperature of the potential rook destinations (NOT proposed destinations)
+		toDir <- catDir(nto-nfrom) # the rook direction
+		delTemp <- toTemp-fromTemp # the change in temperature between the rook destination and the starting cell
+		fromV <- extract(climV, neighs0[,"from"]) # the velocity in the starting cell
+		fromAng <- extract(ang, neighs0[,"from"]) # the angle of the velocity in the starting cell
+		delTemp.adj <- delTemp*sign(fromV) # find cooler for +vel, warmer for -vel; flip sign of dTemp if -vel, so I can just use which.min() for all
+		toAng <- adjAng(toDir) # the angle (0 is north) corresponding to each rook direction
+		delAng <- toAng-fromAng # the change in angle between the rook direction and the original angle of the spatial velocity
+		fromLon <- extract(start.lon, neighs0[,"from"]) # starting lons
+		fromLat <- extract(start.lat, neighs0[,"from"]) # starting lats
+		climSpeed <- abs(fromV/cos(delAng)) # the "raw" (will have to be converted to degrees and limited) speed for adjusted traj
+	
+		climV.adj <- convV(climSpeed, toDir, lat=fromLat, n.per.ll=n.per.ll) # convert speed into lon/lat components in degrees, and limit magnitude
+		adjLon <- fromLon+climV.adj$dLon # change in longitude for each rook direction
+		adjLat <- fromLat+climV.adj$dLat # change in latitude for each rook direction
+	
+		neighs <- cbind(neighs0, # store all of the above variables together so they can be conveniently searched w/ ddply()
+			badPropCell=rep(badProp.cell, each=table(neighs0[,1])), # the destination of the bad proposal
+			fromTemp=fromTemp,
+			toTemp=toTemp,
+			toDir=toDir,
+			delTemp=delTemp,
+			fromV=fromV, 
+			fromAng=fromAng,
+			delTemp.adj=delTemp.adj,
+			fromLon=fromLon,
+			fromLat=fromLat,
+			adjLon=fromLon+climV.adj$dLon,
+			adjLat=fromLat+climV.adj$dLat
+		)
+	
+		adjTraj <- ddply(as.data.frame(neighs), c("id"), function(x)x[which.min(x[,"delTemp.adj"]),]) # the rows of neighs corresponding to the rook matches
+	
 	}
-	
-	neighs0 <- adjacent(t.temp, badProp.start.cell, sorted=TRUE, id=TRUE, include=TRUE) # what are the neighboring cell#'s?
-	# Note: this previous step with adjactent() is extremely important but potentially confusing
-		# Remember that in some cases a raster cell represents a true lon/lat, whereas in other cases it just represents the lon/lat of a trajectory at the beginning of the time series
-		# the t.temp is not important
-		# what is important is that I am searching for neighboring cell#'s, not for neighboring temperatures of specific cells
-		# the distinction is that in the raster, a cell doesn't necessarily have a spatial relationship to its neighbors after the first time step, so I can't search for neighboring temperatures *directly*, i have to find the neighboring cells, then reference a temperature raster that has the spatial relationship of cells intact (t.temp)
-	nfrom <- neighs0[,"from"] # starting cell #
-	nto <- neighs0[,"to"] # rook cell#'s around the starting cell
-	
-	# A bunch of values to keep track of while adjusting the trajectory using rook neighbors
-	# Note: in relation to previous statement about maintaining spatial relationships when appropriate
-		# notice that the "from" and "to" temperatures are taken from t.temp, which has the spatial relationship intact
-		# if I wanted to get the velocities of neighbors, it would NOT work to reference dest.dX, e.g., because the raster neighbors in dest.dX were only spatial neighbors at the first time step, and now they may or may not be next to each b/c the trajectories evolve
-	fromTemp <- extract(t.temp, neighs0[,"from"]) # temperature of the starting cells that had bad proposed destinations
-	toTemp <- extract(t.temp, nto) # temperature of the potential rook destinations (NOT proposed destinations)
-	toDir <- catDir(nto-nfrom) # the rook direction
-	delTemp <- toTemp-fromTemp # the change in temperature between the rook destination and the starting cell
-	fromV <- extract(climV, neighs0[,"from"]) # the velocity in the starting cell
-	fromAng <- extract(ang, neighs0[,"from"]) # the angle of the velocity in the starting cell
-	delTemp.adj <- delTemp*sign(fromV) # find cooler for +vel, warmer for -vel; flip sign of dTemp if -vel, so I can just use which.min() for all
-	toAng <- adjAng(toDir) # the angle (0 is north) corresponding to each rook direction
-	delAng <- toAng-fromAng # the change in angle between the rook direction and the original angle of the spatial velocity
-	fromLon <- extract(start.lon, neighs0[,"from"]) # starting lons
-	fromLat <- extract(start.lat, neighs0[,"from"]) # starting lats
-	climSpeed <- abs(fromV/cos(delAng)) # the "raw" (will have to be converted to degrees and limited) speed for adjusted traj
-	
-	climV.adj <- convV(climSpeed, toDir, lat=fromLat, n.per.ll=n.per.ll) # convert speed into lon/lat components in degrees, and limit magnitude
-	adjLon <- fromLon+climV.adj$dLon # change in longitude for each rook direction
-	adjLat <- fromLat+climV.adj$dLat # change in latitude for each rook direction
-	
-	neighs <- cbind(neighs0, # store all of the above variables together so they can be conveniently searched w/ ddply()
-		badPropCell=rep(badProp.cell, each=table(neighs0[,1])), # the destination of the bad proposal
-		fromTemp=fromTemp,
-		toTemp=toTemp,
-		toDir=toDir,
-		delTemp=delTemp,
-		fromV=fromV, 
-		fromAng=fromAng,
-		delTemp.adj=delTemp.adj,
-		fromLon=fromLon,
-		fromLat=fromLat,
-		adjLon=fromLon+climV.adj$dLon,
-		adjLat=fromLat+climV.adj$dLat
-	)
-	
-	adjTraj <- ddply(as.data.frame(neighs), c("id"), function(x)x[which.min(x[,"delTemp.adj"]),]) # the rows of neighs corresponding to the rook matches
 	
 	# =====================
 	# = Final Destination =
 	# =====================
 	dest.LL <- prop.LL # in many cases, the proposed location is OK, and will be the destination
-	dest.LL[values(badProp),] <- as.matrix(adjTraj[, c("adjLon","adjLat")]) # where the proposal were bad, replace them with adjusted trajectory destinations
+	if(any(values(badProp))){
+		dest.LL[values(badProp),] <- as.matrix(adjTraj[, c("adjLon","adjLat")]) # where the proposal were bad, replace them with adjusted trajectory destinations
+	}
 	dest.lon <- dest.LL[,1]
 	dest.lat <- dest.LL[,2]
 	
@@ -377,13 +385,18 @@ for(i in step.index){
 	# =========================================
 	sumStart <- integer(ncell(start.temp))
 	tableStart <- c(table(cellFromXY(start.temp, start.LL)))
-	sumStart[as.integer(names(tableStop))] <- tableStart
+	sumStart[as.integer(names(tableStart))] <- tableStart
 	trajStart <- setValues(trajStart, sumStart, layer=i)
 	
 	sumStop <- integer(ncell(start.temp))
 	tableStop <- c(table(cellFromXY(start.temp, dest.LL)))
 	sumStop[as.integer(names(tableStop))] <- tableStop
 	trajStop <- setValues(trajStop, sumStop, layer=i)
+		
+	startLoc[,i-1] <- cellFromXY(start.temp, start.LL)
+	stopLoc[,i-1] <- cellFromXY(start.temp, dest.LL)
+
+	
 	
 	setTxtProgressBar(sst.pb, i)
 }
@@ -392,6 +405,11 @@ for(i in step.index){
 # ===========================
 # = Categorize Trajectories =
 # ===========================
+trajEnd <- subset(trajStop, nlayers(trajStop))
+trajStart <- subset(trajStart, 2)
+uniStart <- rowSums(table(c(cellVals), c(startLoc))>0)
+uniStop <- rowSums(table(c(cellVals), c(stopLoc))>0)
+apply(stopLoc, 1, function(x)length(unique(x)))
 # TODO Need to categorize trajectories according to Burrows
 
 
