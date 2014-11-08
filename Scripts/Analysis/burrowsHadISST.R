@@ -440,6 +440,7 @@ cCorridor <- n.ft>0.7 & n.end>0
 cDivergence <- n.end>n.start & !cCorridor & !cSink
 cConvergence <- n.end<n.start & !cCorridor & !cSource
 
+
 # plot(n.end==0, main="Source") # Source
 # plot(n.end>0.45 & n.start<0.15) # Sink
 # plot(n.ft>0.7 & n.end>0) # Corridor
