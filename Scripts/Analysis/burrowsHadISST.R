@@ -3,8 +3,14 @@
 # = Load Packages =
 # =================
 library(raster)
-# library(SDMTools)
+library(SDMTools)
 library(plyr)
+
+# =============================
+# = Load statistics functions =
+# =============================
+stat.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/StatFunctions"
+invisible(sapply(paste(stat.location, list.files(stat.location), sep="/"), source, .GlobalEnv))
 
 
 # =============
@@ -14,12 +20,6 @@ load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/HadISST.RData")
 sst.mu0 <- raster.nan2na(sst.mu)
 sst.ann0 <- raster.nan2na(sst.ann)
 rm(list=c("sst.mu","sst.ann"))
-
-# =============================
-# = Load statistics functions =
-# =============================
-stat.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/StatFunctions"
-invisible(sapply(paste(stat.location, list.files(stat.location), sep="/"), source, .GlobalEnv))
 
 
 # ================================
@@ -195,14 +195,14 @@ lls <- xyFromCell(ang, 1:ncell(ang))
 lons <- setValues(ang, lls[,1])
 lats <- setValues(ang, lls[,2])
 
-
-# ===================================
-# = Get the rook velocities, angles =
-# ===================================
-rookV <- stack(adjV(4), adjV(6), adjV(2), adjV(8), adjV(5)) # these are the velocities for each of the 4 possible directions a trajectory can go when the calculated velocity would make it go from sea to land; which of the 4 directions chosen depends on the sign of the velocity,
-# rookV[is.na(rookV)] <- 0 # set NA's to 0 because these values will eventually just be added to other longitudes and latitudes, and if these velocities are NA,
-rookAng <- stack(adjAng(4), adjAng(6), adjAng(2), adjAng(8), adjAng(5)) # the angle, in radians, for the rook directions
-# cellNum <- setValues(ang, 1:length(ang))
+#
+# # ===================================
+# # = Get the rook velocities, angles =
+# # ===================================
+# rookV <- stack(adjV(4), adjV(6), adjV(2), adjV(8), adjV(5)) # these are the velocities for each of the 4 possible directions a trajectory can go when the calculated velocity would make it go from sea to land; which of the 4 directions chosen depends on the sign of the velocity,
+# # rookV[is.na(rookV)] <- 0 # set NA's to 0 because these values will eventually just be added to other longitudes and latitudes, and if these velocities are NA,
+# rookAng <- stack(adjAng(4), adjAng(6), adjAng(2), adjAng(8), adjAng(5)) # the angle, in radians, for the rook directions
+# # cellNum <- setValues(ang, 1:length(ang))
 
 
 # ==============================================
@@ -214,13 +214,13 @@ rookAng <- stack(adjAng(4), adjAng(6), adjAng(2), adjAng(8), adjAng(5)) # the an
 conv.fact.lon.init <- 111.325*cos(lats/180*pi) # this value is used inside limitV(), but is defined here to reduce computation time
 # dXkm.rook <- limitV(dXkm.rook0, dir="lon", conv.fact.lon=conv.fact.lon.init)
 # dYkm.rook <- limitV(dYkm.rook0, dir="lat")
-dXkm.rook <- limitV(rookV, dir="lon", conv.fact.lon=conv.fact.lon.init)
-dYkm.rook <- limitV(rookV, dir="lat")
-
-# Changes NA rook velocities to 0, because they'll be added to starting lon/lat (after conversion from km to degrees)
-# I don't think any of these should be NA, though
-dXkm.rook[is.na(dXkm.rook)] <- 0
-dYkm.rook[is.na(dYkm.rook)] <- 0
+# dXkm.rook <- limitV(rookV, dir="lon", conv.fact.lon=conv.fact.lon.init)
+# dYkm.rook <- limitV(rookV, dir="lat")
+#
+# # Changes NA rook velocities to 0, because they'll be added to starting lon/lat (after conversion from km to degrees)
+# # I don't think any of these should be NA, though
+# dXkm.rook[is.na(dXkm.rook)] <- 0
+# dYkm.rook[is.na(dYkm.rook)] <- 0
 
 
 # ====================================================
@@ -232,8 +232,8 @@ destV <- climV # TODO delete? is this needed? maybe was only needed if I wasn't 
 # destAng <- ang # TODO delete? is this needed? same reasoning as for destV
 dest.dX <- dXkm # the X speed in the previous destination location (updated at the end of each time step)
 dest.dY <- dYkm # the Y speed in the previous destination location
-dest.dX.rook <- dXkm.rook
-dest.dY.rook <- dYkm.rook
+# dest.dX.rook <- dXkm.rook
+# dest.dY.rook <- dYkm.rook
 dest.LL <- cbind(values(lons), values(lats)) # same as starting LL, but will be updated each iteration after adjDest
 
 
@@ -246,7 +246,7 @@ trajLat <- setValues(trajLat, values(lats), layer=1) # update first year (layer)
 
 # Focal weight matrix: this is used by focal.min and focal.max when called within adjDest (faster to define globally than to continually recreate matrix thousands of times)
 # fw.mat <- matrix(c(NA,1,NA,1,NA,1,NA,1,NA),ncol=3) # focal weight matrix; called inside focal.min/max()
-fw.mat <- matrix(c(NA,1,NA,1,1,1,NA,1,NA),ncol=3) # focal weight matrix; called inside focal.min/max()
+# fw.mat <- matrix(c(NA,1,NA,1,1,1,NA,1,NA),ncol=3) # focal weight matrix; called inside focal.min/max()
 
 
 # ====================================================
@@ -354,7 +354,7 @@ for(i in step.index){
 	# = Final Destination =
 	# =====================
 	dest.LL <- prop.LL # in many cases, the proposed location is OK, and will be the destination
-	dest.LL[values(badProp),] <- adjTraj[, c("adjLon","adjLat")] # where the proposal were bad, replace them with adjusted trajectory destinations
+	dest.LL[values(badProp),] <- as.matrix(adjTraj[, c("adjLon","adjLat")]) # where the proposal were bad, replace them with adjusted trajectory destinations
 	dest.lon <- dest.LL[,1]
 	dest.lat <- dest.LL[,2]
 	
