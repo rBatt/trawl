@@ -422,14 +422,23 @@ nStops0 <- rowSums(nStops00, na.rm=TRUE)
 nStops <- matrix(c(1:ncell(start.temp), nStops0), ncol=2)
 
 
-nEnd <- setValues(climV, finalStops)
-nFlow <- setValues(climV, nStops0)-nEnd
+nEnd0 <- setValues(climV, finalStops)
+nEnd <- aggregate(nEnd0, n.per.ll, fun=sum)
+
+nFlow0 <- setValues(climV, nStops0)-nEnd0
+nFlow <- aggregate(nFlow0, n.per.ll, fun=sum)
 
 
-n.denom <- nFlow+nEnd+1
+n.denom <- nFlow+nEnd+n.per.ll*2
 n.end <- nEnd/n.denom
 n.ft <- nFlow/n.denom
-n.start <- 1/n.denom
+n.start <-( n.per.ll*2)/n.denom
+
+cSource <- n.end==0
+cSink <- n.end>0.45 & n.start<0.15
+cCorridor <- n.ft>0.7 & n.end>0
+cDivergence <- n.end>n.start & !cCorridor & !cSink
+cConvergence <- n.end<n.start & !cCorridor & !cSource
 
 # plot(n.end==0, main="Source") # Source
 # plot(n.end>0.45 & n.start<0.15) # Sink
