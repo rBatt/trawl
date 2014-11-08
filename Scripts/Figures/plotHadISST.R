@@ -38,24 +38,24 @@ png("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/HadISST_Figure
 par(mfrow=c(5,1), mar=c(2,2,0.5,0.1), ps=8, cex=1, mgp=c(0.5,0.15,0), tcl=-0.15, family="Times")
 
 
-plot(n.end==0, smallplot=smplt, bigplot=bgplt, axis.args=axargs) # Source
+plot(cSource, smallplot=smplt, bigplot=bgplt, axis.args=axargs) # Source
 mtext(bquote(Source), side=3, line=-1.5, cex=1, xpd=FALSE)
 
 par(cex=1)
-plot(n.end>0.45 & n.start<0.15, smallplot=smplt, bigplot=bgplt, axis.args=axargs) # Sink
-mtext(bquote(Sink), side=3, line=-1.5, cex=1, xpd=FALSE)
-
-par(cex=1)
-plot(n.ft>0.7 & n.end>0, smallplot=smplt, bigplot=bgplt, axis.args=axargs) # Corridor
-mtext(bquote(Corridor), side=3, line=-1.5, cex=1, xpd=FALSE)
-
-par(cex=1)
-plot(n.end>n.start & !(n.ft>0.7 & n.end>0) & !(n.end>0.45 & n.start<0.15), smallplot=smplt, bigplot=bgplt, axis.args=axargs) # Divergence
+plot(cDivergence, smallplot=smplt, bigplot=bgplt, axis.args=axargs) # Sink
 mtext(bquote(Divergence), side=3, line=-1.5, cex=1, xpd=FALSE)
 
 par(cex=1)
-plot(n.end<n.start & !(n.ft>0.7 & n.end>0) & n.end!=0, smallplot=smplt, bigplot=bgplt, axis.args=axargs) # Convergence
+plot(cCorridor, smallplot=smplt, bigplot=bgplt, axis.args=axargs) # Corridor
+mtext(bquote(Corridor), side=3, line=-1.5, cex=1, xpd=FALSE)
+
+par(cex=1)
+plot(cConvergence, smallplot=smplt, bigplot=bgplt, axis.args=axargs) # Divergence
 mtext(bquote(Convergence), side=3, line=-1.5, cex=1, xpd=FALSE)
+
+par(cex=1)
+plot(cSink, smallplot=smplt, bigplot=bgplt, axis.args=axargs) # Convergence
+mtext(bquote(Sink), side=3, line=-1.5, cex=1, xpd=FALSE)
 
 dev.off()
 
