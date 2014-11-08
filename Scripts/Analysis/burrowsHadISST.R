@@ -42,8 +42,8 @@ sst.ann.s0 <- disaggregate(sst.ann0, n.per.ll, method="bilinear") # "small" grid
 sst.ann.s3 <- reclassify(disaggregate(sst.ann0, n.per.ll), cbind(-Inf, Inf, 1))
 sst.ann <- sst.ann.s0*sst.ann.s3 # redefining sst.ann, now want to use this for everything
 
-sst.mu.s0 <- stackApply(sst.ann.s0, indices=rep(1, length(sst.ann)), fun=mean)
-sst.mu2 <- stackApply(sst.ann, indices=rep(1, length(sst.ann)), fun=mean)
+sst.mu.s0 <- stackApply(sst.ann.s0, indices=rep(1, nlayers(sst.ann.s0)), fun=mean)
+sst.mu2 <- stackApply(sst.ann, indices=rep(1, nlayers(sst.ann)), fun=mean)
 crs(sst.mu0) <- "+proj=lcc +lat_1=65 +lat_2=20 +lon_0=0 +ellps=WGS84" # need projection for terrain()
 crs(sst.mu.s0) <- "+proj=lcc +lat_1=65 +lat_2=20 +lon_0=0 +ellps=WGS84" # need projection for terrain()
 crs(sst.mu2) <- "+proj=lcc +lat_1=65 +lat_2=20 +lon_0=0 +ellps=WGS84" # need projection for terrain()
