@@ -112,6 +112,7 @@ sgulf.raw00[,strat2:=paste(stratum, ll2strat(lon, lat))]
 # legend("topleft", legend=c("original strata definition", "1 degree grid definition"), lty=1, pch=21, col=c("red","black"))
 # image(x=sgulf.raw00[,sort(unique(year))], y=sgulf.raw00[,1:length(unique(strat2))], z=sgulf.raw00[,table(year, strat2)>0], xlab="year", ylab="1 degree stratum ID", main="stratum presence vs. time; red is absent")
 
+
 toleranceChoice <- 1
 
 
