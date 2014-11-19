@@ -76,10 +76,49 @@ setkey(sgulf.strata, stratum)
 # ============================
 sgulf.raw000 <- merge(sgulf.catch, sgulf.set, all.x=TRUE, all.y=FALSE)
 
+
 # =============================
 # = Also merge in stratumarea =
 # =============================
 sgulf.raw00 <- merge(sgulf.raw000, sgulf.strata, all.x=TRUE, by="stratum")
+
+
+# ===============
+# = Trim Strata =
+# ===============
+# sgulf.raw00 <- sgulf.raw00[!(sgulf.raw00$year %in% c(1971, 1972)),] # doesn't really help much
+nyears <- sgulf.raw00[,length(unique(year))]
+
+# sgulf.raw00[,sum(colSums(table(year, stratum)>0)>=(nyears-1))] # original strata gives 12 strata seen every year
+# image(x=sgulf.raw00[,sort(unique(year))], y=sgulf.raw00[,1:length(unique(stratum))], z=sgulf.raw00[,table(year, stratum)>0])
+
+sgulf.raw00[,strat2:=paste(stratum, ll2strat(lon, lat))]
+# sgulf.raw00[,sum(colSums(table(year, strat2)>0)>=(nyears-1))] # 1º grid gives you 5 strata seen every year
+# >=(nyears-1) gives 16 strata on 1º grid
+# >=(nyears-2) gives 19 strata on 1º grid
+# >=(nyears-3) gives 22 strata on 1º grid
+# >=(nyears-4) gives 23 strata on 1º grid
+
+# nstrata <- c()
+# nstrata.orig <- c()
+# for(i in 0:38){
+# 	nstrata[i+1] <- sgulf.raw00[,sum(colSums(table(year, strat2)>0)>=(nyears-i))]
+# 	nstrata.orig[i+1] <- sgulf.raw00[,sum(colSums(table(year, stratum)>0)>=(nyears-i))]
+# }
+# dev.new(width=4)
+# par(mfrow=c(2,1), mar=c(2.5,2,1.5,0.2), cex=1, ps=10, mgp=c(1.25, 0.15, 0), tcl=-0.25)
+# plot(0:38, nstrata, type="o", xlab="threshold # years missing", ylab="# strata below threshold missingness", main="# strata vs. tolerance of missingness")
+# lines(0:38, nstrata.orig, type="o", col="red")
+# legend("topleft", legend=c("original strata definition", "1 degree grid definition"), lty=1, pch=21, col=c("red","black"))
+# image(x=sgulf.raw00[,sort(unique(year))], y=sgulf.raw00[,1:length(unique(strat2))], z=sgulf.raw00[,table(year, strat2)>0], xlab="year", ylab="1 degree stratum ID", main="stratum presence vs. time; red is present")
+
+toleranceChoice <- 1
+
+
+goodStrat2 <- sgulf.raw00[,names(colSums(table(year, strat2)>0))[colSums(table(year, strat2)>0)>=(nyears-toleranceChoice)]]
+sgulf.raw0 <- sgulf.raw00[strat2%in%goodStrat2]
+sgulf.raw0[,stratum:=strat2]
+sgulf.raw0[,strat2:=NULL]
 
 
 # ==================================
@@ -88,9 +127,9 @@ sgulf.raw00 <- merge(sgulf.raw000, sgulf.strata, all.x=TRUE, by="stratum")
 # sgulf.raw00[,rowSums(table(stratum, year)>=1)] # most strata were sampled every year (42 years is mode and max)
 # sgulf.raw00[,colSums(table(stratum, year)>=1)] # most years sampled between 48 and 51 strata
 
-sgulf.YS <- sgulf.raw00[,rowSums(table(stratum, year)>=1)] # the number of years (Y) in each stratum (S)
-sgulf.YS.pick <- names(sgulf.YS)[sgulf.YS==max(sgulf.YS)] # max() still works on class()=="character"
-sgulf.raw0 <- sgulf.raw00[stratum%in%sgulf.YS.pick,] # vector scan instead of binary search, but idc
+# sgulf.YS <- sgulf.raw00[,rowSums(table(stratum, year)>=1)] # the number of years (Y) in each stratum (S)
+# sgulf.YS.pick <- names(sgulf.YS)[sgulf.YS==max(sgulf.YS)] # max() still works on class()=="character"
+# sgulf.raw0 <- sgulf.raw00[stratum%in%sgulf.YS.pick,] # vector scan instead of binary search, but idc
 
 # some checks to make sure that being this selective with strata is still preserving spp obs and no biasing
 # sgulf.raw0[,length(unique(spp))] # 33 spp if use only the strata sampled most often
