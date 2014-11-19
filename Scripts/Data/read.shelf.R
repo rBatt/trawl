@@ -109,24 +109,66 @@ cols2keep <- quote(list(year, month, datetime, haulid, stratum, stratumarea, SLA
 shelf.raw00 <- shelf.raw000[TYPE==1 & month>=6 & month<= 8, eval(cols2keep)] 
 
 
+# ===============
+# = Fix lat/lon =
+# ===============
+# malin line 119 & 120
+shelf.raw00[,lat:=as.numeric(substr(SLAT,1,2))+as.numeric(substr(SLAT,3,4))/60]
+shelf.raw00[,lon:= -as.numeric(substr(SLONG,1,2))-as.numeric(substr(SLONG,3,4))/60]
+
+
+# ===============
+# = Trim Strata =
+# ===============
+nyears <- shelf.raw00[,length(unique(year))]
+
+# shelf.raw00[,sum(colSums(table(year, stratum)>0)==nyears)] # original strata gives 47 strata seen every year
+
+shelf.raw00[,strat2:=paste(stratum, ll2strat(lon, lat))]
+# shelf.raw00[,sum(colSums(table(year, strat2)>0)==nyears)] # 1º grid gives you 14 strata seen every year, 
+# shelf.raw00[,sum(colSums(table(year, strat2)>0)>=(nyears-6))] # 1º grid gives you 49 strata seen in all but 6 years
+
+
+
+
+#
+# nstrata <- c()
+# nstrata.orig <- c()
+# for(i in 0:(nyears-1)){
+# 	nstrata[i+1] <- shelf.raw00[,sum(colSums(table(year, strat2)>0)>=(nyears-i))]
+# 	nstrata.orig[i+1] <- shelf.raw00[,sum(colSums(table(year, stratum)>0)>=(nyears-i))]
+# }
+# dev.new(width=4)
+# par(mfrow=c(2,1), mar=c(2.5,2,1.5,0.2), cex=1, ps=10, mgp=c(1.25, 0.15, 0), tcl=-0.25)
+# plot(0:(nyears-1), nstrata, type="o", xlab="threshold # years missing", ylab="# strata below threshold missingness", main="# strata vs. tolerance of missingness")
+# lines(0:(nyears-1), nstrata.orig, type="o", col="red")
+# legend("topleft", legend=c("original strata definition", "1 degree grid definition"), lty=1, pch=21, col=c("red","black"))
+# image(x=shelf.raw00[,sort(unique(year))], y=shelf.raw00[,1:length(unique(strat2))], z=shelf.raw00[,table(year, strat2)>0], xlab="year", ylab="1 degree stratum ID", main="stratum presence vs. time; red is absent")
+
+
+toleranceChoice <- 6
+
+
+goodStrat2 <- shelf.raw00[,names(colSums(table(year, strat2)>0))[colSums(table(year, strat2)>0)>=(nyears-toleranceChoice)]]
+shelf.raw0 <- shelf.raw00[strat2%in%goodStrat2]
+shelf.raw0[,stratum:=strat2]
+shelf.raw0[,strat2:=NULL]
+
+
+
 # ==================================
 # = Subset to Strata sampled often =
 # ==================================
 # shelf.raw00[,rowSums(table(stratum, year)>=1)] # most strata were sampled every year (42 years is mode and max)
 # shelf.raw00[,colSums(table(stratum, year)>=1)] # most years sampled between 48 and 51 strata
 
-shelf.YS <- shelf.raw00[,rowSums(table(stratum, year)>=1)] # the number of years (Y) in each stratum (S)
-shelf.YS.pick <- names(shelf.YS)[shelf.YS==max(shelf.YS)] # max() still works on class()=="character"
-shelf.raw0 <- shelf.raw00[stratum%in%shelf.YS.pick,] # vector scan instead of binary search, but idc
+# shelf.YS <- shelf.raw00[,rowSums(table(stratum, year)>=1)] # the number of years (Y) in each stratum (S)
+# shelf.YS.pick <- names(shelf.YS)[shelf.YS==max(shelf.YS)] # max() still works on class()=="character"
+# shelf.raw0 <- shelf.raw00[stratum%in%shelf.YS.pick,] # vector scan instead of binary search, but idc
 
 
 
-# ===============
-# = Fix lat/lon =
-# ===============
-# malin line 119 & 120
-shelf.raw0[,lat:=as.numeric(substr(SLAT,1,2))+as.numeric(substr(SLAT,3,4))/60]
-shelf.raw0[,lon:= -as.numeric(substr(SLONG,1,2))-as.numeric(substr(SLONG,3,4))/60]
+
 
 
 # =========================
