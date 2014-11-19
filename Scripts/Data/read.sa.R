@@ -114,6 +114,8 @@ sa.raw0[,depth:=(DEPTHSTART+DEPTHEND)/2]
 sa.raw0[,cntcpue:=cnt/effort]
 sa.raw0[,wtcpue:=wt/effort]
 
+
+
 # ================
 # = Trim columns =
 # ================
@@ -124,9 +126,32 @@ sa.raw0 <- sa.raw0[,list(year, datetime, spp, haulid, stratum, stratumarea, lat,
 # ===============
 # = Trim Strata =
 # ===============
-sa.YS <- sa.raw0[,rowSums(table(stratum, year)>=1)] # the number of years (Y) in each stratum (S)
-sa.YS.pick <- names(sa.YS)[sa.YS==max(sa.YS)] # max() still works on class()=="character"
-sa.raw <- sa.raw0[stratum%in%sa.YS.pick,] # vector scan instead of binary search, but idc
+
+nyears <- sa.raw0[,length(unique(year))]
+
+# sa.raw0[,sum(colSums(table(year, stratum)>0)==nyears)] # original strata gives 18 strata seen every year
+
+sa.raw0[,strat2:=paste(stratum, ll2strat(lon, lat))]
+# sa.raw0[,sum(colSums(table(year, strat2)>0)==nyears)] # 1º grid gives you 18 strata seen every year
+
+# sa.raw0[,strat2:=paste(stratum, ll2strat(lon, lat, 0.5))]
+# sa.raw0[,sum(colSums(table(year, strat2)>0)==nyears)] # 0.5º grid gives you 17 strata seen every year
+#
+# sa.raw0[,strat2:=paste(stratum, ll2strat(lon, lat, 0.25))]
+# sa.raw0[,sum(colSums(table(year, strat2)>0)==nyears)] # 0.25º grid gives you 17 strata seen every year
+
+goodStrat2 <- sa.raw0[,names(colSums(table(year, strat2)>0))[colSums(table(year, strat2)>0)==nyears]]
+sa.raw <- sa.raw0[strat2%in%goodStrat2]
+sa.raw[,stratum:=strat2]
+sa.raw[,strat2:=NULL]
+
+
+# ==============================
+# = Old way of trimming strata =
+# ==============================
+# sa.YS <- sa.raw0[,rowSums(table(stratum, year)>=1)] # the number of years (Y) in each stratum (S)
+# sa.YS.pick <- names(sa.YS)[sa.YS==max(sa.YS)] # max() still works on class()=="character"
+# sa.raw <- sa.raw0[stratum%in%sa.YS.pick,] # vector scan instead of binary search, but idc
 
 
 # # some checks to make sure that being this selective with strata is still preserving spp obs and no biasing
