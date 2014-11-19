@@ -114,23 +114,51 @@ gmex$lat <- rowMeans(cbind(gmex$S_LATD + gmex$S_LATM/60, gmex$E_LATD + gmex$E_LA
 gmex$lon <- -rowMeans(cbind(gmex$S_LOND + gmex$S_LONM/60, gmex$E_LOND + gmex$E_LONM/60), na.rm=TRUE) # need negative sign since western hemisphere
 gmex$depth <- gmex$DEPTH_SSTA*1.8288 # convert fathoms to meters
 
+# ===============================
+# = Trim years (malin line 173) =
+# ===============================
+gmex <- gmex[!(gmex$year %in% c(1982, 1983)),] # 1982 and 1983 didn't sample many strata
+
+
 # ===========================
 # = Add strata where needed =
 # ===========================
 gmex[,stratum:=paste(floor(lat)+0.5, floor(lon)+0.5, floor(depth/100)*100+50, sep="-")]
+
+# ======================
+# = New strata on grid =
+# ======================
+nyears <- gmex[,length(unique(year))]
+
+# gmex[,table(year, stratum)]
+# gmex[,colSums(table(year, stratum)>0)]
+# gmex[,max(colSums(table(year, stratum)>0))]
+# gmex[,rowSums(table(year, stratum)>0)]
+# gmex[,sum(colSums(table(year, stratum)>0)==nyears)] # original strata gives 17 strata seen every year
+
+gmex[,strat2:=paste(stratum, ll2strat(lon, lat))]
+# gmex[,sum(colSums(table(year, strat2)>0)==nyears)] # 1º grid gives you 17 strata seen every year; so I'm assuming that including the depth value didn't affect much – as I would expect
+
+# gmex[,strat2:=paste(stratum, ll2strat(lon, lat, 0.5))]
+# gmex[,sum(colSums(table(year, strat2)>0)==nyears)] # 0.5º grid gives you 12 strata seen every year
+
+# gmex[,strat2:=paste(stratum, ll2strat(lon, lat, 0.25))]
+# gmex[,sum(colSums(table(year, strat2)>0)==nyears)] # 0.25º grid gives you 0 strata seen every year
+
+goodStrat2 <- gmex[,names(colSums(table(year, strat2)>0))[colSums(table(year, strat2)>0)==nyears]]
+gmex <- gmex[strat2%in%goodStrat2]
+gmex[,stratum:=strat2]
+gmex[,strat2:=NULL]
 
 
 
 # ================================
 # = Trim Strata (malin line 169) =
 # ================================
-gmex <- gmex[gmex$stratum %in% c("26.5--96.5-50", "26.5--97.5-50", "27.5--96.5-50", "27.5--97.5-50", "28.5--90.5-50", "28.5--91.5-50", "28.5--92.5-50", "28.5--93.5-50", "28.5--94.5-50", "28.5--95.5-50", "28.5--96.5-50", "29.5--88.5-50", "29.5--89.5-50", "29.5--92.5-50", "29.5--93.5-50", "29.5--94.5-50"),]
+# gmex <- gmex[gmex$stratum %in% c("26.5--96.5-50", "26.5--97.5-50", "27.5--96.5-50", "27.5--97.5-50", "28.5--90.5-50", "28.5--91.5-50", "28.5--92.5-50", "28.5--93.5-50", "28.5--94.5-50", "28.5--95.5-50", "28.5--96.5-50", "29.5--88.5-50", "29.5--89.5-50", "29.5--92.5-50", "29.5--93.5-50", "29.5--94.5-50"),]
 
 
-# ===============================
-# = Trim years (malin line 173) =
-# ===============================
-gmex <- gmex[!(gmex$year %in% c(1982, 1983)),] # 1982 and 1983 didn't sample many strata
+
 
 
 # =================================================
