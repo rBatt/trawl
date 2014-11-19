@@ -5,11 +5,17 @@ library(PBSmapping) # for calculating stratum areas
 library(maptools) # for calculating stratum areas
 library(Hmisc)
 
-source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rmWhite.R")
-source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rm9s.R")
-source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/calcarea.R")
-source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/sumna.R")
-source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/meanna.R")
+# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rmWhite.R")
+# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rm9s.R")
+# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/calcarea.R")
+# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/sumna.R")
+# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/meanna.R")
+
+# =======================
+# = Load data functions =
+# =======================
+data.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions"
+invisible(sapply(paste(data.location, list.files(data.location), sep="/"), source, .GlobalEnv))
 
 
 # ====================
@@ -49,16 +55,34 @@ ebs <- merge(ebs.raw, ebsStrata, all.x=TRUE)
 ebs[,haulid:=paste(formatC(VESSEL, width=3, flag=0), formatC(CRUISE, width=3, flag=0), formatC(HAUL, width=3, flag=0), sep='-')]
 
 
-# ================================
-# = Trim Strata (malin line 161) =
-# ================================
-ebs <- ebs[!(ebs$STRATUM %in% c(82,90)),]
-
-
 # =============
 # = Fix names =
 # =============
 setnames(ebs, c("STRATUM", "YEAR", "LATITUDE", "LONGITUDE", "BOT_DEPTH", "SCIENTIFIC", "WTCPUE", "Areakm2", "BOT_TEMP", "SURF_TEMP", "DATETIME"), c("stratum", "year", "lat", "lon", "depth", "spp", "wtcpue", "stratumarea", "btemp", "stemp", "datetime"))
+
+# ================================
+# = Trim Strata (malin line 161) =
+# ================================
+# ebs <- ebs[!(ebs$STRATUM %in% c(82,90)),]
+
+nyears <- ebs[,length(unique(year))]
+
+# ebs[,sum(colSums(table(year, stratum)>0)==nyears)] # original strata gives 10 strata seen every year
+
+ebs[,strat2:=paste(stratum, ll2strat(lon, lat))]
+# ebs[,sum(colSums(table(year, strat2)>0)==nyears)] # 1º grid gives you 92 strata seen every year
+
+# ebs[,strat2:=paste(stratum, ll2strat(lon, lat, 0.5))]
+# ebs[,sum(colSums(table(year, strat2)>0)==nyears)] # 0.5º grid gives you 162 strata seen every year
+#
+# ebs[,strat2:=paste(stratum, ll2strat(lon, lat, 0.25))]
+# ebs[,sum(colSums(table(year, strat2)>0)==nyears)] # 0.25º grid gives you 118 strata seen every year
+
+goodStrat2 <- ebs[,names(colSums(table(year, strat2)>0))[colSums(table(year, strat2)>0)==nyears]]
+ebs <- ebs[strat2%in%goodStrat2]
+ebs[,stratum:=strat2]
+ebs[,strat2:=NULL]
+
 
 
 
