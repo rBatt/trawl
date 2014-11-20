@@ -58,29 +58,55 @@ wcann[,haulid:=Trawl.Id]
 wcann[,year:=as.numeric(gsub('Cycle ', '', Survey.Cycle))]
 
 
+# ================
+# = Name columns =
+# ================
+setnames(wcann, c("Best.Latitude..dd.", "Best.Longitude..dd.", "Best.Depth..m.", "Species", "Temperature.At.the.Gear..degs.C.", "Trawl.Start.Time"), c("lat", "lon", "depth", "spp", "btemp", "datetime"))
+
+
+# =====================
+# = Add & Trim Strata =
+# =====================
+nyears <- wcann[,length(unique(year))]
+
+
+wcann[,strat2:=ll2strat(lon, lat)]
+# wcann[,sum(colSums(table(year, strat2)>0)==nyears)] # 1º grid gives you 31 strata seen every year
+
+# wcann[,strat2:=ll2strat(lon, lat, 0.5)]
+# wcann[,sum(colSums(table(year, strat2)>0)==nyears)] # 0.5º grid gives you 67 strata seen every year
+#
+# wcann[,strat2:=ll2strat(lon, lat, 0.25)]
+# wcann[,sum(colSums(table(year, strat2)>0)==nyears)] # 0.25º grid gives you 96 strata seen every year
+
+goodStrat2 <- wcann[,names(colSums(table(year, strat2)>0))[colSums(table(year, strat2)>0)==nyears]]
+wcann <- wcann[strat2%in%goodStrat2]
+wcann[,stratum:=strat2]
+wcann[,strat2:=NULL]
+
+
+
+
 # ==============
 # = Add strata =
 # ==============
-wcann[,stratum:=paste(floor(Best.Latitude..dd.)+0.5, floor(Best.Depth..m./100)*100+50, sep="-")]
+# wcann[,stratum:=paste(floor(Best.Latitude..dd.)+0.5, floor(Best.Depth..m./100)*100+50, sep="-")]
 
 
 # ================================
 # = Trim Strata (malin line 167) =
 # ================================
-wcann <- wcann[wcann$stratum %in% c("36.5-50", "37.5-150", "37.5-50", "38.5-150", "38.5-250", "38.5-350", "38.5-50", "39.5-150", "39.5-50", "40.5-150", "40.5-250", "41.5-150", "41.5-250", "41.5-50", "42.5-150", "42.5-250", "42.5-50", "43.5-150", "43.5-250", "43.5-350", "43.5-50", "44.5-150", "44.5-250", "44.5-350", "44.5-50", "45.5-150", "45.5-350", "45.5-50", "46.5-150", "46.5-250", "46.5-50", "47.5-150", "47.5-50", "48.5-150", "48.5-250", "48.5-50"),] # trim wcann to same footprint as wctri
+# wcann <- wcann[wcann$stratum %in% c("36.5-50", "37.5-150", "37.5-50", "38.5-150", "38.5-250", "38.5-350", "38.5-50", "39.5-150", "39.5-50", "40.5-150", "40.5-250", "41.5-150", "41.5-250", "41.5-50", "42.5-150", "42.5-250", "42.5-50", "43.5-150", "43.5-250", "43.5-350", "43.5-50", "44.5-150", "44.5-250", "44.5-350", "44.5-50", "45.5-150", "45.5-350", "45.5-50", "46.5-150", "46.5-250", "46.5-50", "47.5-150", "47.5-50", "48.5-150", "48.5-250", "48.5-50"),] # trim wcann to same footprint as wctri
 
 
 
 # ================
 # = Stratum area =
 # ================
-wcann[,stratumarea:=calcarea(cbind(Best.Longitude..dd., Best.Latitude..dd.)), by=stratum]
+wcann[,stratumarea:=calcarea(cbind(lon, lat)), by=stratum]
 
 
-# ================
-# = Name columns =
-# ================
-setnames(wcann, c("Best.Latitude..dd.", "Best.Longitude..dd.", "Best.Depth..m.", "Species", "Temperature.At.the.Gear..degs.C.", "Trawl.Start.Time"), c("lat", "lon", "depth", "spp", "btemp", "datetime"))
+
 
 # ============
 # = Add cpue =
