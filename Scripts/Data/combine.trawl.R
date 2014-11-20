@@ -8,9 +8,15 @@ library(rfishbase)
 library(plyr)
 library(taxize)
 
-source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rmWhite.R")
-source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/sumna.R")
-source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/meanna.R")
+# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rmWhite.R")
+# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/sumna.R")
+# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/meanna.R")
+
+# =======================
+# = Load data functions =
+# =======================
+data.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions"
+invisible(sapply(paste(data.location, list.files(data.location), sep="/"), source, .GlobalEnv))
 
 
 # ============================================
@@ -111,121 +117,16 @@ trawl00[,isSpecies:=is.species(spp)] # infer whether the taxa are identified to 
 uspp <- trawl00[,unique(spp)]
 
 
-countN <- function(x){ # count the number of times the letter "n" appears
-	sapply(strsplit(x,""), FUN=function(x)length(grep("n",x)))
-}
-
-grb.spp1 <- function(x) {
-	tryCatch(
-		{
-			x <- x$results
-			x <- x[!duplicated(x[,"matched_name2"]),]
-			adjN <- pmax(countN(x$matched_name2) - countN(x$submitted_name), 0)*0.01 # gets bonus match score if the matched name has more n's, because n's appear to be missing a lot
-			x$score <- x$score + adjN
-			x <- x[max(which.max(x[,"score"]),1),c("submitted_name","matched_name2")]
-			if(x[,"matched_name2"]==""){x[,"matched_name2"] <- NA}
-			return(x)
-		}, 
-		error=function(cond){
-			tryCatch(
-				{
-					data.frame(submitted_name=x$results[1, "submitted_name"], matched_name2=as.character(NA))
-				},
-				error=function(cond){data.frame(submitted_name=NA, matched_name2=NA)}
-			)
-		}	
-	)
-}
-
 tax.files <- dir("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy")
 
 
-# ==============================
-# = Grab correct species names =
-# ==============================
-	# =========================================================
-	# = If spp.corr1.RData does not exist, start from scratch =
-	# =========================================================
-if(!"spp.corr1.RData"%in%tax.files){
-	print("Can't find data file, looking up all spp names")
-	flush.console()
-	uspp.chunks <- as.character(cut(seq_along(uspp), length(uspp)))
-	u.uspp.chunks <- unique(uspp.chunks)
-	# start.time <- proc.time()["elapsed"]/60/60
-	spp.pb <- txtProgressBar(min=1, max=length(u.new.spp.chunks), style=3)
-	for(s in seq_along(u.uspp.chunks)){
-		
-		t.chunk <- u.uspp.chunks[s]
-		t.uspp <- uspp[uspp.chunks==t.chunk]
-		t.spp.corr1.names <- gnr_resolve(t.uspp, stripauthority=TRUE, http="get", resolve_once=TRUE)
-		t.spp.corr1 <- data.table(grb.spp1(t.spp.corr1.names))
-		if(s==1){
-			spp.corr1 <- t.spp.corr1
-		}else{
-			spp.corr1 <- rbind(spp.corr1, t.spp.corr1)	
-		}
-		setTxtProgressBar(spp.pb, s)
-	}
-	close(spp.pb)
-	setnames(spp.corr1, c("submitted_name", "matched_name2"), c("spp", "sppCorr"))
-	setkey(spp.corr1, spp)
-	save(spp.corr1, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.corr1.RData")
-	
-	# ======================================================
-	# = If spp.corr1.RData exists, only search for new spp =
-	# ======================================================
-}else{ # in the case where the spp.corr1.RData file has already been found, ....
-	print("Found data file of corrected species names")
-	flush.console()
+if("spp.corr1.RData"%in%tax.files){
 	load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.corr1.RData")
-	new.spp0 <- !uspp%in%spp.corr1[,spp] # are there any species that we haven't searched yet?
-	if(any(new.spp0)){ # if so, ...
-		print(paste("Looking up spp names for ", sum(new.spp0), " new spp", sep=""))
-		flush.console()
-		new.spp <- uspp[new.spp0] # define the new.spp as the unique species names that haven't been searched
-		
-		new.spp.chunks <- as.character(cut(seq_along(new.spp), length(new.spp))) # could just use unique(), but this is here if we want to search for more than 1 new.spp at a time (i.e., several new.spp would be passed to gnr_resolve at once)
-		u.new.spp.chunks <- unique(new.spp.chunks) # the unique groups of species that will be saerched
-		
-		spp.pb <- txtProgressBar(min=1, max=length(u.new.spp.chunks), style=3)
-		for(s in seq_along(u.new.spp.chunks)){ # for each group of new species to search (current just each unique species)
-		
-			t.chunk <- u.new.spp.chunks[s] # temporary spp group name
-			t.new.spp <- new.spp[new.spp.chunks==t.chunk] # temporary spp name (could be more than 1 spp, depending on how we used cut())
-			t.spp.corr2.names <- gnr_resolve(t.new.spp, stripauthority=TRUE, http="get", resolve_once=TRUE) # search the species w/ taxize package
-			t.spp.corr2 <- data.table(grb.spp1(t.spp.corr2.names)) # 
-			if(s==1){
-				spp.corr2 <- t.spp.corr2
-			}else{
-				spp.corr2 <- rbind(spp.corr2, t.spp.corr2)	
-			}
-			setTxtProgressBar(spp.pb, s)
-			
-		}
-		close(spp.pb)
-		setnames(spp.corr2, c("submitted_name", "matched_name2"), c("spp", "sppCorr"))
-		setkey(spp.corr2, spp) # set key for spp.corr2 (should already be set for spp.corr1)
-		# spp.corr1 <- spp.corr1[spp.corr2] # do a join ... maybe this should just be an rbind()
-		spp.corr1 <- rbind(spp.corr1, spp.corr2)
-		
-			# ===========================
-			# = Some manual corrections =
-			# ===========================
-			# spp.corr1[is.na(sppCorr)]
-			spp.corr1[spp=="Antipatharian", sppCorr:="Antipatharia"]
-			spp.corr1[spp=="Gorgonian", sppCorr:="Gorgonacea"]
-			spp.corr1[spp=="Gymothorax igromargiatus", sppCorr:="Gymnothorax nigromargiatus"]
-			spp.corr1[spp=="Micropaope uttigii", sppCorr:="Micropanope nuttingi"]
-			spp.corr1[spp=="Neptheid", sppCorr:="Neptheidae"]
-			spp.corr1[spp=="Ogocephalidae", sppCorr:="Ogcocephalidae"]
-			spp.corr1[spp=="Raioides", sppCorr:="Raioidea"]
-			spp.corr1[spp=="Seapen", sppCorr:="Pennatulacea"]
-			spp.corr1 <- spp.corr1[!is.na(sppCorr),]
-		
-		# Save the new spp.corr1 file, which has been updated with new species
-		save(spp.corr1, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.corr1.RData")
-	}
+	newlyChecked <- getSpp(uspp=uspp, oldSpp=spp.corr1)
+}else{
+	getSpp(uspp=uspp)
 }
+	
 
 
 # ===========================
