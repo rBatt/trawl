@@ -116,116 +116,37 @@ trawl00[,isSpecies:=is.species(spp)] # infer whether the taxa are identified to 
 
 uspp <- trawl00[,unique(spp)]
 
-
 tax.files <- dir("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy")
 
 
+# =============================
+# = Get Correct Species Names =
+# =============================
 if("spp.corr1.RData"%in%tax.files){
 	load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.corr1.RData")
-	newlyChecked <- getSpp(uspp=uspp, oldSpp=spp.corr1)
+	newlyChecked.spp <- getSpp(uspp=uspp, oldSpp=spp.corr1)
+	spp.corr1 <- newlyChecked.spp
 }else{
-	getSpp(uspp=uspp)
+	newlyChecked.spp <- getSpp(uspp=uspp)
+	spp.corr1 <- newlyChecked.spp
 }
-	
+save(spp.corr1, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.corr1.RData")
 
 
-# ===========================
-# = Search for common names =
-# ===========================
-u.sppCorr <- spp.corr1[,sppCorr] #spp.corr1[,unique(sppCorr)]
-	# ========================================================
-	# = If spp.cmmn1.RData doesn't exist, start from scratch =
-	# ========================================================
-if(!"spp.cmmn1.RData"%in%tax.files){
-	print("File of common names not found, searching for all")
-	flush.console()
-	cmmn.pb <- txtProgressBar(min=1, max=length(u.sppCorr), style=3)
-	for(i in 1:length(u.sppCorr)){
-		t.spp.cmmn00 <- tryCatch(
-			{
-				ncbi.check <- sci2comm(u.sppCorr[i], db="ncbi", ask=FALSE, verbose=FALSE)[[1]][1][[1]]
-				stopifnot(!is.null(ncbi.check))
-				ncbi.check
-			}, # first try looking in ncbi b/c gives english
-			error=function(cond){
-				tryCatch( # next try finding the common name in itis
-					{sci2comm(u.sppCorr[i], db="itis", ask=FALSE, verbose=FALSE)[[1]]},
-					error=function(cond){
-						tryCatch( # if itis throws an error, look in eol
-							{sci2comm(u.sppCorr[i], db="eol", ask=FALSE, verbose=FALSE)[[1]]},
-							error=function(cond){NA} # ... return NA
-						)
-					} # end 2nd error function
-				) # end 2nd try catch
-			} # end 1st error function 
-		) # end 1st try catch
-		
-
-		t.spp.cmmn0 <- t.spp.cmmn00[grepl("[a-zA-Z]", t.spp.cmmn00)][1] # only match common names with english chars
-		
-		t.spp.cmmn1 <- data.table(sppCorr=u.sppCorr[i], common=t.spp.cmmn0) # turn the common match into a data table w/ sppCorr
-		if(i==1){
-			spp.cmmn1 <- t.spp.cmmn1 # create the spp.cmmn1 data.table
-		}else{
-			spp.cmmn1 <- rbind(spp.cmmn1, t.spp.cmmn1) # or accumulate the spp.cmmn1 entries
-		}
-		setTxtProgressBar(cmmn.pb, i)
-	}
-	close(cmmn.pb)
-	setkey(spp.cmmn1, sppCorr)
-	save(spp.cmmn1, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.cmmn1.RData")
-	
-	# =============================================================
-	# = If spp.cmmn1.RData does exist, only search for new common =
-	# =============================================================
-}else{
-	print("File of common names found")
-	flush.console()
+# ==============================
+# = Get "Correct" Common Names =
+# ==============================
+if("spp.cmmn1.RData"%in%tax.files){
 	load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.cmmn1.RData")
-	setkey(spp.cmmn1, sppCorr)
-	new.sppCorr0 <- !u.sppCorr%in%spp.cmmn1[,sppCorr] & !is.na(u.sppCorr)
-	if(any(new.sppCorr0)){
-		print(paste("Looking up common names for ", sum(new.sppCorr0), " new spp", sep=""))
-		flush.console()
-		new.sppCorr <- u.sppCorr[new.sppCorr0]
-		cmmn.pb <- txtProgressBar(min=1, max=length(new.sppCorr), style=3) # initialize the progress bar
-		for(i in 1:length(new.sppCorr)){
-			t.spp.cmmn00 <- tryCatch(
-				{
-					ncbi.check <- sci2comm(new.sppCorr[i], db="ncbi", ask=FALSE, verbose=FALSE)[[1]][1][[1]]
-					stopifnot(!is.null(ncbi.check))
-					ncbi.check
-				}, # first try looking in ncbi b/c gives english
-				error=function(cond){
-					tryCatch( # next try finding the common name in itis
-						{sci2comm(new.sppCorr[i], db="itis", ask=FALSE, verbose=FALSE)[[1]]},
-						error=function(cond){
-							tryCatch( # if itis throws an error, look in eol
-								{sci2comm(new.sppCorr[i], db="eol", ask=FALSE, verbose=FALSE)[[1]]},
-								error=function(cond){NA} # ... return NA
-							)
-						} # end 2nd error function
-					) # end 2nd try catch
-				} # end 1st error function 
-			) # end 1st try catch
-			
-			t.spp.cmmn0 <- t.spp.cmmn00[grepl("[a-zA-Z]", t.spp.cmmn00)][1] # only match common names with english chars
-			t.spp.cmmn2 <- data.table(sppCorr=new.sppCorr[i], common=t.spp.cmmn0)
-			if(i==1){
-				spp.cmmn2 <- t.spp.cmmn2
-			}else{
-				spp.cmmn2 <- rbind(spp.cmmn2, t.spp.cmmn2)
-			}
-			
-			setTxtProgressBar(cmmn.pb, i) # update progress bar
-		}
-		close(cmmn.pb) # close progress bar
-		setkey(spp.cmmn2, sppCorr) # set key for new common names
-		spp.cmmn1 <- rbind(spp.cmmn1, spp.cmmn2) # bind new and old common names
-
-		save(spp.cmmn1, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.cmmn1.RData")
-	}
+	newlyChecked.cmmn <- getCmmn(u.sppCorr=spp.corr1[,sppCorr], oldCmmn=spp.cmmn1)
+	spp.cmmn1 <- newlyChecked.cmmn
+}else{
+	newlyChecked.cmmn <- getCmmn(uspp=spp.corr1[,sppCorr])
+	spp.cmmn1 <- newlyChecked.cmmn
 }
+save(spp.cmmn1, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.cmmn1.RData")
+
+
 
 
 # ===========================================
@@ -241,85 +162,52 @@ trawl.newSpp[!grepl("[a-zA-Z]", common)|common=="", common:=as.character(NA)] # 
 setkey(trawl.newSpp, sppCorr, common)
 trawl.newSpp <- unique(trawl.newSpp)
 
-
-# =============================
-# = Determine taxonomic level =
-# =============================
-sppCorr2 <- trawl.newSpp[,sppCorr]
-class.names <- c("species", "genus", "family", "order", "class", "superclass", "subphylum", "phylum", "kingdom")
+# ================================
+# = Get Taxonomic Classification =
+# ================================
 
 if("taxLvl1.RData"%in%tax.files){
-	print("File of taxonomic levels found")
-	flush.console()
 	load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/taxLvl1.RData")
+	
+	taxLvl1 <- getTax(sppCorr2=trawl.newSpp[,sppCorr], oldTax=taxLvl1)
+
 	setkey(taxLvl1, sppCorr)
-	new.sppCorr0 <- !sppCorr2%in%taxLvl1[,sppCorr] & !is.na(sppCorr2)
-	if(any(new.sppCorr0)){
-		print(paste("Looking up taxonomic level for ", sum(new.sppCorr0), " new spp", sep=""))
-		flush.console()
-		sppCorr3 <- u.sppCorr[new.sppCorr0]
-		# TODO I need to actually look up the taxonomic level for this situation, because currently I don't
-	}
+	taxLvl1 <- unique(taxLvl1)
 }else{
-	sppCorr3 <- sppCorr2
+	taxLvl1 <- getTax(sppCorr2=trawl.newSpp[,sppCorr])
 	
-	print("File of taxonomic levels not found, searching for all")
-	flush.console()
-	tlvl.pb <- txtProgressBar(min=1, max=length(sppCorr3), style=3)
-	for(i in 1:length(sppCorr3)){
-		t.classification <- tryCatch( # first try finding the common name in itis
-			{
-				classification(get_tsn(sppCorr3[i], ask=FALSE, verbose=FALSE), verbose=FALSE)[[1]]
-			},
-				error=function(cond){as.character(NA)}
-		)
-		# t.taxLvl0 <- t.taxLvl00[grepl("[a-zA-Z]", t.taxLvl00)][1] # only match common names with english chars
-		
-		# t.class <- as.data.frame(matrix(NA, ncol=length(class.names), dimnames=list(NULL,class.names)))
-		#
-		# t.class
-		
-		if(!is.na(t.classification)){
-			t.taxLvl0 <- tail(t.classification[,2], 1) # 2nd column contains level of classification, tail(,1) to get most specific
-			
-			t.c1 <- tolower(t.classification[,2]) # column 1 of classification, in lower case
-			t.c2 <- t.classification[,1] # column 2 of classification, which is class. level
-			t.c1.ind <- t.c1%in%class.names # index of which levels of classification should be extracted
-		
-			t.taxLvl1 <- data.table(sppCorr=sppCorr3[i], taxLvl=t.taxLvl0) # create a data table
-			t.taxLvl1[,(class.names):=NA] # create empty columns for classification
-			t.taxLvl1[,t.c1[t.c1.ind]:=as.list(t.classification[t.c1.ind,1])] # fill in empty classification columns where found
-		
-			
-		}else{ # else, if the call to classification() or get_tsn() failed, then
-			t.taxLvl0 <- NA # leave taxLvl as NA
-			t.taxLvl1 <- data.table(sppCorr=sppCorr3[i], taxLvl=t.taxLvl0) # record corrected spp name, and NA tax lvl
-			t.taxLvl1[,(class.names):=NA] # and the classification will be left as NA
-		}
-		
-		
-		# t.taxLvl1 <- data.table(sppCorr=sppCorr2[i], taxLvl=t.taxLvl0) # turn the common match into a data table w/ sppCorr
-		# if(i==1){
-		if(!exists("taxLvl1")){
-			taxLvl1 <- t.taxLvl1 # create the spp.cmmn1 data.table
-		}else{
-			taxLvl1 <- rbind(taxLvl1, t.taxLvl1) # or accumulate the spp.cmmn1 entries
-		}
-		setTxtProgressBar(tlvl.pb, i)
-	}
-	close(tlvl.pb)
 	setkey(taxLvl1, sppCorr)
-	save(taxLvl1, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/taxLvl1.RData")
-	
+	taxLvl1 <- unique(taxLvl1)
 }
+
+save(taxLvl1, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/taxLvl1.RData")
+
+
+# ====================
+# = Add Manual Names =
+# ====================
+manualTax <- fread("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spptaxonomy_2014-10-09_plusManual_no_spp._RDB.csv")
+
+setnames(manualTax, c("taxon", "name"), c("spp", "sppCorr"))
+
+manualTax[,spp:=cullParen(cullSp(fixCase(cullExSpace(spp))))]
+
+setkey(manualTax, spp)
+manualTax <- unique(manualTax)
+
+
+tns.in.man <- trawl.newSpp[,spp]%in%manualTax[,spp] # find the trawl names in the manual file
+man.in.tns <- manualTax[,spp]%in%trawl.newSpp[,spp] # find the manual names in the trawl object
+trawl.newSpp2 <- rbind(trawl.newSpp[!tns.in.man], manualTax[man.in.tns, list(sppCorr, spp, common)]) # take all of the trawl object names not found in the manual file, then bind it to all of the manual names that were found in the trawl object
+
 
 
 # ======================================
 # = Update species names in trawl data =
 # ======================================
-setkey(trawl.newSpp, spp)
+setkey(trawl.newSpp2, spp)
 setkey(trawl00, spp)
-trawl0 <- merge(trawl00, trawl.newSpp, all.x=TRUE, by="spp") #trawl[trawl.newSpp]
+trawl0 <- merge(trawl00, trawl.newSpp2, all.x=TRUE, by="spp") #trawl[trawl.newSpp]
 
 trawl0[!is.na(sppCorr),spp:=sppCorr]
 trawl0[,correctSpp:=!is.na(sppCorr)]
