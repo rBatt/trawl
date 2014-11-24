@@ -316,7 +316,7 @@ trawl2 <- trawl3[,
 			# common=.SD[correctSpp,unique(common)],
 			# taxLvl=.SD[correctSpp,unique(taxLvl)]
 			common=unique(common[correctSpp]),
-			taxLvl=unique(common[taxLvl])
+			taxLvl=unique(taxLvl[correctSpp])
 		) 
 	},
 	by=c("region","s.reg","spp","year","stratum")
@@ -358,6 +358,7 @@ trawl1 <- trawl1[,list(s.reg, spp, year, stratum, lat, lon, depth, stemp, btemp,
 # Have to rebuild some of the taxonomic classifications after merging
 trawl2.tax <- trawl2[,list(s.reg, spp, taxLvl, common, correctSpp)] # get classifications
 setkey(trawl2.tax) # set key in preparation for merge
+trawl2.tax <- unique(trawl2.tax)
 
 # Need to make sure we're only using the classifications for the conditions when correctSpp was true
 # This is a necessary step – otherwise, there WILL be duplicates
@@ -375,7 +376,7 @@ trawl2.tax2 <- trawl2.tax[,
 ]
 setkey(trawl2.tax2) # set key in preparation for merge
 
-trawl <- merge(trawl1, trawl2.tax2) # merge trawl data with rebuilt taxonomic classification
+trawl <- merge(trawl1, trawl2.tax2, by=c("s.reg","spp")) # merge trawl data with rebuilt taxonomic classification
 setkey(trawl, s.reg, spp, stratum, year) # set key
 
 
