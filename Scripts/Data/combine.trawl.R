@@ -306,8 +306,10 @@ trawl2 <- trawl3[,
 		# OK, create condensed output list
 		list(
 			# datetime=as.POSIXct(mean(datetime, na.rm=TRUE), tz="GMT", origin="1970-01-01 00:00.00 GMT"),
-			lat=roundGrid(mean(lat, na.rm=TRUE)), 
-			lon=roundGrid(mean(lon, na.rm=TRUE)), 
+			lat=roundGrid(mean(lat, na.rm=TRUE)),
+			lon=roundGrid(mean(lon, na.rm=TRUE)),
+			# lat=(mean(lat, na.rm=TRUE)),
+			# lon=(mean(lon, na.rm=TRUE)),
 			depth=mean(depth, na.rm=TRUE), 
 			stemp=meanna(stemp), 
 			btemp=meanna(btemp), 
@@ -326,7 +328,8 @@ setkey(trawl2, spp, s.reg, year, stratum)
 # sum(duplicated(trawl2))
 
 # Create the data.table that will hold the spp, s.reg, year, stratum such that for a given species in a given place, we can build a complete time series (missing data gaps to be filled in w/ NA's)
-allSpp <- trawl2[,CJ(spp=unique(spp)[!is.na(unique(spp))], year=as.character(do.call(":", list(min(year), max(year)))), stratum=unique(stratum)[!is.na(unique(stratum))]), by="s.reg"] # build combinations
+# allSpp <- trawl2[,CJ(spp=unique(spp)[!is.na(unique(spp))], year=as.character(do.call(":", list(min(year), max(year)))), stratum=unique(stratum)[!is.na(unique(stratum))]), by="s.reg"] # build combinations
+allSpp <- trawl2[,CJ(spp=unique(spp)[!is.na(unique(spp))], year=as.character(unique(year)), stratum=unique(stratum)[!is.na(unique(stratum))]), by="s.reg"] # build combinations
 
 
 # Set keys before merge
@@ -379,13 +382,13 @@ setkey(trawl2.tax2) # set key in preparation for merge
 trawl <- merge(trawl1, trawl2.tax2, by=c("s.reg","spp")) # merge trawl data with rebuilt taxonomic classification
 setkey(trawl, s.reg, spp, stratum, year) # set key
 
-
 # Need to rebuild numeric variables (but not CPUE data) after filling in time series w/ NA's
 # (some of these values are known, even though they were observed for a given place/time/species)
 trawl[is.na(wtcpue), wtcpue:=0] # set NA cpue's to 0's
-trawl[, c("lat","lon","depth"):=list(fill.mean(lat), fill.mean(lon), fill.mean(depth)), by=c("s.reg", "stratum")] # assume depth, lon, lat is constant w/in a stratum, so can fill in NA's with these values
-trawl[, c("stemp","btemp"):=list(fill.mean(stemp), fill.mean(btemp)), by=c("s.reg","stratum","year")] # assume that temperatures are constant w/in a stratum/ region/ year, so can fill in NA's again
 
+trawl[, c("lat","lon","depth"):=list(roundGrid(fill.mean(lat)), roundGrid(fill.mean(lon)), fill.mean(depth)), by=c("s.reg", "stratum")] # assume depth, lon, lat is constant w/in a stratum, so can fill in NA's with these values
+
+trawl[, c("stemp","btemp"):=list(fill.mean(stemp), fill.mean(btemp)), by=c("s.reg","stratum","year")] # assume that temperatures are constant w/in a stratum/ region/ year, so can fill in NA's again
 
 
 # ========
