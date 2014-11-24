@@ -1,7 +1,4 @@
 
-# TODO need to change all the lookup code into functions
-# TODO need to incorporate the manually-found species info
-
 
 library(data.table)
 library(rfishbase)
@@ -107,6 +104,20 @@ save(raw.and.spp, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Dat
 
 trawl00[,isSpecies:=is.species(spp)] # infer whether the taxa are identified to species or to genus (1 or 2 words)
 
+# =============================
+# = Watch out for duplicates? =
+# =============================
+# setkey(trawl00, s.reg, year, spp, stratum, datetime)
+# sum(duplicated(trawl00))
+#
+# setkey(trawl00, s.reg, year, spp, stratum, haulid, datetime)
+# sum(duplicated(trawl00))
+#
+# setkey(trawl00, s.reg, year, spp, stratum, haulid, datetime, raw.spp)
+# sum(duplicated(trawl00))
+
+# need the "duplicates" for matching to malin's taxa, i guess
+
 
 # ================================
 # = Use Taxize to clean up names =
@@ -130,6 +141,7 @@ if("spp.corr1.RData"%in%tax.files){
 	newlyChecked.spp <- getSpp(uspp=uspp)
 	spp.corr1 <- newlyChecked.spp
 }
+
 save(spp.corr1, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.corr1.RData")
 
 
@@ -144,6 +156,7 @@ if("spp.cmmn1.RData"%in%tax.files){
 	newlyChecked.cmmn <- getCmmn(uspp=spp.corr1[,sppCorr])
 	spp.cmmn1 <- newlyChecked.cmmn
 }
+
 save(spp.cmmn1, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.cmmn1.RData")
 
 
@@ -187,6 +200,7 @@ save(taxLvl1, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Ta
 # = Add Manual Names =
 # ====================
 manualTax <- fread("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spptaxonomy_2014-10-09_plusManual_no_spp._RDB.csv")
+rmWhite(manualTax) # have to remove leading and trailing white space
 
 setnames(manualTax, c("taxon", "name"), c("spp", "sppCorr"))
 
@@ -225,8 +239,10 @@ if(taxLvl1[,sum(is.na(sppCorr))]==0){
 # ===========================
 # = Trim trawl columns down =
 # ===========================
-trawl <- trawl0[,list(region, s.reg, spp, taxLvl, common, year, datetime, stratum, lat, lon, depth, stemp, btemp, wtcpue, cntcpue, correctSpp)]
-setkey(trawl, s.reg, taxLvl, spp, year, stratum)
+trawl4 <- trawl0[,list(region, s.reg, spp, taxLvl, common, year, datetime, stratum, lat, lon, depth, stemp, btemp, wtcpue, cntcpue, correctSpp)]
+setkey(trawl4, s.reg, taxLvl, spp, year, stratum)
+
+trawl4[,depth:=as.numeric(depth)]
 
 
 # ====================
@@ -242,27 +258,137 @@ gsub(pat2y, "20\\3-\\1-\\2", test, perl=TRUE)
 gsub(pat4y, "\\3-\\1-\\2", test, perl=TRUE)
 # pat.mdy <- "^(\\d{1,2})(?:[\\/-])(\\d{1,2})(?:[\\/-])"
 
-trawl[,datetime:=gsub(pat2y, "20\\3-\\1-\\2", datetime, perl=TRUE)] # e.g., switch out 6/23/07 for 2007-6-23
+trawl4[,datetime:=gsub(pat2y, "20\\3-\\1-\\2", datetime, perl=TRUE)] # e.g., switch out 6/23/07 for 2007-6-23
 
-trawl[,datetime:=gsub(pat4y, "\\3-\\1-\\2", datetime, perl=TRUE)] # e.g., switch out 6/23/2007 for 2007-6-23
+trawl4[,datetime:=gsub(pat4y, "\\3-\\1-\\2", datetime, perl=TRUE)] # e.g., switch out 6/23/2007 for 2007-6-23
 
-trawl[,datetime:=gsub(pat4y.only, "\\1-01-01", datetime, perl=TRUE)] # e.g., switch out 2007 for 2007-01-01
+trawl4[,datetime:=gsub(pat4y.only, "\\1-01-01", datetime, perl=TRUE)] # e.g., switch out 2007 for 2007-01-01
 
 # trawl[,datetime:=as.POSIXct(datetime, tz="GMT")] # note that the times get truncated # too slow, see below for better solution
 
 # ======================
 # = Add POSIX to trawl =
 # ======================
-trawl.posix <- data.table(datetime=trawl[,unique(datetime)], datetimeP=as.POSIXct(trawl[,unique(datetime)], tz="GMT"))
+trawl.posix <- data.table(datetime=trawl4[,unique(datetime)], datetimeP=as.POSIXct(trawl4[,unique(datetime)], tz="GMT"))
 setkey(trawl.posix, datetime)
-setkey(trawl, datetime)
-trawl <- merge(trawl, trawl.posix, all.x=TRUE)
-trawl[,datetime:=datetimeP]
-trawl <- trawl[,j=names(trawl)[names(trawl)!="datetimeP"], with=FALSE]
+setkey(trawl4, datetime)
+trawl3 <- merge(trawl4, trawl.posix, all.x=TRUE)
+trawl3[,datetime:=datetimeP]
+trawl3 <- trawl3[,j=names(trawl3)[names(trawl3)!="datetimeP"], with=FALSE]
+
+
+# ======================================================================
+# = In the past, my save object was basically the equivalent of trawl3 =
+# ======================================================================
+
+# ================================
+# = Aggregate and Pad Trawl Data =
+# ================================
+# Make sure each species in each stratum (by=s.reg) has a row
+# Then aggregate by averaging wtcpue
+
+# First, need to do a bit of aggregating to make sure that duplicates weren't creating when finding the correct species names
+# Ha, they were definitely created
+# I think the problem (or part of it, at least), may be related to the way in which I build upon the common, tax lvl, and spp name files; in particular, I think that because I've begun to institutte new restrictions on what constitutes a valid common name, that now there are both "corrSpp" TRUE and FALSE for the same original raw species name. The particular case of this that I'm thinking of while writing this is where I strip out any name matches (for common) with foriegn characters. Not entirely sure where this lack of match ends up converting into a corrSpp being F, though
+# Anyway, I need to do some condensing here. 
+trawl2 <- trawl3[,
+	{
+		# just some checks to make sure that weird things don't happen
+		if(length(unique(common[correctSpp]))>1){
+			print(unique(common[correctSpp]))
+			stop("trying to add too many common names – apparent correct match of species name to multiple commons")
+		}
+		if(length(unique(taxLvl[correctSpp]))>1){
+			print(unique(taxLvl[correctSpp]))
+			stop("trying to add too many taxLvl – apparent correct match of species name to multiple taxonomic classifications")
+		}
+		
+		# OK, create condensed output list
+		list(
+			# datetime=as.POSIXct(mean(datetime, na.rm=TRUE), tz="GMT", origin="1970-01-01 00:00.00 GMT"),
+			lat=roundGrid(mean(lat, na.rm=TRUE)), 
+			lon=roundGrid(mean(lon, na.rm=TRUE)), 
+			depth=mean(depth, na.rm=TRUE), 
+			stemp=meanna(stemp), 
+			btemp=meanna(btemp), 
+			wtcpue=meanna(wtcpue), 
+			correctSpp=any(correctSpp),
+			# common=.SD[correctSpp,unique(common)],
+			# taxLvl=.SD[correctSpp,unique(taxLvl)]
+			common=unique(common[correctSpp]),
+			taxLvl=unique(common[taxLvl])
+		) 
+	},
+	by=c("region","s.reg","spp","year","stratum")
+] # note that sometimes wtcpue is 0 when cntcpue is non-0, hence why you can have normal numerics for depth and temp even though there is 0 cpue (which would seemingly imply a no-obs, but that's not necessarily true)
+
+setkey(trawl2, spp, s.reg, year, stratum)
+# sum(duplicated(trawl2))
+
+# Create the data.table that will hold the spp, s.reg, year, stratum such that for a given species in a given place, we can build a complete time series (missing data gaps to be filled in w/ NA's)
+allSpp <- trawl2[,CJ(spp=unique(spp)[!is.na(unique(spp))], year=as.character(do.call(":", list(min(year), max(year)))), stratum=unique(stratum)[!is.na(unique(stratum))]), by="s.reg"] # build combinations
+
+
+# Set keys before merge
+setkey(trawl2, s.reg, spp, year, stratum)
+setkey(allSpp, s.reg, spp, year, stratum) 
+
+
+
+# ===========================================
+# = Merge full time series skeleton w/ data =
+# ===========================================
+# A lot of confusion due to data.table asserting I was attempting an unintentional merge
+# See bug: https://github.com/Rdatatable/data.table/issues/742
+# I had 1.9.2 when I first had this bug, then I updated to 1.9.4 (had to install from source b/c still on Mountain Lion on laptop), but still had bug
+# solution was to just check for duplicated i
+if(sum(duplicated(allSpp))==0){
+	# trawl1 <- merge(allSpp, trawl2, all=TRUE, by=c("s.reg","spp","year","stratum"))
+	trawl1 <- trawl2[allSpp, allow.cartesian=TRUE] # MERGE
+	setkey(trawl1, s.reg, spp, year, stratum)
+}else{
+	# Hopefully it never enters this, will probably throw an error if it does
+	trawl1 <- trawl2[allSpp] # MERGE
+	setkey(trawl1, s.reg, spp, year, stratum)
+}
+
+# Strip down to names that I want to keep
+trawl1 <- trawl1[,list(s.reg, spp, year, stratum, lat, lon, depth, stemp, btemp, wtcpue)]
+
+# Have to rebuild some of the taxonomic classifications after merging
+trawl2.tax <- trawl2[,list(s.reg, spp, taxLvl, common, correctSpp)] # get classifications
+setkey(trawl2.tax) # set key in preparation for merge
+
+# Need to make sure we're only using the classifications for the conditions when correctSpp was true
+# This is a necessary step – otherwise, there WILL be duplicates
+# This created a huge headache for me originally, before I figure out what was going on (still don't fully understand why all of those duplicates exist, although I do have ideas)
+trawl2.tax2 <- trawl2.tax[,
+	{
+		list(
+			s.reg=s.reg[correctSpp],
+			spp=spp[correctSpp],
+			taxLvl=taxLvl[correctSpp],
+			common=common[correctSpp],
+			correctSpp=correctSpp[correctSpp]
+			)
+	}
+]
+setkey(trawl2.tax2) # set key in preparation for merge
+
+trawl <- merge(trawl1, trawl2.tax2) # merge trawl data with rebuilt taxonomic classification
+setkey(trawl, s.reg, spp, stratum, year) # set key
+
+
+# Need to rebuild numeric variables (but not CPUE data) after filling in time series w/ NA's
+# (some of these values are known, even though they were observed for a given place/time/species)
+trawl[is.na(wtcpue), wtcpue:=0] # set NA cpue's to 0's
+trawl[, c("lat","lon","depth"):=list(fill.mean(lat), fill.mean(lon), fill.mean(depth)), by=c("s.reg", "stratum")] # assume depth, lon, lat is constant w/in a stratum, so can fill in NA's with these values
+trawl[, c("stemp","btemp"):=list(fill.mean(stemp), fill.mean(btemp)), by=c("s.reg","stratum","year")] # assume that temperatures are constant w/in a stratum/ region/ year, so can fill in NA's again
+
 
 
 # ========
 # = Save =
 # ========
-setkey(trawl, s.reg, taxLvl, spp, year, stratum)
+setkey(trawl, s.reg, spp, year, stratum)
 save(trawl, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/trawl.RData")
