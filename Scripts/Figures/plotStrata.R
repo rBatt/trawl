@@ -138,7 +138,7 @@ dev.off()
 # = Trim data for plotting spatial catch over time =
 # ==================================================
 # Trim data
-long.spp <- trawl[taxLvl=="Species"&is.finite(wtcpue)&wtcpue>0,][,n.yrs:=lu(year), by=c("spp","s.reg")][n.yrs>=4,]
+long.spp <- trawl[taxLvl=="Species",][,n.yrs:=lu(year[wtcpue>0]), by=c("spp","s.reg")][n.yrs>=4,]
 long.spp[,cut.yrs:=cy(year), by=c("spp","s.reg")]
 long.space.spp <- long.spp[,min.locs.yr:=min(colSums(table(paste(lat,lon),year)>0)),by=c("spp","s.reg")][min.locs.yr>=2 & is.finite(wtcpue),]
 
@@ -210,7 +210,7 @@ spp.plot <- bquote({ # Create a back-quoted expression
 # ============================
 # = Actually do the spp plot =
 # ============================
-pdf("~/Documents/School&Work/pinskyPost/trawl/Figures/catch.SpaceTime.pdf", width=4, height=7)
+pdf("~/Documents/School&Work/pinskyPost/trawl/Figures/catch.SpaceTime2.pdf", width=4, height=7)
 long.space.spp[, 
 	j={
 		xl <- .SD[, range(lon)]
