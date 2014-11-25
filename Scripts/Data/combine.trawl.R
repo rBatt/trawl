@@ -9,6 +9,11 @@ library(taxize)
 # source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/sumna.R")
 # source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/meanna.R")
 
+# =========================
+# = Memory-saving options =
+# =========================
+delOldTrawl <- c(FALSE, TRUE)[2]
+
 # =======================
 # = Load data functions =
 # =======================
@@ -58,6 +63,13 @@ badSpp <- unique(c(badEgg, badFish, badLarv, badYoy))
 
 setkey(trawl000, spp)
 trawl00 <- trawl000[!.(badSpp),]
+
+# ==================
+# = Save Memory #1 =
+# ==================
+if(delOldTrawl){
+	rm(list=trawl000)
+}
 
 
 # ====================================
@@ -223,6 +235,13 @@ setkey(trawl.newSpp2, spp)
 setkey(trawl00, spp)
 trawl0 <- merge(trawl00, trawl.newSpp2, all.x=TRUE, by="spp") #trawl[trawl.newSpp]
 
+# ==================
+# = Save Memory #2 =
+# ==================
+if(delOldTrawl){
+	rm(list="trawl00")
+}
+
 trawl0[!is.na(sppCorr),spp:=sppCorr]
 trawl0[,correctSpp:=!is.na(sppCorr)]
 
@@ -241,6 +260,13 @@ if(taxLvl1[,sum(is.na(sppCorr))]==0){
 # ===========================
 trawl4 <- trawl0[,list(region, s.reg, spp, taxLvl, common, year, datetime, stratum, lat, lon, depth, stemp, btemp, wtcpue, cntcpue, correctSpp)]
 setkey(trawl4, s.reg, taxLvl, spp, year, stratum)
+
+# ==================
+# = Save Memory #3 =
+# ==================
+if(delOldTrawl){
+	rm(list="trawl0")
+}
 
 trawl4[,depth:=as.numeric(depth)]
 
@@ -277,6 +303,14 @@ trawl3[,datetime:=datetimeP]
 trawl3 <- trawl3[,j=names(trawl3)[names(trawl3)!="datetimeP"], with=FALSE]
 
 
+# ==================
+# = Save Memory #4 =
+# ==================
+if(delOldTrawl){
+	rm(list="trawl4")
+}
+
+
 # ======================================================================
 # = In the past, my save object was basically the equivalent of trawl3 =
 # ======================================================================
@@ -290,7 +324,10 @@ trawl3 <- trawl3[,j=names(trawl3)[names(trawl3)!="datetimeP"], with=FALSE]
 # First, need to do a bit of aggregating to make sure that duplicates weren't creating when finding the correct species names
 # Ha, they were definitely created
 # I think the problem (or part of it, at least), may be related to the way in which I build upon the common, tax lvl, and spp name files; in particular, I think that because I've begun to institutte new restrictions on what constitutes a valid common name, that now there are both "corrSpp" TRUE and FALSE for the same original raw species name. The particular case of this that I'm thinking of while writing this is where I strip out any name matches (for common) with foriegn characters. Not entirely sure where this lack of match ends up converting into a corrSpp being F, though
-# Anyway, I need to do some condensing here. 
+# Anyway, I need to do some condensing here.
+# ==================================
+# = Prepare Padding by Aggregating =
+# ==================================
 trawl2 <- trawl3[,
 	{
 		# just some checks to make sure that weird things don't happen
@@ -306,10 +343,10 @@ trawl2 <- trawl3[,
 		# OK, create condensed output list
 		list(
 			# datetime=as.POSIXct(mean(datetime, na.rm=TRUE), tz="GMT", origin="1970-01-01 00:00.00 GMT"),
-			lat=roundGrid(mean(lat, na.rm=TRUE)),
-			lon=roundGrid(mean(lon, na.rm=TRUE)),
-			# lat=(mean(lat, na.rm=TRUE)),
-			# lon=(mean(lon, na.rm=TRUE)),
+			# lat=roundGrid(mean(lat, na.rm=TRUE)),
+			# lon=roundGrid(mean(lon, na.rm=TRUE)),
+			lat=mean(lat, na.rm=TRUE),
+			lon=mean(lon, na.rm=TRUE),
 			depth=mean(depth, na.rm=TRUE), 
 			stemp=meanna(stemp), 
 			btemp=meanna(btemp), 
@@ -327,6 +364,88 @@ trawl2 <- trawl3[,
 setkey(trawl2, spp, s.reg, year, stratum)
 # sum(duplicated(trawl2))
 
+
+# ==================
+# = Save Memory #5 =
+# ==================
+if(delOldTrawl){
+	rm(list="trawl3")
+}
+
+# save.image("~/Desktop/quickPickUp_combineTrawl.asdf982734FAK.RData")
+# =====================================================
+# = Pad species absences (actual observations of 0's) =
+# =====================================================
+# test <- trawl2[,head(.SD), by=c("s.reg", "year")]
+#
+# test.m <- test[s.reg=="ai", merge.data.table(x=list(spp=unique(spp)), y=list(year=unique(year), stratum=unique(stratum)), by=NULL)]
+#
+# test.m2 <- test[,
+# 	j={
+# 		yr.strat <- .SD[,list(year=year, stratum=stratum)]
+# 		setkey(yr.strat, year, stratum)
+# 		yr.strat <- unique(yr.strat)
+# 		yr.strat[,ysID:=1:nrow(.SD)]
+#
+# 		res0 <- CJ(spp=unique(spp[!is.na(spp)]), ysID=yr.strat[,ysID])
+# 		res <- merge(res0, yr.strat, by="ysID")
+# 		res[,ysID:=NULL]
+# 		res
+#
+# 	},
+# 	by=c("s.reg")
+# ]
+
+
+allSpp0 <- trawl2[, 
+	j={
+		yr.strat <- .SD[,list(year=year, stratum=stratum)]
+		setkey(yr.strat, year, stratum)
+		yr.strat <- unique(yr.strat)
+		yr.strat[,ysID:=1:nrow(.SD)]
+		
+		res0 <- CJ(spp=unique(spp[!is.na(spp)]), ysID=yr.strat[,ysID])
+		res <- merge(res0, yr.strat, by="ysID")
+		res[,ysID:=NULL]
+		res
+	
+	},
+	by=c("s.reg")
+]
+
+# Set keys before merge
+setkey(trawl2, s.reg, spp, year, stratum)
+setkey(allSpp0, s.reg, spp, year, stratum) 
+
+
+if(sum(duplicated(allSpp0))==0){
+	# trawl1.1 <- merge(allSpp0, trawl2, all=TRUE, by=c("s.reg","spp","year","stratum"))
+	trawl1.1 <- trawl2[allSpp0, allow.cartesian=TRUE] # MERGE
+	setkey(trawl1.1, s.reg, spp, year, stratum)
+}else{
+	# Hopefully it never enters this, will probably throw an error if it does
+	trawl1.1 <- trawl2[allSpp0] # MERGE
+	setkey(trawl1.1, s.reg, spp, year, stratum)
+}
+
+trawl1.1[,length(unique(spp)), by=c("s.reg","stratum","year")]
+
+# Indicate that all of these rows were actually observed stratum-year combinations (and possibly obs absences of spp)
+trawl1.1[,Obsd:=TRUE] # mark all rows as being "observed"
+trawl1.1[is.na(wtcpue)&Obsd, wtcpue:=0] # mark observed absences (which are often not recorded, thus NA at this point) as 0's
+
+# Strip down to names that I want to keep
+trawl1.1 <- trawl1.1[,list(s.reg, spp, year, stratum, lat, lon, depth, stemp, btemp, wtcpue, Obsd)]
+
+
+# Rebuild lat, lon, depth, btemp, stemp
+trawl1.1[, c("lat","lon","depth"):=list(fill.mean(lat), fill.mean(lon), fill.mean(depth)), by=c("s.reg", "stratum")] 
+trawl1.1[, c("stemp","btemp"):=list(fill.mean(stemp), fill.mean(btemp)), by=c("s.reg","stratum","year")]
+
+
+# ============================================================
+# = Pad w/ true missingness (as opposed to observed absence) =
+# ============================================================
 # Create the data.table that will hold the spp, s.reg, year, stratum such that for a given species in a given place, we can build a complete time series (missing data gaps to be filled in w/ NA's)
 # allSpp <- trawl2[,CJ(spp=unique(spp)[!is.na(unique(spp))], year=as.character(do.call(":", list(min(year), max(year)))), stratum=unique(stratum)[!is.na(unique(stratum))]), by="s.reg"] # build combinations
 allSpp <- trawl2[,CJ(spp=unique(spp)[!is.na(unique(spp))], year=as.character(unique(year)), stratum=unique(stratum)[!is.na(unique(stratum))]), by="s.reg"] # build combinations
@@ -347,17 +466,24 @@ setkey(allSpp, s.reg, spp, year, stratum)
 # solution was to just check for duplicated i
 if(sum(duplicated(allSpp))==0){
 	# trawl1 <- merge(allSpp, trawl2, all=TRUE, by=c("s.reg","spp","year","stratum"))
-	trawl1 <- trawl2[allSpp, allow.cartesian=TRUE] # MERGE
-	setkey(trawl1, s.reg, spp, year, stratum)
+	trawl1.2 <- trawl1.1[allSpp, allow.cartesian=TRUE] # MERGE
+	setkey(trawl1.2, s.reg, spp, year, stratum)
 }else{
 	# Hopefully it never enters this, will probably throw an error if it does
-	trawl1 <- trawl2[allSpp] # MERGE
+	trawl1.2 <- trawl1.1[allSpp] # MERGE
 	setkey(trawl1, s.reg, spp, year, stratum)
 }
 
-# Strip down to names that I want to keep
-trawl1 <- trawl1[,list(s.reg, spp, year, stratum, lat, lon, depth, stemp, btemp, wtcpue)]
+# Finish indicating which rows were actually "absence" data vs. "no observation" data
+trawl1.2[is.na(Obsd), Obsd:=FALSE]
 
+# Strip down to names that I want to keep
+trawl1 <- trawl1.2[,list(s.reg, spp, year, stratum, lat, lon, depth, stemp, btemp, wtcpue, Obsd)]
+
+
+# ==================================================
+# = Rebuild Taxonomic Classification after Padding =
+# ==================================================
 # Have to rebuild some of the taxonomic classifications after merging
 trawl2.tax <- trawl2[,list(s.reg, spp, taxLvl, common, correctSpp)] # get classifications
 setkey(trawl2.tax) # set key in preparation for merge
@@ -382,13 +508,12 @@ setkey(trawl2.tax2) # set key in preparation for merge
 trawl <- merge(trawl1, trawl2.tax2, by=c("s.reg","spp")) # merge trawl data with rebuilt taxonomic classification
 setkey(trawl, s.reg, spp, stratum, year) # set key
 
+
 # Need to rebuild numeric variables (but not CPUE data) after filling in time series w/ NA's
-# (some of these values are known, even though they were observed for a given place/time/species)
-trawl[is.na(wtcpue), wtcpue:=0] # set NA cpue's to 0's
-
-trawl[, c("lat","lon","depth"):=list(roundGrid(fill.mean(lat)), roundGrid(fill.mean(lon)), fill.mean(depth)), by=c("s.reg", "stratum")] # assume depth, lon, lat is constant w/in a stratum, so can fill in NA's with these values
-
-trawl[, c("stemp","btemp"):=list(fill.mean(stemp), fill.mean(btemp)), by=c("s.reg","stratum","year")] # assume that temperatures are constant w/in a stratum/ region/ year, so can fill in NA's again
+# This has already been done in cases where Obsd is TRUE (done in trawl1.1)
+# Subsetting to !(Obsd) avoid redundancy w/ what was already done in trawl1.1 – should speed up slightly :)
+trawl[!(Obsd), c("lat","lon","depth"):=list(fill.mean(lat), fill.mean(lon), fill.mean(depth)), by=c("s.reg", "stratum")]
+trawl[!(Obsd), c("stemp","btemp"):=list(fill.mean(stemp), fill.mean(btemp)), by=c("s.reg","stratum","year")]
 
 
 # ========
