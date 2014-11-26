@@ -408,7 +408,7 @@ for(i in step.index){
 trajEnd <- subset(trajStop, nlayers(trajStop))
 trajStart <- subset(trajStart, 2)
 uniStart0 <- table(c(cellVals), c(startLoc))
-uniStart <- rowSums(uniStart0)>0)
+uniStart <- rowSums(uniStart0)>0
 
 tblt <- function(x){
 	tabulate(x, nbin=ncell(start.temp))
@@ -460,10 +460,13 @@ cConvergence <- n.end<n.start & !cCorridor & !cSource
 # = Save Trajectory Results =
 # ===========================
 # Save a few objects used specifically for a couple figures I made (in plotHadISST.R)
-save(sst.mu, spatGrad.aspect, spatGrad.slope, timeTrend, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Results/HadISST_tempGrads.RData") # TODO I don't want to rewrite this .RData file every time I run this script during testing. What I do with this might depend on how much of this script I turn into separate functions, etc. So for now leaving it here.
+save(sst.mu, ang, spatSlope, timeTrend, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Results/HadISST_tempGrads.RData")
 
 # Save the trajectory locations
 save(trajLon, trajLat, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Results/HadISST_trajectories.RData")
+
+# Save categories
+save(cSource, cSink, cDivergence, cConvergence, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Results/HadISST_categories.RData")
 
 # Save the full image
 save.image("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Results/HadISST_trajectoriesImage.RData", compress="xz")
