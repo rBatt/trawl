@@ -1,3 +1,5 @@
+
+
 # ==================
 # = Load Libraries =
 # ==================
@@ -24,7 +26,6 @@ plot.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/PlotFunctions
 invisible(sapply(paste(plot.location, list.files(plot.location), sep="/"), source, .GlobalEnv))
 
 
-
 # =======================
 # = Load Stat Functions =
 # =======================
@@ -41,24 +42,13 @@ setkey(trawl, spp, s.reg, year)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 # ==================================================
 # = Trim data for plotting spatial catch over time =
 # ==================================================
 # Trim data
 long.spp <- trawl[taxLvl=="Species",][,n.yrs:=lu(year[wtcpue>0]), by=c("spp","s.reg")][n.yrs>=4,]
 long.spp[,cut.yrs:=cy(year), by=c("spp","s.reg")]
-long.space.spp <- long.spp[,min.locs.yr:=min(colSums(table(paste(lat,lon),year)>0)),by=c("spp","s.reg")][min.locs.yr>=2 & is.finite(wtcpue),]
+long.space.spp <- long.spp[,min.locs.yr:=min(colSums(table(stratum,year)>0)),by=c("spp","s.reg")][min.locs.yr>=16 & is.finite(wtcpue),]
 
 s.reg.key <- c(
 	"ai"="Aleutian Islands", 
