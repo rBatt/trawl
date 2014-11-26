@@ -68,7 +68,7 @@ setkey(trawl.new, s.reg, spp, year, stratum)
 good.strat.id <- c()
 n.year.strat <- trawl.new[, # subsetting to strata that are observed in max(x) years, where x is the number of years each strata was observed. So if some strata were observed for a minimum of 12 years, and for a maximum of 30 years, only use strata observed for 30 years (even if only 1 was observed in 30 years, but 20 others were observed in 29 years, e.g.). So this is a pretty blunt and harsh tool.
 	{
-	nys <- rowSums(table(stratum[!is.na(stemp)|!is.na(btemp)], year[!is.na(stemp)|!is.na(btemp)])>1)
+	nys <- rowSums(table(stratum[Obsd], year[Obsd])>1)
 	nys.strat <- names(nys)
 	nys.n <- as.numeric(nys)
 	good.strat.id <<- c(good.strat.id, paste(unique(s.reg), nys.strat[nys.n==max(nys.n)]))
