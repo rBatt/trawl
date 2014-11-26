@@ -1,61 +1,112 @@
 
+# ==================
+# = Load Libraries =
+# ==================
 library(circular)
 library(raster)
 library(SDMTools)
+library(maps)
 
-
+# ================
+# = Load Results =
+# ================
 load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Results/HadISST_tempGrads.RData")
+load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Results/HadISST_categories.RData")
+# load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Results/HadISST_trajectoriesImage.RData")
 
+# =========================
+# = Set up Figure Options =
+# =========================
 heat.cols <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(256)
 smplt <- c(0.9,0.92, 0.2,0.8)
 bgplt <- c(0.05,0.89,0.15,0.95)
 axargs <- list(mgp=c(0.75,0.5,0))
 
+# ===============
+# = Make figure =
+# ===============
+# Set up figure dimensions
 # dev.new(width=5, height=7.5)
 png("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/HadISST_Figures/HadISST_tempGrads.png", res=200, width=5, height=7.5, units="in")
-par(mfrow=c(4,1), mar=c(2,2,0.5,0.1), ps=8, cex=1, mgp=c(0.5,0.15,0), tcl=-0.15, family="Times")
+par(mfrow=c(4,1), mar=c(2,2,2,0.1), ps=8, cex=1, mgp=c(0.5,0.15,0), tcl=-0.15, family="Times")
 
+# Plot average temperature
 plot(sst.mu, col=heat.cols, smallplot=smplt, bigplot=bgplt, axis.args=axargs)
-mtext(bquote(Average~temperature~(degree*C)), side=3, line=-1.5, cex=1, xpd=FALSE)
+mtext(bquote(Avg~temperature~(degree*C)), side=3, line=-2.75, cex=1, xpd=FALSE)
+invisible(map(add=TRUE, fill=FALSE, col="black"))
 
+# Plot temporal gradient
 par(cex=1)
 plot(timeTrend, col=heat.cols, smallplot=smplt, bigplot=bgplt, axis.args=axargs)
-mtext(bquote(Temporal~gradient~(degree*C/yr)), side=3, line=-1.5, cex=1, xpd=FALSE)
+mtext(bquote(Time~gradient~(degree*C/yr)), side=3, line=-2.75, cex=1, xpd=FALSE)
+invisible(map(add=TRUE, fill=FALSE, col="black"))
 
+# Plot spatial gradient
 par(cex=1)
 plot(spatGrad.slope, col=heat.cols, smallplot=smplt, bigplot=bgplt, axis.args=axargs)
-mtext(bquote(Spatial~gradient~(degree*C/km)), side=3, line=-1.5, cex=1, xpd=FALSE)
+mtext(bquote(Space~gradient~(degree*C/km)), side=3, line=-2.75, cex=1, xpd=FALSE)
+invisible(map(add=TRUE, fill=FALSE, col="black"))
 
+# Plot spatial angle
 par(cex=1)
 plot(spatGrad.aspect, col=circular.colors(256), smallplot=smplt, bigplot=bgplt, axis.args=axargs)
-mtext(bquote(Angle~of~spatial~gradient~(360*degree==N)), side=3, line=-1.5, cex=1, xpd=FALSE)
+mtext(bquote(Space~Angle~(360*degree==N)), side=3, line=-2.75, cex=1, xpd=FALSE)
+invisible(map(add=TRUE, fill=FALSE, col="black"))
+
 dev.off()
 
 
-
+# ==============================
+# = Plot Trajectory Categories =
+# ==============================
 # dev.new(width=5, height=7.5)
 png("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/HadISST_Figures/HadISST_categories.png", res=200, width=5, height=8.5, units="in")
 par(mfrow=c(5,1), mar=c(2,2,0.5,0.1), ps=8, cex=1, mgp=c(0.5,0.15,0), tcl=-0.15, family="Times")
 
-
+# Source
 plot(cSource, smallplot=smplt, bigplot=bgplt, axis.args=axargs) # Source
-mtext(bquote(Source), side=3, line=-1.5, cex=1, xpd=FALSE)
+mtext(bquote(Source), side=3, line=-2.5, cex=1, xpd=FALSE)
+invisible(map(add=TRUE, fill=FALSE, col="black"))
 
+# Divergence
 par(cex=1)
 plot(cDivergence, smallplot=smplt, bigplot=bgplt, axis.args=axargs) # Sink
-mtext(bquote(Divergence), side=3, line=-1.5, cex=1, xpd=FALSE)
+mtext(bquote(Divergence), side=3, line=-2.5, cex=1, xpd=FALSE)
+invisible(map(add=TRUE, fill=FALSE, col="black"))
 
+# Corridor
 par(cex=1)
 plot(cCorridor, smallplot=smplt, bigplot=bgplt, axis.args=axargs) # Corridor
-mtext(bquote(Corridor), side=3, line=-1.5, cex=1, xpd=FALSE)
+mtext(bquote(Corridor), side=3, line=-2.5, cex=1, xpd=FALSE)
+invisible(map(add=TRUE, fill=FALSE, col="black"))
 
+# Convergence
 par(cex=1)
 plot(cConvergence, smallplot=smplt, bigplot=bgplt, axis.args=axargs) # Divergence
-mtext(bquote(Convergence), side=3, line=-1.5, cex=1, xpd=FALSE)
+mtext(bquote(Convergence), side=3, line=-2.5, cex=1, xpd=FALSE)
+invisible(map(add=TRUE, fill=FALSE, col="black"))
 
+# Sink
 par(cex=1)
 plot(cSink, smallplot=smplt, bigplot=bgplt, axis.args=axargs) # Convergence
-mtext(bquote(Sink), side=3, line=-1.5, cex=1, xpd=FALSE)
+mtext(bquote(Sink), side=3, line=-2.5, cex=1, xpd=FALSE)
+invisible(map(add=TRUE, fill=FALSE, col="black"))
 
 dev.off()
 
+
+
+# =======================
+# = Combined Categories =
+# =======================
+cCat <- cSource*1 + cDivergence*2 + cCorridor*3 + cConvergence*4 + cSink*5
+axargs2 <- list(mgp=c(0.75,0.5,0), at=0:5, labels=c("none","source","diverge","corridor","converge","sink"))
+col5 <- c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99", "#e31a1c")
+
+
+# dev.new(width=9.5, height=3)
+png("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/HadISST_Figures/HadISST_combinedCategories.png", res=200, width=9.5, height=3, units="in")
+par(mfrow=c(1,1), mar=c(2,2,0.5,0.1), ps=8, cex=1, mgp=c(0.5,0.15,0), tcl=-0.15, family="Times")
+plot(cCat, smallplot=smplt, bigplot=bgplt, axis.args=axargs2, col=col5)
+invisible(map(add=TRUE, fill=FALSE, col="black", lwd=0.5))
+dev.off()
