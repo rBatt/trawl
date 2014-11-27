@@ -14,18 +14,33 @@ dat.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions"
 invisible(sapply(paste(dat.location, list.files(dat.location), sep="/"), source, .GlobalEnv))
 
 
-# # ================================
-# # = Test WC sampling correlation =
-# # ================================
-# wctridata <- data.frame(tri=NA, spp=NA, stratum=NA)
-# wcanndata <- data.frame(ann=NA, spp=NA, stratum=NA)
-# trawl[s.reg%in%c("wctri","wcann")&year==2004,
-# 	{
-# 		print(.SD)
-# 		wctridata <<- rbind(wctridata, .SD[s.reg=="wctri", list(tri=wtcpue, spp=spp, stratum=stratum)])
-# 		wcanndata <<- rbind(wcanndata, .SD[s.reg=="wcann", list(ann=wtcpue, spp=spp, stratum=stratum)])
-# 	},
+# ================================
+# = Test WC sampling correlation =
+# ================================
+justWC <- trawl[s.reg%in%c("wctri","wcann")&year==2004]
+# melt(justWC, id.vars=c("s.reg","spp","year","stratum","lat","lon","depth","stemp","common","taxLvl","Obsd","correctSpp"), measure.vars=c("wtcpue"))
+# wcStrat <- justWC[,
+# 	j={
+# 		s.tab <- table(stratum,s.reg)
+# 		s.tab.names <- rownames(s.tab)
+# 		s.tab.names[s.tab[,1]>0 & s.tab[,2]>0]
+#
+# 	}
 # ]
+#
+# justWC <- justWC[stratum%in%wcStrat,]
+# justWC[,wtcpue.bin:=as.numeric(wtcpue>0)]
+#
+# part1 <- justWC[,glmer(wtcpue.bin~s.reg+(1|spp), family=binomial)]
+# part1.pred <- predict(part1, type="response")
+#
+# justWC[wtcpue==0,wtcpue.no0:=as.numeric(NA)]
+# justWC[wtcpue!=0,wtcpue.no0:=wtcpue]
+# part2 <- justWC[,lmer(wtcpue.no0~s.reg+spp+(1|stratum))]
+# part2.pred <- predict(part2, type="response", newdata=as.data.frame(justWC[,list(s.reg=s.reg, spp=spp, stratum=stratum)]))
+#
+# parts12.pred <- part2.pred*part1.pred
+
 
 # ================================
 # = Combine 2 West Coast surveys =
