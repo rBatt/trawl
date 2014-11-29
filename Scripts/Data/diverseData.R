@@ -17,7 +17,7 @@ invisible(sapply(paste(dat.location, list.files(dat.location), sep="/"), source,
 # ================================
 # = Test WC sampling correlation =
 # ================================
-justWC <- trawl[s.reg%in%c("wctri","wcann")&year==2004]
+# justWC <- trawl[s.reg%in%c("wctri","wcann")&year==2004]
 # melt(justWC, id.vars=c("s.reg","spp","year","stratum","lat","lon","depth","stemp","common","taxLvl","Obsd","correctSpp"), measure.vars=c("wtcpue"))
 # wcStrat <- justWC[,
 # 	j={
@@ -86,7 +86,18 @@ n.year.strat <- trawl.new[, # subsetting to strata that are observed in max(x) y
 	nys <- rowSums(table(stratum[Obsd], year[Obsd])>1)
 	nys.strat <- names(nys)
 	nys.n <- as.numeric(nys)
-	good.strat.id <<- c(good.strat.id, paste(unique(s.reg), nys.strat[nys.n==max(nys.n)]))
+	if(s.reg=="sgulf"){
+		good.strat.id <<- c(good.strat.id, paste(unique(s.reg), nys.strat[nys.n>=(max(nys.n)-1)]))
+	}else if(s.reg=="shelf"){
+		good.strat.id <<- c(good.strat.id, paste(unique(s.reg), nys.strat[nys.n>=(max(nys.n)-6)]))
+	}else if(s.reg=="neus"){
+		good.strat.id <<- c(good.strat.id, paste(unique(s.reg), nys.strat[nys.n>=(max(nys.n)-3)]))
+	}else if(s.reg=="newf"){
+		good.strat.id <<- c(good.strat.id, paste(unique(s.reg), nys.strat[nys.n>=(max(nys.n)-1)]))
+	}else{
+		good.strat.id <<- c(good.strat.id, paste(unique(s.reg), nys.strat[nys.n==max(nys.n)]))
+	}
+	
 	},
 	by=c("s.reg")
 ]
