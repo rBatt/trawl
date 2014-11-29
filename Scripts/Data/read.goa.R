@@ -1,5 +1,8 @@
 
 
+# ==================
+# = Load Libraries =
+# ==================
 # NOTE: using the data.table code took 0.790 seconds, whereas the original code took 5.567 seconds
 library(bit64)
 library(data.table)
@@ -7,14 +10,23 @@ library(PBSmapping) # for calculating stratum areas
 library(maptools) # for calculating stratum areas
 library(Hmisc)
 
-source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rmWhite.R")
-source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rm9s.R")
-source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/calcarea.R")
-source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/sumna.R")
-source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/meanna.R")
+# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rmWhite.R")
+# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rm9s.R")
+# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/calcarea.R")
+# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/sumna.R")
+# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/meanna.R")
 
 
+# =======================
+# = Load data functions =
+# =======================
+data.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions"
+invisible(sapply(paste(data.location, list.files(data.location), sep="/"), source, .GlobalEnv))
 
+
+# =============
+# = Read Data =
+# =============
 goaStrata <- fread("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/raw_data/AFSC_GOA/2013-10-17/goaStrata.csv", header=TRUE, sep=",", select=c("StratumCode","Areakm2"))
 goaStrata[,StratumCode:=as.character(StratumCode)]
 setkey(goaStrata, StratumCode)
@@ -51,23 +63,46 @@ goa <- merge(goa.raw, goaStrata, all.x=TRUE)
 
 goa[,haulid:=paste(formatC(VESSEL, width=3, flag=0), formatC(CRUISE, width=3, flag=0), formatC(HAUL, width=3, flag=0), sep='-')]
 
-# ================================
-# = Trim strata (malin line 162) =
-# ================================
-goa <- goa[!(goa$STRATUM %in% c(50, 210, 410, 420, 430, 440, 450, 510, 520, 530, 540, 550)),]
-
-
-# ===============================
-# = Trim years (malin line 172) =
-# ===============================
-goa <- goa[!(goa$YEAR %in% 2001),] # 2001 didn't sample many strata
-
-
 
 # =============
 # = Set Names =
 # =============
 setnames(goa, c("STRATUM", "YEAR", "LATITUDE", "LONGITUDE", "BOT_DEPTH", "SCIENTIFIC", "WTCPUE", "Areakm2", "BOT_TEMP", "SURF_TEMP", "DATETIME"), c("stratum", "year", "lat", "lon", "depth", "spp", "wtcpue", "stratumarea", "btemp", "stemp", "datetime"))
+
+
+# ===============
+# = Trim Strata =
+# ===============
+nyears <- goa[,length(unique(year))]
+
+# goa[,sum(colSums(table(year, stratum)>0)==nyears)] # original strata gives 32 strata seen every year
+
+goa[,strat2:=paste(stratum, ll2strat(lon, lat))]
+# goa[,sum(colSums(table(year, strat2)>0)==nyears)] # 1º grid gives you 63 strata seen every year
+
+# goa[,strat2:=paste(stratum, ll2strat(lon, lat, 0.5))]
+# goa[,sum(colSums(table(year, strat2)>0)==nyears)] # 0.5º grid gives you 44 strata seen every year
+#
+# goa[,strat2:=paste(stratum, ll2strat(lon, lat, 0.25))]
+# goa[,sum(colSums(table(year, strat2)>0)==nyears)] # 0.25º grid gives you 6 strata seen every year
+
+goodStrat2 <- goa[,names(colSums(table(year, strat2)>0))[colSums(table(year, strat2)>0)==nyears]]
+goa <- goa[strat2%in%goodStrat2]
+goa[,stratum:=strat2]
+goa[,strat2:=NULL]
+
+
+# ================================
+# = Trim strata (malin line 162) =
+# ================================
+# goa <- goa[!(goa$stratum %in% c(50, 210, 410, 420, 430, 440, 450, 510, 520, 530, 540, 550)),]
+
+
+# ===============================
+# = Trim years (malin line 172) =
+# ===============================
+# goa[,colSums(table(stratum, year)>1)]
+# goa <- goa[!(goa$year %in% 2001),] # 2001 didn't sample many strata ..... 27 Nov 2014: RDB says '?? looks like a fine year to me!'
 
 
 
