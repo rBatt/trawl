@@ -42,6 +42,13 @@ beta.turn.time.expr <- bquote({
 	# print(.SD)
 	if(lu(year)>3){
 		castExp <- acast(melt(.SD, id.vars=c("year","spp"), measure.vars=c("wtcpue")), year~spp, fill=0)[,-1]
+		
+		# Add fix needed due to region-wide species padding (some spp were never observed in this stratum, but were obsd for other strata in the same region)
+		# for "wc", if a species has NA's, that's the result of the species only being observed by wcann or by wctri, but not both.
+		goodSpp0 <- apply(castExp, 2, function(x)all(!is.na(x))&any(!is.na(x) & x>0))
+		goodSpp <- names(goodSpp0)[goodSpp0]
+		castExp <- castExp[,colnames(castExp)%in%goodSpp]
+		
 		d.helli00 <- beta.div(castExp, nperm=0, save.D=TRUE)
 		d.helli0 <- d.helli00$D
 		d.helli <- c(d.helli0)
@@ -114,6 +121,13 @@ setkey(beta.turn.time, s.reg, stratum)
 # ==========================
 beta.var.time.expr <- bquote({
 	castExp <- acast(melt(.SD, id.vars=c("year","spp"), measure.vars=c("wtcpue")), year~spp, fill=0)[,-1]
+	
+	# Add fix needed due to region-wide species padding (some spp were never observed in this stratum, but were obsd for other strata in the same region)
+	# for "wc", if a species has NA's, that's the result of the species only being observed by wcann or by wctri, but not both.
+	goodSpp0 <- apply(castExp, 2, function(x)all(!is.na(x))&any(!is.na(x) & x>0))
+	goodSpp <- names(goodSpp0)[goodSpp0]
+	castExp <- castExp[,colnames(castExp)%in%goodSpp]
+	
 	beta.div(castExp, nperm=0)[[1]][2]
 })
 
@@ -168,6 +182,7 @@ setkey(beta.turn.space, s.reg, year)
 # Create expression
 beta.var.space.expr <- bquote({
 	castExp <- acast(melt(.SD, id.vars=c("stratum","spp"), measure.vars=c("wtcpue")), stratum~spp, fill=0)[,-1]
+	
 	beta.div(castExp, nperm=0)[[1]][2]
 
 
