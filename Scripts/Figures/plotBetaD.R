@@ -28,12 +28,12 @@ beta.var.time[,var.time.col:=heat.cols[cut(var.time, 256)]]
 # New device
 # dev.new(height=4, width=beta.var.time[,map.w(lat,lon,4)])
 pdf(height=4, width=beta.var.time[,map.w(lat,lon,4)], file="~/Documents/School&Work/pinskyPost/trawl/Figures/betaD_temporalVariance.pdf")
-par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1, bg="lightgray")
+par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
 
 # Plot
 beta.var.time[,plot(lon, lat, col=var.time.col, pch=21, cex=1, type="n")] # set plot region
-invisible(beta.var.time[,map(add=TRUE, fill=FALSE, col="black")]) # add map
-beta.var.time[,points(lon, lat, col=var.time.col, pch=21, cex=1)] # add points
+invisible(beta.var.time[,map(add=TRUE, fill=TRUE, col="lightgray")]) # add map
+beta.var.time[,points(lon, lat, bg=var.time.col, pch=21, cex=1)] # add points
 
 # Key
 beta.var.time[,segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)] # add colors for key
@@ -59,12 +59,12 @@ beta.turn.time[,turn.time.col:=heat.cols[cut(turn.time, 256)]]
 
 # dev.new(height=4, width=beta.turn.time[,map.w(lat,lon,4)])
 pdf(height=4, width=beta.var.time[,map.w(lat,lon,4)], file="~/Documents/School&Work/pinskyPost/trawl/Figures/betaD_temporalTurnover.pdf")
-par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1, bg="lightgray")
+par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
 
-beta.turn.time[,plot(lon, lat, col=turn.time.col, pch=21, cex=1, type="n")]
-invisible(beta.turn.time[,map(add=TRUE, fill=FALSE, col="black")])
+beta.turn.time[,plot(lon, lat, bg=turn.time.col, pch=21, cex=1, type="n")]
+invisible(beta.turn.time[,map(add=TRUE, fill=TRUE, col="lightgray")])
 
-beta.turn.time[,points(lon, lat, col=turn.time.col, pch=21, cex=1)]
+beta.turn.time[,points(lon, lat, bg=turn.time.col, pch=21, cex=1)]
 
 beta.turn.time[,segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)]
 
