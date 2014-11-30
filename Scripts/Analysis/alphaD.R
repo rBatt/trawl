@@ -41,6 +41,15 @@ invisible(sapply(paste(stat.location, list.files(stat.location), sep="/"), sourc
 alpha.trend.expr <- bquote({
 	if(lu(year)>3){
 		castExp <- acast(melt(.SD, id.vars=c("year","spp"), measure.vars=c("wtcpue")), year~spp)[,-1]
+		# castExp <- test[,acast(melt(.SD, id.vars=c("year","spp"), measure.vars=c("wtcpue")), year~spp)[,-1]]
+		
+		# Add fix needed due to region-wide species padding (some spp were never observed in this stratum, but were obsd for other strata in the same region)
+		# for "wc", if a species has NA's, that's the result of the species only being observed by wcann or by wctri, but not both.
+		goodSpp0 <- apply(castExp, 2, function(x)all(!is.na(x))&any(!is.na(x) & x>0))
+		goodSpp <- names(goodSpp0)[goodSpp0]
+		castExp <- castExp[,colnames(castExp)%in%goodSpp]
+		
+		
 		alphaD <- diversity(castExp)
 		
 		yrs.0 <- as.numeric(names(alphaD))
@@ -65,6 +74,13 @@ alpha.trend.expr <- bquote({
 alpha.now.expr <- bquote({
 	if(lu(year)>3){
 		castExp <- acast(melt(.SD, id.vars=c("year","spp"), measure.vars=c("wtcpue")), year~spp)[,-1]
+		
+		# Add fix needed due to region-wide species padding (some spp were never observed in this stratum, but were obsd for other strata in the same region)
+		# for "wc", if a species has NA's, that's the result of the species only being observed by wcann or by wctri, but not both.
+		goodSpp0 <- apply(castExp, 2, function(x)all(!is.na(x))&any(!is.na(x) & x>0))
+		goodSpp <- names(goodSpp0)[goodSpp0]
+		castExp <- castExp[,colnames(castExp)%in%goodSpp]
+		
 		alphaD <- diversity(castExp)
 
 		yrs.0 <- as.numeric(names(alphaD))
@@ -93,6 +109,13 @@ alpha.now.expr <- bquote({
 alpha.plot.expr <- bquote({
 	if(lu(year)>3){
 		castExp <- acast(melt(.SD, id.vars=c("year","spp"), measure.vars=c("wtcpue")), year~spp)[,-1]
+		
+		# Add fix needed due to region-wide species padding (some spp were never observed in this stratum, but were obsd for other strata in the same region)
+		# for "wc", if a species has NA's, that's the result of the species only being observed by wcann or by wctri, but not both.
+		goodSpp0 <- apply(castExp, 2, function(x)all(!is.na(x))&any(!is.na(x) & x>0))
+		goodSpp <- names(goodSpp0)[goodSpp0]
+		castExp <- castExp[,colnames(castExp)%in%goodSpp]
+		
 		alphaD <- diversity(castExp)
 		
 		yrs.0 <- as.numeric(names(alphaD))
