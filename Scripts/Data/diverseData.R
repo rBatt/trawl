@@ -45,9 +45,18 @@ invisible(sapply(paste(dat.location, list.files(dat.location), sep="/"), source,
 # ================================
 # = Combine 2 West Coast surveys =
 # ================================
-trawl.new <- trawl[(s.reg!="wctri" | (s.reg=="wctri"&year<2003)) & taxLvl%in%c("Species"),] # need to prevent overlap of the 2 WC 
+trawl.new <- trawl[(s.reg!="wctri" | (s.reg=="wctri"&year<2003)) & taxLvl%in%c("Species") & Obsd==TRUE,] # need to prevent overlap of the 2 WC
+spp.both.wc <- trawl.new[s.reg%in%c("wctri","wcann"),
+	j={
+		ann.spp <- .SD[s.reg=="wcann", unique(spp)]
+		tri.spp <- .SD[s.reg=="wctri", unique(spp)]
+		# wc.spp.both <- intersect(ann.spp, tri.spp)
+		wc.spp.both <- intersect(ann.spp, tri.spp)
+	}	
+] # only use species present in both of the WC
 trawl.new[s.reg=="wcann",s.reg:="wc"]
 trawl.new[s.reg=="wctri",s.reg:="wc"]
+trawl.new <- trawl.new[s.reg!="wc"|(s.reg=="wc" & spp%in%spp.both.wc)]
 
 setkey(trawl.new, s.reg, spp, year, stratum)
 
@@ -108,6 +117,7 @@ trawl2 <- trawl.new[paste(s.reg,stratum)%in%good.strat.id,]
 
 
 divData <- trawl2
+divData[,c("lon","lat"):=list(roundGrid(lon),roundGrid(lat))]
 
 
 save(divData, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/divData.RData")
