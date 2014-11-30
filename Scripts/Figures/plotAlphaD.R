@@ -31,8 +31,8 @@ heat.cols <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF
 
 alphaD[,alpha.trend.col:=heat.cols[cut(alpha.trend, 256)]]
 
-dev.new(height=4, width=alphaD[,map.w(lat,lon,4)])
-# pdf(height=4, width=alphaD[,map.w(lat,lon,4)], file="~/Documents/School&Work/pinskyPost/trawl/Figures/alphaD_temporalTrend.pdf")
+# dev.new(height=4, width=alphaD[,map.w(lat,lon,4)])
+pdf(height=4, width=alphaD[,map.w(lat,lon,4)], file="~/Documents/School&Work/pinskyPost/trawl/Figures/alphaD_temporalTrend.pdf")
 par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
 
 alphaD[,plot(lon, lat, col=alpha.trend.col, pch=21, cex=1, type="n")]
@@ -46,7 +46,7 @@ alphaD[,segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")] # 
 alphaD[,text(-167, y=seq(30,40, length.out=4), round(seq(min(alpha.trend), max(alpha.trend), length.out=4),4), adj=1, cex=1, col="black")]
 
 alphaD[,text(-162.5, 41.5, bquote(alpha~diversity~trend))]
-# dev.off()
+dev.off()
 
 
 
@@ -59,8 +59,8 @@ heat.cols <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF
 
 alphaD[,alpha.now.col:=heat.cols[cut(alpha.now, 256)]]
 
-dev.new(height=4, width=alphaD[,map.w(lat,lon,4)])
-# pdf(height=4, width=alphaD[,map.w(lat,lon,4)], file="~/Documents/School&Work/pinskyPost/trawl/Figures/alphaD_now.pdf")
+# dev.new(height=4, width=alphaD[,map.w(lat,lon,4)])
+pdf(height=4, width=alphaD[,map.w(lat,lon,4)], file="~/Documents/School&Work/pinskyPost/trawl/Figures/alphaD_now.pdf")
 par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
 
 alphaD[,plot(lon, lat, col=alpha.now.col, pch=21, cex=1, type="n")]
@@ -74,7 +74,7 @@ alphaD[,segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")] # 
 alphaD[,text(-167, y=seq(30,40, length.out=4), round(seq(min(alpha.now), max(alpha.now), length.out=4),4), adj=1, cex=1, col="black")]
 
 alphaD[,text(-162.5, 41.5, bquote(alpha~diversity~now))]
-# dev.off()
+dev.off()
 
 # dev.new()
 # alphaD[,plot((alpha.now), (alpha.trend))]
