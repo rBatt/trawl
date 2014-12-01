@@ -103,6 +103,8 @@ n.year.strat <- trawl.new[, # subsetting to strata that are observed in max(x) y
 		good.strat.id <<- c(good.strat.id, paste(unique(s.reg), nys.strat[nys.n>=(max(nys.n)-3)]))
 	}else if(s.reg=="newf"){
 		good.strat.id <<- c(good.strat.id, paste(unique(s.reg), nys.strat[nys.n>=(max(nys.n)-1)]))
+	}else if(s.reg=="goa"){
+		good.strat.id <<- c(good.strat.id, paste(unique(s.reg), nys.strat[nys.n>=(max(nys.n)-2)]))
 	}else{
 		good.strat.id <<- c(good.strat.id, paste(unique(s.reg), nys.strat[nys.n==max(nys.n)]))
 	}
