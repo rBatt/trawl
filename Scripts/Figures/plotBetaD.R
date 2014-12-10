@@ -18,6 +18,24 @@ load("~/Documents/School&Work/pinskyPost/trawl/Results/trawl.betaD.RData")
 	# 4) beta.var.time
 
 
+# ===========================
+# = Load Scripts/ Functions =
+# ===========================
+# Load Data functions
+dat.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions"
+invisible(sapply(paste(dat.location, list.files(dat.location), sep="/"), source, .GlobalEnv))
+
+# Load plottign functions
+plot.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/PlotFunctions"
+invisible(sapply(paste(plot.location, list.files(plot.location), sep="/"), source, .GlobalEnv))
+
+# Load statistics functions
+stat.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/StatFunctions"
+invisible(sapply(paste(stat.location, list.files(stat.location), sep="/"), source, .GlobalEnv))
+
+# divData2 <- divData[,list(stemp=meanna(stemp), btemp=meanna(btemp), depth=meanna(depth), wtcpue=meanna(wtcpue)), by=c("s.reg","stratum","spp","year","common")]
+
+
 # ================================
 # = Beta D as variance over time =
 # ================================
