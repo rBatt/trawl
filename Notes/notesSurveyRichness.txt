@@ -1,0 +1,19 @@
+
+
+
+Availability of information/ indices related to calculating richness. In particular, counts of individuals and measures of effort could be useful.
+
+ ======
+ = AI =
+ ======
+
+
+ ========
+ = GMEX =
+ ========
+Count information: Yes
+Effort: raw counts provided, effort calculated on lines 187-188
+
+
+
+
