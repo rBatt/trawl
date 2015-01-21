@@ -9,31 +9,39 @@
 #See Zipkin et al. 2010 (Biological Conservation) for more context and details on the model. 
 
 #Read in the occurence data
-data1 <- read.table("occ data.csv", header=TRUE,sep=",",na.strings=TRUE)
+msomDir <- "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/Analysis/MSOM/covariates model/"
+data1 <- read.table(paste0(msomDir,"occ data.csv"), header=TRUE,sep=",",na.strings=TRUE)
 data1$Occ <- rep(1, dim(data1)[1])
+
 #See the first ten lines of data
 data1[1:10,]
+
 #How many citings for each species
-total.count = tapply(data1$Occ, data1$Species, sum)
+total.count <- tapply(data1$Occ, data1$Species, sum)
 
 #Find the number of unique species
-uspecies = as.character(unique(data1$Species))
+uspecies <- as.character(unique(data1$Species))
+
 #n is the number of observed species
-n=length(uspecies)
+n <- length(uspecies)
 
 #Load the species groups data
-groups <- read.table("groups.csv", header=TRUE,sep=",",na.strings=c("NA"))
-species = as.character(groups$species)
-assmb = groups$group
-a=which(assmb==1)
-ground = assmb; ground[-a] = 0
-b=which(assmb==2)
-mid=assmb; mid[-b] = 0; mid[b]=1
+groups <- read.table(paste0(msomDir,"groups.csv"), header=TRUE,sep=",",na.strings=c("NA"))
+species <- as.character(groups$species)
+assmb <- groups$group
+a <- which(assmb==1)
+ground <- assmb
+ground[-a] <- 0
+b <- which(assmb==2)
+mid <- assmb 
+mid[-b] <- 0
+mid[b] <- 1
 
 #Find the number of unique sampling locations
-upoints = as.character(unique(data1$Point))
+upoints <- as.character(unique(data1$Point))
+
 #J is the number of sampled points
-J=length(upoints)
+J <- length(upoints)
 
 #Reshape the data using the R package "reshape"
 library(reshape)
@@ -41,16 +49,20 @@ library(reshape)
 #The detection/non-detection data is reshaped into a three dimensional 
 #array X where the first dimension, j, is the point; the second 
 #dimension, k, is the rep; and the last dimension, i, is the species. 
-junk.melt=melt(data1,id.var=c("Species", "Point", "Rep"), measure.var="Occ")
-X=cast(junk.melt, Point ~ Rep ~ Species)
+junk.melt <- melt(data1,id.var=c("Species", "Point", "Rep"), measure.var="Occ")
+X <- cast(junk.melt, Point ~ Rep ~ Species)
 
 #Add in the missing lines with NAs
-for (i in 1: dim(X)[3]) {
-   b = which(X[,,i] > 0) 
-   X[,,i][b] = 1  
-   X[,,i][-b] = 0  
-   X[,,i][1:36,4] = NA;  X[,,i][38:56,4] = NA;  
-   X[,,i][59:61,4] = NA;  X[,,i][66:70,4] = NA;        
+for (i in 1:dim(X)[3]) {
+	b <- which(X[,,i] > 0) 
+	X[,,i][b] <- 1  
+	X[,,i][-b] <- 0  
+
+	X[,,i][1:36,4] <- NA
+	X[,,i][38:56,4] <- NA
+
+	X[,,i][59:61,4] <- NA
+	X[,,i][66:70,4] <- NA      
 }
 
 #Create all zero encounter histories to add to the detection array X 
@@ -58,27 +70,37 @@ for (i in 1: dim(X)[3]) {
 #species (beyond the n observed species). 
 
 #nzeroes is the number of all zero encounter histories to be added
-  nzeroes = 50
+nzeroes <- 50
+
 #X.zero is a matrix of zeroes, including the NAs for when a point has not been sampled  
-  X.zero = matrix(0, nrow=70, ncol=4)
-  X.zero[1:36,4] = NA;  X.zero[38:56,4] = NA;  
-  X.zero[59:61,4] = NA;  X.zero[66:70,4] = NA;   
+X.zero <- matrix(0, nrow=70, ncol=4)
+X.zero[1:36,4] <- NA
+X.zero[38:56,4] <- NA
+
+X.zero[59:61,4] <- NA
+X.zero[66:70,4] <- NA
+
 #Xaug is the augmented version of X.  The first n species were actually observed
 #and the n+1 through nzeroes species are all zero encounter histories  
-  Xaug <- array(0, dim=c(dim(X)[1],dim(X)[2],dim(X)[3]+nzeroes))
-  Xaug[,,(dim(X)[3]+1):dim(Xaug)[3]] = rep(X.zero, nzeroes)
-  dimnames(X)=NULL
-  Xaug[,,1:dim(X)[3]] <-  X
+Xaug <- array(0, dim=c(dim(X)[1],dim(X)[2],dim(X)[3]+nzeroes))
+Xaug[,,(dim(X)[3]+1):dim(Xaug)[3]] <- rep(X.zero, nzeroes)
+dimnames(X) <- NULL
+Xaug[,,1:dim(X)[3]] <-  X
 
 #K is a vector of length J indicating the number of reps at each point j  
 KK <- X.zero
-a=which(KK==0); KK[a] <- 1
-K=apply(KK,1,sum, na.rm=TRUE)
-K=as.vector(K)
+a <- which(KK==0)
+KK[a] <- 1
+K <- apply(KK,1,sum, na.rm=TRUE)
+K <- as.vector(K)
 
 #Create a vector to indicate which habitat type each point is in (CATO = 1; FCW =0)
-Ind <- as.vector(cbind(matrix(rep(0,35),ncol=1,nrow=35),
-      matrix(rep(1,35),ncol=1,nrow=35)));
+Ind <- as.vector(
+	cbind(
+		matrix(rep(0,35), ncol=1, nrow=35),
+		matrix(rep(1,35), ncol=1, nrow=35)
+	)
+)
 
 #Read in the habitat data      
 habitat <- read.table("habitat.csv", header=TRUE,sep=",",na.strings=c("NA"))
@@ -205,31 +227,49 @@ library(R2WinBUGS)
 
 #Create the necessary arguments to run the bugs() command 
 #Load all the data
-sp.data = list(n=n, nzeroes=nzeroes, J=J, K=K, X=Xaug, date1=date1,
-               date2=date2, ufc1=ufc1, ba1=ba1, ufc2=ufc2, 
-               ba2=ba2, Ind=Ind, ground=ground, mid=mid)
+sp.data <- list(
+	n=n, 
+	nzeroes=nzeroes, 
+	J=J, 
+	K=K, 
+	X=Xaug, 
+	date1=date1,
+	date2=date2, 
+	ufc1=ufc1, 
+	ba1=ba1, 
+	ufc2=ufc2,
+	ba2=ba2, 
+	Ind=Ind, 
+	ground=ground, 
+	mid=mid
+)
 
 #Specify the parameters to be monitored
-sp.params = list('u.cato', 'u.fcw', 'v.cato', 'v.fcw', 'omega', 'a1', 
-		'a2', 'a3', 'a4', 'b1', 'b2', 'Nsite', 'N', 'Nground', 'Nmid') 
+sp.params <- list('u.cato', 'u.fcw', 'v.cato', 'v.fcw', 'omega', 'a1', 'a2', 'a3', 'a4', 'b1', 'b2', 'Nsite', 'N', 'Nground', 'Nmid') 
 
 #Specify the initial values
-    sp.inits = function() {
-    omegaGuess = runif(1, n/(n+nzeroes), 1)
-    psi.meanGuess = runif(1, .25,1)
-    list(omega=omegaGuess,w=c(rep(1, n), rbinom(nzeroes, size=1, prob=omegaGuess)),
-               u.cato=rnorm(n+nzeroes), v.cato=rnorm(n+nzeroes),
-               u.fcw=rnorm(n+nzeroes), v.fcw=rnorm(n+nzeroes),
-               Z = matrix(rbinom((n+nzeroes)*J, size=1, prob=psi.meanGuess), 
-		                nrow=J, ncol=(n+nzeroes)), 
-               a1=rnorm(n+nzeroes), a2=rnorm(n+nzeroes), a3=rnorm(n+nzeroes), 
-               a4=rnorm(n+nzeroes), b1=rnorm(n+nzeroes), b2=rnorm(n+nzeroes)
-               )
-           }
+sp.inits <- function() {
+    omegaGuess <- runif(1, n/(n+nzeroes), 1)
+    psi.meanGuess <- runif(1, .25,1)
+    list(
+		omega=omegaGuess,
+		w=c(rep(1, n), rbinom(nzeroes, size=1, prob=omegaGuess)),
+        u.cato=rnorm(n+nzeroes), 
+		v.cato=rnorm(n+nzeroes),
+		u.fcw=rnorm(n+nzeroes), 
+		v.fcw=rnorm(n+nzeroes),
+		Z = matrix(rbinom((n+nzeroes)*J, size=1, prob=psi.meanGuess), nrow=J, ncol=(n+nzeroes)), 
+		a1=rnorm(n+nzeroes), 
+		a2=rnorm(n+nzeroes), 
+		a3=rnorm(n+nzeroes), 
+		a4=rnorm(n+nzeroes), 
+		b1=rnorm(n+nzeroes), 
+		b2=rnorm(n+nzeroes)
+	)
+}
  
-#Run the model and call the results “fit”
-fit = bugs(sp.data, sp.inits, sp.params, "covarmodel.txt", debug=TRUE, 
-         n.chains=2, n.iter=10000, n.burnin=5000, n.thin=5)
+#Run the model and call the results fit
+fit <- bugs(sp.data, sp.inits, sp.params, "covarmodel.txt", debug=TRUE, n.chains=2, n.iter=10000, n.burnin=5000, n.thin=5)
 
 #######################################################################
 #Summarize some results
@@ -239,42 +279,39 @@ fit$summary
 
 #See baseline estimates of species-specific occupancy and detection in one of 
 #the habitat types (CATO)
-cato.occ = fit$sims.list$u.cato
-cato.det = fit$sims.list$v.cato
+cato.occ <- fit$sims.list$u.cato
+cato.det <- fit$sims.list$v.cato
 
 #This includes occupancy and detection estimates for all observed 
 #species only (species 1:n)
-psi.cato = plogis(cato.occ[,1:n]) 
-p.cato   = plogis(cato.det[,1:n]) 
+psi.cato <- plogis(cato.occ[,1:n]) 
+p.cato <- plogis(cato.det[,1:n]) 
 
 occ.matrix <- cbind(apply(psi.cato,2,mean),apply(psi.cato,2,sd))
 det.matrix <- cbind(apply(p.cato,2,mean),apply(p.cato,2,sd))
 
 #See estimates of total richness (N) and estimates of richness at each of the 
 #J sampling locations (Nsite)
-N = fit$sims.list$N
+N <- fit$sims.list$N
 mean(N); summary(N); plot(table(N))
 
-Nsite = fit$sims.list$Nsite
+Nsite <- fit$sims.list$Nsite
 site.richness.matrix = cbind(apply(Nsite,2,mean), apply(Nsite,2,mean))
 
 #Plot mean site richness against one of the covariates to examine how point 
 #richness varies as a result of understory foliage
-plot(ufc, apply(Nsite,2,mean), pch=16, lwd=2, xlab="Understory foliage (UFC)",
-        ylab="Point richness", type="p")
+plot(ufc, apply(Nsite,2,mean), pch=16, lwd=2, xlab="Understory foliage (UFC)", ylab="Point richness", type="p")
 
 #Examine how mean species-specific occupancy changes by ufc in one of the 
 #habitat types (CAT0)
-x = seq(-1.5,2.5, by=0.1)
-y = (x*sdufc) + mufc
-a1 = fit$sims.list$a1 
-a2 = fit$sims.list$a2
+x <- seq(-1.5,2.5, by=0.1)
+y <- (x*sdufc) + mufc
+a1 <- fit$sims.list$a1 
+a2 <- fit$sims.list$a2
 
-plot(y,y, type="l", ylim=c(0,1), xlim=c(0,40), main="Species-specific relationships with ufc",
-col="white")
+plot(y,y, type="l", ylim=c(0,1), xlim=c(0,40), main="Species-specific relationships with ufc", col="white")
 
 for (i in 1:n) {
    CATO <- mean(cato.occ[,i]) + mean(a1[,i])*x + mean(a2[,i])*x*x
-   lines(y,plogis(CATO), type="l", ylim=c(0,1), xlim=c(0,40),   
-		main=i)
-   }
+   lines(y,plogis(CATO), type="l", ylim=c(0,1), xlim=c(0,40), main=i)
+}
