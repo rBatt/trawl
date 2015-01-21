@@ -1,0 +1,88 @@
+
+   model{
+
+#Define prior distributions for community-level model parameters
+omega ~ dunif(0,1)
+
+cato.mean ~ dunif(0,1)
+mu.ucato <- log(cato.mean) - log(1-cato.mean)
+
+fcw.mean ~ dunif(0,1)
+mu.ufcw <- log(fcw.mean) - log(1-fcw.mean)
+
+cato2.mean ~ dunif(0,1)
+mu.vcato <- log(cato2.mean) - log(1-cato2.mean)
+
+fcw2.mean ~ dunif(0,1)
+mu.vfcw <- log(fcw2.mean) - log(1-fcw2.mean)
+
+mua1 ~ dnorm(0, 0.001)
+mua2 ~ dnorm(0, 0.001)
+mua3 ~ dnorm(0, 0.001)
+mua4 ~ dnorm(0, 0.001)
+mub1 ~ dnorm(0, 0.001)
+mub2 ~ dnorm(0, 0.001)
+
+tau.ucato ~ dgamma(0.1,0.1)  
+tau.ufcw ~ dgamma(0.1,0.1)
+tau.vcato ~ dgamma(0.1,0.1) 
+tau.vfcw ~ dgamma(0.1,0.1)
+tau.a1 ~ dgamma(0.1,0.1)
+tau.a2 ~ dgamma(0.1,0.1)
+tau.a3 ~ dgamma(0.1,0.1)
+tau.a4 ~ dgamma(0.1,0.1) 
+tau.b1 ~ dgamma(0.1,0.1) 
+tau.b2 ~ dgamma(0.1,0.1)
+
+for (i in 1:(n+nzeroes)) {
+
+#Create priors for species i from the community level prior distributions
+    w[i] ~ dbern(omega)
+    u.cato[i] ~ dnorm(mu.ucato, tau.ucato)
+    u.fcw[i] ~ dnorm(mu.ufcw, tau.ufcw)  
+    v.cato[i] ~ dnorm(mu.vcato, tau.vcato) 
+    v.fcw[i] ~ dnorm(mu.vfcw, tau.vfcw)   
+    a1[i] ~ dnorm(mua1, tau.a1)
+    a2[i] ~ dnorm(mua2, tau.a2)
+    a3[i] ~ dnorm(mua3, tau.a3)
+    a4[i] ~ dnorm(mua4, tau.a4)     
+    b1[i] ~ dnorm(mub1, tau.b1)    
+    b2[i] ~ dnorm(mub2, tau.b2)
+
+
+#Create a loop to estimate the Z matrix (true occurrence for species i 
+#at point j.      
+   for (j in 1:J) {
+       logit(psi[j,i]) <- u.cato[i]*(1-Ind[j]) + u.fcw[i]*Ind[j] + 
+               a1[i]*ufc1[j] + a2[i]*ufc2[j] + a3[i]*ba1[j] + a4[i]*ba2[j] 
+       
+  mu.psi[j,i] <- psi[j,i]*w[i]
+  Z[j,i] ~ dbern(mu.psi[j,i])
+
+#Create a loop to estimate detection for species i at point k during 
+#sampling period k.      
+     for (k in 1:K[j]) {  
+    logit(p[j,k,i]) <-  v.cato[i]*(1-Ind[j]) + v.fcw[i]*Ind[j] + 
+                      b1[i]*date1[j,k] + b2[i]*date2[j,k] 
+
+       mu.p[j,k,i] <- p[j,k,i]*Z[j,i]
+       X[j,k,i] ~ dbern(mu.p[j,k,i])
+}   }}
+
+
+#Sum all species observed (n) and unobserved species (n0) to find the 
+#total estimated richness
+n0 <- sum(w[(n+1):(n+nzeroes)])
+N <- n + n0
+
+
+#Create a loop to determine point level richness estimates for the 
+#whole community and for subsets or assemblages of interest.
+for(j in 1:J){
+Nsite[j]<- inprod(Z[j,1:(n+nzeroes)],w[1:(n+nzeroes)])
+Nground[j]<- inprod(Z[j,1:n],ground[1:n])
+Nmid[j]<- inprod(Z[j,1:n],mid[1:n])
+}
+
+#Finish writing the text file into a document we call covarmodel.txt
+}
