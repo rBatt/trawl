@@ -55,8 +55,8 @@ X <- cast(junk.melt, Point ~ Rep ~ Species)
 #Add in the missing lines with NAs
 for (i in 1:dim(X)[3]) {
 	b <- which(X[,,i] > 0) 
-	X[,,i][b] <- 1  
-	X[,,i][-b] <- 0  
+	X[,,i][b] <- 1L
+	X[,,i][-b] <- 0L  
 
 	X[,,i][1:36,4] <- NA
 	X[,,i][38:56,4] <- NA
@@ -73,7 +73,7 @@ for (i in 1:dim(X)[3]) {
 nzeroes <- 50
 
 #X.zero is a matrix of zeroes, including the NAs for when a point has not been sampled  
-X.zero <- matrix(0, nrow=70, ncol=4)
+X.zero <- matrix(0L, nrow=70, ncol=4)
 X.zero[1:36,4] <- NA
 X.zero[38:56,4] <- NA
 
@@ -82,7 +82,7 @@ X.zero[66:70,4] <- NA
 
 #Xaug is the augmented version of X.  The first n species were actually observed
 #and the n+1 through nzeroes species are all zero encounter histories  
-Xaug <- array(0, dim=c(dim(X)[1],dim(X)[2],dim(X)[3]+nzeroes))
+Xaug <- array(0L, dim=c(dim(X)[1],dim(X)[2],dim(X)[3]+nzeroes))
 Xaug[,,(dim(X)[3]+1):dim(Xaug)[3]] <- rep(X.zero, nzeroes)
 dimnames(X) <- NULL
 Xaug[,,1:dim(X)[3]] <-  X
@@ -103,7 +103,7 @@ Ind <- as.vector(
 )
 
 #Read in the habitat data      
-habitat <- read.table("habitat.csv", header=TRUE,sep=",",na.strings=c("NA"))
+habitat <- read.table(paste0(msomDir,"habitat.csv"), header=TRUE,sep=",",na.strings=c("NA"))
 
 #Standardize the understory foliage data (ufc)
 ufc <- as.vector(habitat$ufc)
@@ -121,8 +121,8 @@ ba2 <- as.vector( ba1*ba1 )
 
 #Read in the date data
 #The sampling dates have been converted to Julien dates
-dates <- read.table("dates.csv", header=TRUE,sep=",",na.strings=c("NA"))
-dates <- as.matrix(dates[,c("rep1","rep2","rep3","rep3")])
+dates <- read.table(paste0(msomDir,"dates.csv"), header=TRUE,sep=",",na.strings=c("NA"))
+dates <- as.matrix(dates[,c("rep1","rep2","rep3","rep4")])
 mdate <- mean(dates, na.rm=TRUE)
 sddate <- sqrt(var(dates[1:length(dates)], na.rm=TRUE))
 date1 <- (dates-mdate) /  sddate
@@ -219,7 +219,7 @@ Nmid[j]<- inprod(Z[j,1:n],mid[1:n])
 
 #Finish writing the text file into a document we call covarmodel.txt
 }
-",file="covarmodel.txt")
+",file=paste0(msomDir,"covarmodel.txt"))
 
 
 #Load the R2Winbugs library
@@ -245,42 +245,113 @@ sp.data <- list(
 )
 
 #Specify the parameters to be monitored
-sp.params <- list('u.cato', 'u.fcw', 'v.cato', 'v.fcw', 'omega', 'a1', 'a2', 'a3', 'a4', 'b1', 'b2', 'Nsite', 'N', 'Nground', 'Nmid') 
+sp.params <- c('u.cato', 'u.fcw', 'v.cato', 'v.fcw', 'omega', 'a1', 'a2', 'a3', 'a4', 'b1', 'b2', 'Nsite', 'N', 'Nground', 'Nmid') 
 
+n.chains <- 2
+
+# for(i in 1:n.chains){
+# 	if(i==1){
+# 		sp.inits <- list()
+# 	}
+# 	omegaGuess <- runif(1, n/(n+nzeroes), 1)
+# 	psi.meanGuess <- runif(1, .25,1)
+# 	sp.inits[[i]] <- list(
+# 		omega=omegaGuess,
+# 		w=c(rep(1, n), rbinom(nzeroes, size=1, prob=omegaGuess)),
+#         u.cato=rnorm(n+nzeroes),
+# 		v.cato=rnorm(n+nzeroes),
+# 		u.fcw=rnorm(n+nzeroes),
+# 		v.fcw=rnorm(n+nzeroes),
+# 		Z = matrix(rbinom((n+nzeroes)*J, size=1, prob=psi.meanGuess), nrow=J, ncol=(n+nzeroes)),
+# 		a1=rnorm(n+nzeroes),
+# 		a2=rnorm(n+nzeroes),
+# 		a3=rnorm(n+nzeroes),
+# 		a4=rnorm(n+nzeroes),
+# 		b1=rnorm(n+nzeroes),
+# 		b2=rnorm(n+nzeroes)
+# 	)
+# }
 #Specify the initial values
-sp.inits <- function() {
-    omegaGuess <- runif(1, n/(n+nzeroes), 1)
-    psi.meanGuess <- runif(1, .25,1)
-    list(
+# sp.inits <- function(){
+# 	omegaGuess <- runif(1, n/(n+nzeroes), 1)
+# 	psi.meanGuess <- runif(1, .25,1)
+# 	list(
+# 		omega=omegaGuess,
+# 		w=c(rep(1, n), rbinom(nzeroes, size=1, prob=omegaGuess)),
+#         u.cato=rnorm(n+nzeroes),
+# 		v.cato=rnorm(n+nzeroes),
+# 		u.fcw=rnorm(n+nzeroes),
+# 		v.fcw=rnorm(n+nzeroes),
+# 		Z = matrix(rbinom((n+nzeroes)*J, size=1, prob=psi.meanGuess), nrow=J, ncol=(n+nzeroes)),
+# 		a1=rnorm(n+nzeroes),
+# 		a2=rnorm(n+nzeroes),
+# 		a3=rnorm(n+nzeroes),
+# 		a4=rnorm(n+nzeroes),
+# 		b1=rnorm(n+nzeroes),
+# 		b2=rnorm(n+nzeroes)
+# 	)
+# }
+
+make.inits <- function(){
+	omegaGuess <- runif(1, n/(n+nzeroes), 1)
+	psi.meanGuess <- runif(1, .25,1)
+	list(
 		omega=omegaGuess,
 		w=c(rep(1, n), rbinom(nzeroes, size=1, prob=omegaGuess)),
         u.cato=rnorm(n+nzeroes), 
 		v.cato=rnorm(n+nzeroes),
 		u.fcw=rnorm(n+nzeroes), 
 		v.fcw=rnorm(n+nzeroes),
-		Z = matrix(rbinom((n+nzeroes)*J, size=1, prob=psi.meanGuess), nrow=J, ncol=(n+nzeroes)), 
+		# the change below necessary to avoid invalid initials; see: http://mbjoseph.github.io/blog/2013/02/24/com_occ/
+		Z = apply(Xaug, c(1,3), max, na.rm=TRUE), #matrix(rbinom((n+nzeroes)*J, size=1, prob=psi.meanGuess), nrow=J, ncol=(n+nzeroes)), 
 		a1=rnorm(n+nzeroes), 
 		a2=rnorm(n+nzeroes), 
 		a3=rnorm(n+nzeroes), 
 		a4=rnorm(n+nzeroes), 
 		b1=rnorm(n+nzeroes), 
 		b2=rnorm(n+nzeroes)
-	)
+	)	
 }
- 
+
+sp.inits <- list()
+for(i in 1:n.chains){
+	sp.inits[[i]] <- make.inits()
+}
+
+# omega=sp.inits[[1]]$omega
+# w=sp.inits[[1]]$w
+# u.cato=sp.inits[[1]]$u.cato
+# v.cato=sp.inits[[1]]$v.cato
+# u.fcw=sp.inits[[1]]$u.fcw
+# v.fcw=sp.inits[[1]]$v.fcw
+# Z=sp.inits[[1]]$Z
+# a1=sp.inits[[1]]$a1
+# a2=sp.inits[[1]]$a2
+# a3=sp.inits[[1]]$a3
+# a4=sp.inits[[1]]$a4
+# b1=sp.inits[[1]]$b1
+# b2=sp.inits[[1]]$b2
+
+
+
+
 #Run the model and call the results fit
-fit <- bugs(sp.data, sp.inits, sp.params, "covarmodel.txt", debug=TRUE, n.chains=2, n.iter=10000, n.burnin=5000, n.thin=5)
+# fit <- bugs(sp.data, sp.inits, sp.params, "covarmodel.txt", debug=TRUE, n.chains=2, n.iter=10000, n.burnin=5000, n.thin=5)
+fit <- jags(sp.data, inits=sp.inits, sp.params, paste0(msomDir,"covarmodel.txt"), n.chains=n.chains, n.iter=200, n.burnin=50)
+# ocmod <- jags.model(file=paste0(msomDir,"covarmodel.txt"), inits=sp.inits, data=sp.data, n.chains=n.chains)
+# fit <- update(ocmod, n.iter=1E2)
+# fit <- coda.samples(ocmod, n.iter=5E2, variable.names=unlist(sp.params))
 
 #######################################################################
 #Summarize some results
 
 #See a summary of the parameter estimates
-fit$summary
+fit$BUGSoutput$summary
 
 #See baseline estimates of species-specific occupancy and detection in one of 
 #the habitat types (CATO)
-cato.occ <- fit$sims.list$u.cato
-cato.det <- fit$sims.list$v.cato
+cato.occ <- fit$BUGSoutput$sims.list$u.cato
+cato.det <- fit$BUGSoutput$sims.list$v.cato
 
 #This includes occupancy and detection estimates for all observed 
 #species only (species 1:n)
@@ -292,11 +363,11 @@ det.matrix <- cbind(apply(p.cato,2,mean),apply(p.cato,2,sd))
 
 #See estimates of total richness (N) and estimates of richness at each of the 
 #J sampling locations (Nsite)
-N <- fit$sims.list$N
+N <- fit$BUGSoutput$sims.list$N
 mean(N); summary(N); plot(table(N))
 
-Nsite <- fit$sims.list$Nsite
-site.richness.matrix = cbind(apply(Nsite,2,mean), apply(Nsite,2,mean))
+Nsite <- fit$BUGSoutput$sims.list$Nsite
+site.richness.matrix <- cbind(apply(Nsite,2,mean), apply(Nsite,2,mean))
 
 #Plot mean site richness against one of the covariates to examine how point 
 #richness varies as a result of understory foliage
@@ -306,8 +377,8 @@ plot(ufc, apply(Nsite,2,mean), pch=16, lwd=2, xlab="Understory foliage (UFC)", y
 #habitat types (CAT0)
 x <- seq(-1.5,2.5, by=0.1)
 y <- (x*sdufc) + mufc
-a1 <- fit$sims.list$a1 
-a2 <- fit$sims.list$a2
+a1 <- fit$BUGSoutput$sims.list$a1 
+a2 <- fit$BUGSoutput$sims.list$a2
 
 plot(y,y, type="l", ylim=c(0,1), xlim=c(0,40), main="Species-specific relationships with ufc", col="white")
 
