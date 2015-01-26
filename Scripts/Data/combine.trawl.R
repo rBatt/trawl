@@ -279,9 +279,9 @@ pat2y <- "^(\\d{1,2})(?:[\\/-])(\\d{1,2})(?:[\\/-])(\\d{2})(?=\\s|$)" # for date
 pat4y <- "^(\\d{1,2})(?:[\\/-])(\\d{1,2})(?:[\\/-])(\\d{4})(?=\\s|$)" # for dates like 6/23/2007, or 06/23/2007, etc
 pat4y.only <- "^(\\d{4})$" # for dates that are just the year, e.g., 2007
 
-test <- c("7/15/10 17:59", "08/03/1997 17:58", "09/01/1987 18:00", "07-17-1991")
-gsub(pat2y, "20\\3-\\1-\\2", test, perl=TRUE)
-gsub(pat4y, "\\3-\\1-\\2", test, perl=TRUE)
+# test <- c("7/15/10 17:59", "08/03/1997 17:58", "09/01/1987 18:00", "07-17-1991")
+# gsub(pat2y, "20\\3-\\1-\\2", test, perl=TRUE)
+# gsub(pat4y, "\\3-\\1-\\2", test, perl=TRUE)
 # pat.mdy <- "^(\\d{1,2})(?:[\\/-])(\\d{1,2})(?:[\\/-])"
 
 trawl4[,datetime:=gsub(pat2y, "20\\3-\\1-\\2", datetime, perl=TRUE)] # e.g., switch out 6/23/07 for 2007-6-23
