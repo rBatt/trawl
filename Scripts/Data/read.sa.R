@@ -7,11 +7,6 @@ library(PBSmapping) # for calculating stratum areas
 library(maptools) # for calculating stratum areas
 library(Hmisc)
 
-# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rmWhite.R")
-# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rm9s.R")
-# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/calcarea.R")
-# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/sumna.R")
-# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/meanna.R")
 
 # =======================
 # = Load data functions =
@@ -26,12 +21,14 @@ invisible(sapply(paste(data.location, list.files(data.location), sep="/"), sourc
 # String to begin directory
 sa.start <- "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/raw_data/SEAMAP-SA/"
 
+
 # ======================
 # = Read in Catch Data =
 # ======================
 sa.catch.class <- c(rep("character",12), rep("numeric",4), rep("character",2), "numeric", "character",rep("numeric",2),"character","numeric", rep("character",7), rep("numeric",11), rep("character",2))
 sa.catch.drop <- c("EVENTNAME", "VESSELNAME", "GEARNAME", "SPECIESCODE", "MRRI_CODE", "SPECIESSUBWEIGHT", "SPECIESWGTPROCESSED", "WEIGHTMETHODDESC", "ORGWTUNITS", "CATCHSUBSAMPLED", "CATCHWEIGHT", "CATCHSUBWEIGHT", "TIMESTART", "DURATION", "TOWTYPETEXT", "ACCSPGRIDCODE", "EVENTTYPEDESCRIPTION", "SALINITYSURFACE", "SALINITYBOTTOM", "SDO", "BDO", "TEMPAIR", "SPECSTATUSDESCRIPTION", "LASTUPDATED")
 sa.catch00 <- fread(paste(sa.start, "malinpinsky.Coastalbiomass.csv", sep=""), colClasses=sa.catch.class, drop=sa.catch.drop)
+
 
 # ===============================
 # = Read in Strata info (depth) =
@@ -61,6 +58,7 @@ sa.catch00[,STATIONCODE:=gsub("[\"=]", "", STATIONCODE)]
 sa.strata[,haulid:=gsub("[\"=]", "", haulid)]
 setkey(sa.strata, haulid)
 
+
 # ======================================================
 # = Figure out of some columns contain anything useful =
 # ======================================================
@@ -75,25 +73,41 @@ setkey(sa.strata, haulid)
 # In fact, where project name =="", all columns are NA for those rows
 setnames(sa.catch00, c("DATE", "COLLECTIONNUMBER", "SPECIESSCIENTIFICNAME", "SPECIESCOMMONNAME", "NUMBERTOTAL", "SPECIESTOTALWEIGHT", "EFFORT", "STATIONCODE", "TEMPSURFACE", "TEMPBOTTOM"), c("datetime", "haulid", "spp", "common", "cnt", "wt", "effort", "stratum", "stemp", "btemp"))
 
+
 # ===========================================
 # = Trim to inner strata and non-empty rows =
 # ===========================================
 sa.catch0 <- sa.catch00[PROJECTNAME!=""&DEPTHZONE=="INNER", list(datetime, spp, common, haulid, stratum, LATITUDESTART, LATITUDEEND, LONGITUDESTART, LONGITUDEEND, stemp, btemp, cnt, wt, effort)]
 
+
 # ================================
 # = Fix lat/lon, add stratumarea =
 # ================================
+# sa.catch0[LONGITUDESTART < -100 | LONGITUDEEND < -100]
+# sa.catch0[,summary(abs(abs(LONGITUDESTART)-abs(LONGITUDEEND)))]
+# this was weird, so I took a guess
+sa.catch0[LONGITUDESTART > -782.000 & LONGITUDESTART < -780.000, LONGITUDESTART:=-79.0]
+sa.catch0[LONGITUDEEND > -782.000 & LONGITUDEEND < -780.000, LONGITUDEEND:=-78.988]
+sa.catch0[LONGITUDESTART > -802.000 & LONGITUDESTART < -800.000, LONGITUDESTART:= -81.006+0.01]
+
+# sa.catch0[LATITUDEEND>40]
+# sa.catch0[,summary(abs(abs(LATITUDESTART)-abs(LATITUDEEND)))]
+sa.catch0[LATITUDEEND>40, LATITUDEEND:=LATITUDESTART+0.009]
+
+
 sa.catch0[,year:=substr(haulid, 1, 4)]
 sa.catch0[,lat:=(LATITUDESTART+LATITUDEEND)/2]
 sa.catch0[,lon:=(LONGITUDESTART+LONGITUDEEND)/2]
 
 sa.catch0[,stratumarea:=calcarea(cbind(lon, lat)), by=stratum] # I think this is right ... copied from how malin did gmex
 
+
 # ================
 # = Trim columns =
 # ================
 sa.catch <- sa.catch0[,list(year, datetime, spp, common, haulid, stratum, stratumarea, lat, lon, stemp, btemp, cnt, wt, effort)]
 setkey(sa.catch, haulid)
+
 
 # ===================================
 # = Combine w/ strat data for Depth =
@@ -115,7 +129,6 @@ sa.raw0[,cntcpue:=cnt/effort]
 sa.raw0[,wtcpue:=wt/effort]
 
 
-
 # ================
 # = Trim columns =
 # ================
@@ -123,56 +136,16 @@ sa.raw0[,wtcpue:=wt/effort]
 sa.raw0 <- sa.raw0[,list(year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth, stemp, btemp, cntcpue, wtcpue)]
 
 
-# ===============
-# = Trim Strata =
-# ===============
-
-nyears <- sa.raw0[,length(unique(year))]
-
-# sa.raw0[,sum(colSums(table(year, stratum)>0)==nyears)] # original strata gives 18 strata seen every year
-
-sa.raw0[,strat2:=paste(stratum, ll2strat(lon, lat))]
-# sa.raw0[,sum(colSums(table(year, strat2)>0)==nyears)] # 1º grid gives you 18 strata seen every year
-
-# sa.raw0[,strat2:=paste(stratum, ll2strat(lon, lat, 0.5))]
-# sa.raw0[,sum(colSums(table(year, strat2)>0)==nyears)] # 0.5º grid gives you 17 strata seen every year
-#
-# sa.raw0[,strat2:=paste(stratum, ll2strat(lon, lat, 0.25))]
-# sa.raw0[,sum(colSums(table(year, strat2)>0)==nyears)] # 0.25º grid gives you 17 strata seen every year
-
-goodStrat2 <- sa.raw0[,names(colSums(table(year, strat2)>0))[colSums(table(year, strat2)>0)==nyears]]
-sa.raw <- sa.raw0[strat2%in%goodStrat2]
-sa.raw[,stratum:=strat2]
-sa.raw[,strat2:=NULL]
+# =================
+# = Reformat Year =
+# =================
+sa.raw0[,year:=as.integer(year)]
 
 
-# ==============================
-# = Old way of trimming strata =
-# ==============================
-# sa.YS <- sa.raw0[,rowSums(table(stratum, year)>=1)] # the number of years (Y) in each stratum (S)
-# sa.YS.pick <- names(sa.YS)[sa.YS==max(sa.YS)] # max() still works on class()=="character"
-# sa.raw <- sa.raw0[stratum%in%sa.YS.pick,] # vector scan instead of binary search, but idc
-
-
-# # some checks to make sure that being this selective with strata is still preserving spp obs and no biasing
-# # A bias exists, such that the peristant strata have more species in later years relative to all strata put together.
-# sa.raw[,length(unique(spp))] # 246 spp if use only the strata sampled most often (296 if 23 or 24 years)
-# sa.raw0[,length(unique(spp))] # 331 spp in original data set, so losing some species
-# mean(sa.raw0[,colSums(table(spp, year)>1)]) # ~154 spp observed per year in original data
-# mean(sa.raw[,colSums(table(spp, year)>1)]) # ~108 spp observed per year after trimming strata (134 if 23 or 24 years)
-#
-# # plot/ lm for bias in spp/ year (when set to strata w/ 24 years)
-# spp.yr.total <- sa.raw0[,colSums(table(spp, year)>1)]
-# spp.yr.consis <- sa.raw[,colSums(table(spp, year)>1)]
-# annualSpp.diff <- spp.yr.total - spp.yr.consis
-
-# asd.yr <- as.numeric(names(annualSpp.diff))
-# dev.new(height=6, width=3.5)
-# par(mfrow=c(3,1), mar=c(2,2,0.5,0.5), ps=8, family="Times", cex=1, mgp=c(1,0.25,0), tcl=-0.25)
-# plot(asd.yr, spp.yr.total, type="l", xlab="", ylab="Spp per year (all strata)")
-# plot(asd.yr, spp.yr.consis, type="l", xlab="", ylab="Spp per year (consistent strata)")
-# plot(asd.yr,annualSpp.diff, type="l", xlab="year", ylab="Diff between all and consistent")
-# # basically the strata that they added had species absent from the consistent strata, so towards the end there is a big upward swing in the all-strata plot, but a milder upward trend in the consistent strata plot
+# ==============
+# = Fix Strata =
+# ==============
+sa.raw <- makeStrat(sa.raw0, regName="sa")
 
 
 # ==================

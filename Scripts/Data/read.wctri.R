@@ -5,11 +5,7 @@ library(bit64)
 library(PBSmapping) # for calculating stratum areas
 library(maptools) # for calculating stratum areas
 library(Hmisc)
-#
-# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rmWhite.R")
-# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rm9s.R")
-# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/calcarea.R")
-# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/sumna.R")
+
 
 # =======================
 # = Load data functions =
@@ -66,39 +62,16 @@ wctri[,year:=as.numeric(substr(CRUISE, 1, 4))]
 setnames(wctri, c("VESSEL", "START_LATITUDE", "START_LONGITUDE", "BOTTOM_DEPTH", "SPECIES_NAME", "WEIGHT", "SURFACE_TEMPERATURE", "GEAR_TEMPERATURE", "START_TIME", "NUMBER_FISH"), c("svvessel", "lat", "lon", "depth", "spp", "wtcpue", "stemp", "btemp", "datetime", "cntcpue"))
 
 
-# =======================
-# = Add and Trim Strata =
-# =======================
-nyears <- wctri[,length(unique(year))]
-
-
-wctri[,strat2:=ll2strat(lon, lat)]
-# wctri[,sum(colSums(table(year, strat2)>0)==nyears)] # 1º grid gives you 17 strata seen every year
-
-# wctri[,strat2:=ll2strat(lon, lat, 0.5)]
-# wctri[,sum(colSums(table(year, strat2)>0)==nyears)] # 0.5º grid gives you 37 strata seen every year
-#
-# wctri[,strat2:=ll2strat(lon, lat, 0.25)]
-# wctri[,sum(colSums(table(year, strat2)>0)==nyears)] # 0.25º grid gives you 62 strata seen every year
-
-goodStrat2 <- wctri[,names(colSums(table(year, strat2)>0))[colSums(table(year, strat2)>0)==nyears]]
-wctri <- wctri[strat2%in%goodStrat2]
-wctri[,stratum:=strat2]
-wctri[,strat2:=NULL]
-
-
 # ==============
 # = Add strata =
 # ==============
-# wctri[,stratum:=paste(floor(START_LATITUDE)+0.5, floor(BOTTOM_DEPTH/100)*100+50, sep="-")]
+wctri[,stratum:=paste(floor(lat)+0.5, floor(depth/100)*100+50, sep="-")]
 
 
-
-# ================================
-# = Trim Strata (malin line 165) =
-# ================================
-# wctri <- wctri[wctri$stratum %in% c("36.5-50", "37.5-150", "37.5-50", "38.5-150", "38.5-250", "38.5-350", "38.5-50", "39.5-150", "39.5-50", "40.5-150", "40.5-250", "41.5-150", "41.5-250", "41.5-50", "42.5-150", "42.5-250", "42.5-50", "43.5-150", "43.5-250", "43.5-350", "43.5-50", "44.5-150", "44.5-250", "44.5-350", "44.5-50", "45.5-150", "45.5-350", "45.5-50", "46.5-150", "46.5-250", "46.5-50", "47.5-150", "47.5-50", "48.5-150", "48.5-250", "48.5-50"),]
-
+# ==============
+# = Fix Strata =
+# ==============
+wctri <- makeStrat(wctri, regName="wctri")
 
 
 # ================
