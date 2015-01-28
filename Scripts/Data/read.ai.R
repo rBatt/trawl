@@ -6,11 +6,6 @@ library(PBSmapping) # for calculating stratum areas
 library(maptools) # for calculating stratum areas
 library(Hmisc)
 
-# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rmWhite.R")
-# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rm9s.R")
-# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/calcarea.R")
-# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/sumna.R")
-# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/meanna.R")
 
 # =======================
 # = Load data functions =
@@ -67,34 +62,10 @@ setnames(ai, c("STRATUM", "YEAR", "LATITUDE", "LONGITUDE", "BOT_DEPTH", "SCIENTI
 # Calculate a corrected longitude for Aleutians (all in western hemisphere coordinates)
 ai$lon[ai$lon>0] <- ai$lon[ai$lon>0] - 360
 
-nyears <- ai[,length(unique(year))]
-
-# ai[,sum(colSums(table(year, stratum)>0)==nyears)] # original strata gives 40 strata seen every year
-
-ai[,strat2:=paste(stratum, ll2strat(lon, lat))]
-# ai[,sum(colSums(table(year, strat2)>0)==nyears)] # 1º grid gives you 46 strata seen every year
-
-# ai[,strat2:=paste(stratum, ll2strat(lon, lat, gridSize=0.75))]
-# ai[,sum(colSums(table(year, strat2)>0)==nyears)] # 0.75º grid gives 48 strata seen every year
-#
-# ai[,strat2:=paste(stratum, ll2strat(lon, lat, gridSize=0.5))]
-# ai[,sum(colSums(table(year, strat2)>0)==nyears)] # 0.5º grid gives 46 strata seen every year
-#
-# ai[,strat2:=paste(stratum, ll2strat(lon, lat, gridSize=0.25))]
-# ai[,sum(colSums(table(year, strat2)>0)==nyears)] # 0.25º grid gives 25 strata seen every year
-
-
-goodStrat2 <- ai[,names(colSums(table(year, strat2)>0))[colSums(table(year, strat2)>0)==nyears]]
-
-
-# ===================================
-# = Trim Strata (line 160 of malin) =
-# ===================================
-# ai <- ai[!(ai$STRATUM %in% c(221, 411, 421, 521, 611)),]
-ai <- ai[strat2%in%goodStrat2]
-ai[,stratum:=strat2]
-ai[,strat2:=NULL]
-
+# ==============
+# = Fix Strata =
+# ==============
+ai <- makeStrat(ai, regName="ai")
 
 
 # ==================
@@ -126,12 +97,15 @@ ai[.(c('Bathyrajaabyssicola', 'Bathyrajaaleutica', 'Bathyrajainterrupta', 'Bathy
 # =============
 # = Aggregate =
 # =============
-# setkey(ai, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth, btemp, stemp)
-# ai2 <- ai[j=lapply(list(wtcpue=wtcpue, cntcpue=NUMCPUE), FUN=sumna), by=key(ai)]
-# ai2 <- ai[j=lapply(list(wtcpue=wtcpue, cntcpue=NUMCPUE), FUN=meanna), by=key(ai)] # I think cpue should be avgd
+# ai[, rLat:=roundGrid(lat)]
+# ai[, rLon:=roundGrid(lon)]
+# ai[, K:=as.integer(as.factor(haulid)), by=c("year", "rLat", "rLon")]
 
+# ai[,length(unique(haulid))] == ai[,length(unique(paste(year, rLat, rLon, K)))] # in this case, these should match
+
+# setkey(ai, year, datetime, spp, haulid, stratum, K, stratumarea, lat, lon, depth)
 setkey(ai, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth)
-ai2 <- ai[j=lapply(list(stemp=stemp, btemp=btemp, wtcpue=wtcpue, cntcpue=NUMCPUE), FUN=meanna), by=key(ai)]
+ai2 <- ai[j=lapply(list(stemp=stemp, btemp=btemp, wtcpue=wtcpue, cntcpue=NUMCPUE), FUN=meanna), by=key(ai)] # 1 duplicate entry
 
 
 

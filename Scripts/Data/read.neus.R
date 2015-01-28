@@ -8,12 +8,6 @@ library(PBSmapping) # for calculating stratum areas
 library(maptools) # for calculating stratum areas
 library(Hmisc)
 
-# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rmWhite.R")
-# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rm9s.R")
-# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/calcarea.R")
-# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/sumna.R")
-# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/meanna.R")
-
 
 # =======================
 # = Load data functions =
@@ -101,50 +95,11 @@ neus <- merge(neus, neus.station, all.x=TRUE)
 # =============
 setnames(neus, c("YEAR", "SCINAME", "LAT", "LON", "DEPTH", "STRATUM", "SURFTEMP", "BOTTEMP", "BIOMASS", "ABUNDANCE"), c("year", "spp", "lat", "lon", "depth", "stratum", "stemp", "btemp", "wtcpue", "cntcpue"))
 
-# ================================
-# = Trim Strata (malin line 163) =
-# ================================
-# neus <- neus[neus$STRATUM %in% c("1010", "1020", "1030", "1040", "1050", "1060", "1070", "1080", "1090", "1100", "1110", "1130", "1140", "1150", "1160", "1170", "1190", "1200", "1210", "1220", "1230", "1240", "1250", "1260", "1270", "1280", "1290", "1300", "1340", "1360", "1370", "1380", "1400", "1650", "1660", "1670", "1680", "1690", "1700", "1710", "1730", "1740", "1750"), ] # strata to keep (based on Nye et al. MEPS)
 
-# ===============
-# = Trim Strata =
-# ===============
-nyears <- neus[,length(unique(year))]
-
-# neus[,sum(colSums(table(year, stratum)>0)==nyears)] # original strata gives 43 strata seen every year
-
-neus[,strat2:=paste(stratum, ll2strat(lon, lat))]
-# neus[,sum(colSums(table(year, strat2)>0)==nyears)] # 1º grid gives you 19 strata seen every year
-neus[,sum(colSums(table(year, strat2)>0)>=(nyears-3))]
-
-# neus[,strat2:=paste(stratum, ll2strat(lon, lat, 0.5))]
-# neus[,sum(colSums(table(year, strat2)>0)==nyears)] # 0.5º grid gives you 3 strata seen every year
-#
-# neus[,strat2:=paste(stratum, ll2strat(lon, lat, 0.25))]
-# neus[,sum(colSums(table(year, strat2)>0)==nyears)] # 0.25º grid gives you 0 strata seen every year
-
-
-
-# nstrata <- c()
-# nstrata.orig <- c()
-# for(i in 0:(nyears-1)){
-# 	nstrata[i+1] <- neus[,sum(colSums(table(year, strat2)>0)>=(nyears-i))]
-# 	nstrata.orig[i+1] <- neus[,sum(colSums(table(year, stratum)>0)>=(nyears-i))]
-# }
-# dev.new(width=4)
-# par(mfrow=c(2,1), mar=c(2.5,2,1.5,0.2), cex=1, ps=10, mgp=c(1.25, 0.15, 0), tcl=-0.25)
-# plot(0:(nyears-1), nstrata, type="o", xlab="threshold # years missing", ylab="# strata below threshold missingness", main="# strata vs. tolerance of missingness")
-# lines(0:(nyears-1), nstrata.orig, type="o", col="red")
-# legend("topleft", legend=c("original strata definition", "1 degree grid definition"), lty=1, pch=21, col=c("red","black"))
-# image(x=neus[,sort(unique(year))], y=neus[,1:length(unique(strat2))], z=neus[,table(year, strat2)>0], xlab="year", ylab="1 degree stratum ID", main="stratum presence vs. time; red is absent")
-
-
-thresholdYears <- 3
-
-goodStrat2 <- neus[,names(colSums(table(year, strat2)>0))[colSums(table(year, strat2)>0)>=(nyears-thresholdYears)]]
-neus <- goa[strat2%in%goodStrat2]
-neus[,stratum:=strat2]
-neus[,strat2:=NULL]
+# ==============
+# = Fix Strata =
+# ==============
+neus <- makeStrat(neus, regName="neus")
 
 
 # =================================
