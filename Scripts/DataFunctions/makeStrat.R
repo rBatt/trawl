@@ -51,7 +51,7 @@ makeStrat <- function(x, regName, doLots=NULL){
 		# Initialize graphical device
 		png(paste0(figLoc,paste0(regName,".StratTol.png")), width=7, height=8.5, res=150, units="in")
 		layout(matrix(c(rep(1,3), rep(2,3), rep(1,3), rep(2,3), 3:8),ncol=3))
-		par(mar=c(1.75,1.75,1,0.1), mgp=c(1,0.15,0), tcl=-0.15, ps=8, cex=1, family="Times")
+		par(mar=c(2.0,1.75,1,0.1), mgp=c(1,0.15,0), tcl=-0.15, ps=8, cex=1, family="Times")
 	
 		# Tolerance vs. Missingness Panels
 		plot(0:(nyears-1), nstrata, type="o", xlab="threshold # years missing", ylab="# strata below threshold missingness", main="# strata vs. tolerance of missingness")
@@ -60,7 +60,7 @@ makeStrat <- function(x, regName, doLots=NULL){
 		image(x=x[,sort(unique(year))], y=x[,1:length(unique(strat2))], z=x[,table(year, strat2)>0], xlab="year", ylab="1 degree stratum ID", main="stratum presence vs. time; red is absent")
 
 		# Tolerance Maps
-		par(mar=c(1.5,1.5,0.1,0.1), mgp=c(1,0.15,0), tcl=-0.15, ps=8, cex=1, family="Times")
+		par(mar=c(1.25,1.25,0.1,0.1), mgp=c(1,0.15,0), tcl=-0.15, ps=8, cex=1, family="Times")
 		tol0 <- x[strat2%in%x[,names(colSums(table(year, strat2)>0))[colSums(table(year, strat2)>0)>=(nyears-0)]]]
 		tol0[,c("lat","lon"):=list(roundGrid(lat),roundGrid(lon))]
 		for(i in 1:6){
