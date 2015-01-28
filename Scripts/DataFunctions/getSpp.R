@@ -36,7 +36,7 @@ getSpp <- function(uspp, oldSpp=NULL){
 		u.uspp.chunks <- unique(uspp.chunks) # unique chunks
 		
 		# Loop through species to look up
-		spp.pb <- txtProgressBar(min=1, max=length(u.new.spp.chunks), style=3) # create progress bar for lookup process
+		spp.pb <- txtProgressBar(min=1, max=length(u.spp.chunks), style=3) # create progress bar for lookup process
 		for(s in seq_along(u.uspp.chunks)){ # for each chunk ...
 		
 			# Define chunks and get current species to check
