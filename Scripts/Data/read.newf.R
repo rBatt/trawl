@@ -8,16 +8,6 @@ library(maptools) # for calculating stratum areas
 library(Hmisc)
 
 
-# ====================
-# = Source Functions =
-# ====================
-# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rmWhite.R")
-# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rm9s.R")
-# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/calcarea.R")
-# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/sumna.R")
-# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/meanna.R")
-
-
 # =======================
 # = Load data functions =
 # =======================
@@ -142,6 +132,8 @@ for(i in 1:length(newf.files)){ # for each file
 	print(dim(newf.raw00))
 }
 newf.raw0 <- newf.raw00
+
+
 # ========================
 # = Subset data based on =
 # ========================
@@ -154,15 +146,18 @@ newf.raw0 <- newf.raw0[ss2,]
 ss3 <- newf.raw0$settype == 1
 newf.raw0 <- newf.raw0[ss3,]
 
+
 # =========================
 # = Convert to data.table =
 # =========================
 newf.raw <- data.table(newf.raw0)
 
+
 # ========================
 # = Create unique haulid =
 # ========================
 newf.raw[,haulid:=paste(formatC(vessel, width=2, flag=0), formatC(trip, width=3, flag=0), formatC(set, width=3, flag=0, format='d'), sep='-')]
+
 
 # =============
 # = Fix years =
@@ -170,7 +165,7 @@ newf.raw[,haulid:=paste(formatC(vessel, width=2, flag=0), formatC(trip, width=3,
 setnames(newf.raw, "yearl", "year")
 newf.raw[,year:=year+1900]
 newf.raw[newf.raw$year<1950, year:=year+100]
-# setkey(newf.raw, yearl)
+
 
 # ============
 # = Add date =
@@ -264,13 +259,6 @@ newf.raw <- merge(newf.raw, newf.spp, all.x=TRUE)
 # =======================
 setnames(newf.raw, c("vessel", "trip", "set"), c("svvessel", "cruise", "tow"))
 
-# =====================
-# = Add empty columns =
-# =====================
-# newf.raw[,station:=as.character(NA)]
-# newf.raw[,surfsal:=as.numeric(NA)]
-# newf.raw[,botsal:=as.numeric(NA)]
-
 
 # ====================================
 # = Identifying Spring/ Fall Surveys =
@@ -292,11 +280,6 @@ bad.series <- is.na(newf.season)
 newf.raw[, season:=newf.season]
 setkey(newf.raw, season)
 
-# newf.raw2 <- newf.raw
-
-
-# newf.raw <- newf.raw2
-
 
 # =========================
 # = Fix fall spring dates =
@@ -314,64 +297,7 @@ fallYear1 <- newf.raw["fall", ][,yearsurv] # record the original fall years
 fallYear2 <- fallYear1 # set a new fall year to the original fall years
 fallYear2[fallMonth4] <- fallYear1[fallMonth4] - 1 # change the new fall years by subtracting one when when their month<4
 newf.raw["fall",yearsurv:=fallYear2] # In the data.table, replace the old fall years with the new fall years (old[month<4]-1)
-# newf.raw["fall",]$juliansurv <- as.numeric(as.date(paste(newf.raw["fall",]$month, newf.raw["fall",]$day, newf.raw["fall",]$year, sep='/')))-as.numeric(as.date(paste('07/01/', newf.raw["fall",]$yearsurv, sep='')))
 newf.raw["fall",juliansurv:=julian] # might not need this ...
-
-# ===============
-# = Trim Strata =
-# ===============
-# newf00 <- newf.raw
-# # setnames(newf00, "yearl", "year")
-# setkey(newf00, season)
-
-# newf00 <- newf00["fall"]
-
-#
-# # Trim to high quality strata (sampled every year)
-# # for Spring
-# strat.year.spr <- newf00["spring"][,table(stratum, year)]
-# sys.spring.rsum <- rowSums(strat.year.spr>0)
-# sys.spring.csum <- colSums(strat.year.spr>0)
-# 	# as.data.frame(sys.spring.rsum) # how many years per stratum?
-# # 		hist(sys.spring.rsum, breaks=60, col='grey') # most strata cover 1 years, next most cover 15 #????
-# # 		sum(sys.spring.rsum==14) # 34 stratum
-# # 		sum(sys.spring.rsum==15) # 50 strata
-# # 	as.data.frame(sys.spring.csum) # how many strata per year?
-# # 	hist(sys.spring.csum, col='grey', breaks=60) # most years have 82 strata
-# strat.year.spr2 <- strat.year.spr[sys.spring.rsum==15,]#;  strat.year.spr2
-# 	# colSums(strat.year.spr2>0) # all years have 50 strata
-# # 	rowSums(strat.year.spr2>0) # all strata have 15 years
-# strats.spr <- rownames(strat.year.spr2)[rowSums(strat.year.spr2>0)==15]
-# # 	length(strats.spr) # 50 strata
-# # 	 	i = !duplicated(newf00["spring"]$haulid) & newf00["spring"]$stratum %in% strats.spr
-# # 	 	dev.new();plot(newf00["spring"]$lon[i], newf00["spring"]$lat[i])
-# # 		plot(newf00["spring"]$lon, newf00["spring"]$lat)
-# #
-# # dataspr = newf00["spring"][newf00["spring"]$stratum %in% strats.spr,]
-# # 	dim(dataspr) # 62,249
-#
-#
-# # Fall
-# strat.year.fall <- newf00["fall"][,table(stratum, yearsurv)]
-# sys.fall.rsum <- rowSums(strat.year.fall>0)
-# sys.fall.csum <- colSums(strat.year.fall>0)
-# 	# as.data.frame(sys.fall.rsum) # how many years per stratum?
-# # 		hist(sys.fall.rsum, breaks=60, col='grey') # most strata cover 1 years, next most cover 15 #????
-# 		# sum(sys.fall.rsum==15) # 31 stratum #?? I get 57 ... ahh, difference between using year and yearsurv
-# 		# sum(sys.fall.rsum==16) # 130 strata
-# # 	as.data.frame(sys.fall.csum) # how many strata per year?
-# 	# hist(sys.fall.csum, col='grey', breaks=60) # most years have ~230 strata
-# strat.year.fall2 <- strat.year.fall[sys.fall.rsum==16,]#;  strat.year.fall2
-# 	# colSums(strat.year.fall2>0) # all years have 130 strata
-# 	# rowSums(strat.year.fall2>0) # all strata have 16 years
-# strats.fall <- rownames(strat.year.fall2)[rowSums(strat.year.fall2>0)==16]
-# 	# length(strats.fall) # 130 strata
-# 	#  	i = !duplicated(newf00["fall"]$haulid) & newf00["fall"]$stratum %in% strats.fall
-# 	#  	dev.new();plot(newf00["fall"]$lon[i], newf00["fall"]$lat[i])
-# # 		plot(newf00["fall"]$lon, newf00["fall"]$lat)
-# #
-# datafal = newf00["fall"][newf00["fall"]$stratum %in% strats.fall,]
-# # 	dim(datafall) # 62,249
 
 
 # ==================
@@ -380,6 +306,7 @@ newf.raw["fall",juliansurv:=julian] # might not need this ...
 setkey(newf.raw, season)
 newf00 <- newf.raw["fall"]
 
+
 # =======================
 # = Trim wrong duration =
 # =======================
@@ -387,26 +314,12 @@ newf00 <- newf.raw["fall"]
 newf0 <- newf00[duration<=60,]
 
 
-	
-
 # =====================
 # = Duplicated Hauls? =
 # =====================
 blah <- newf0[duplicated(paste(haulid,spp, common, season)) | duplicated(paste(haulid,spp, common, season), fromLast=TRUE),]
 setkey(blah, haulid)
 print(blah[, list(haulid, year, season, numcpue, wtcpue, spp, common)], nrow=Inf)
-
-
-# ===================================
-# = Quick Test of Atlantic Cod Data =
-# ===================================
-# test <- newf0
-# setkey(test, common)
-# cod.test <- test["COD,ATLANTIC", list(catch=sumna(wtcpue)), by=c("year","season")] # compare this with meanna(wtcpue)...
-# setkey(cod.test)
-# dev.new();par(mfrow=c(3,1), mar=c(2,2,1,1), mgp=c(2,0.5,0), tcl=-0.25, ps=10, family="Times", cex=1)
-# cod.test[,plot(year, catch, type="o", main=season[1], xlim=c(1995,2012)), by="season"]
-# It's because 2008 was the year when there weren't a lot of strata that were sampled. So it loosk normal-ish if you do the mean among strata
 
 
 # ========================
@@ -482,6 +395,7 @@ newf$spp[i] <- 'SCOPELOSAURIDAE' # according to ITIS, this should be 	Scopelosau
 i <- !(newf$spp %in% c('EGGS, FISH(SPAWN)', 'EGGS, INVERTEBRATE', 'EGGS, SKATE CASES', 'EGGS, UNIDENTIFIED', 'OFFAL, OTHER', 'PLANT MATERIAL', 'SHELLS', 'STONE', 'UNIDENTIFIED FISH', 'UNIDENTIFIED MATERIAL'))
 newf <- newf[i,]
 
+
 # =======================================
 # = Trim down to known spp, and to fall =
 # =======================================
@@ -498,6 +412,7 @@ setkey(newf, spp)
 newf <- newf[spp!=""&!is.na(spp),]
 dim(newf) # 257226, 50
 
+
 # ================
 # = Trim columns =
 # ================
@@ -506,93 +421,10 @@ newf <- newf[,list(yearsurv, datetime, spp, haulid, stratum, area, lat, lon, dep
 setnames(newf, old=c("yearsurv", "area", "bottemp", "surftemp", "numcpue"), new=c("year", "stratumarea", "btemp", "stemp", "cntcpue"))
 
 
-# ===============
-# = Trim Strata =
-# ===============
-nyears <- newf[,length(unique(year))]
-
-# newf[,sum(colSums(table(year, stratum)>0)==nyears)] # original strata gives 10 strata seen every year
-
-newf[,strat2:=paste(stratum, ll2strat(lon, lat))]
-# newf[,sum(colSums(table(year, strat2)>0)==nyears)] # 1º grid gives you 89 strata seen every year
-
-# newf[,strat2:=paste(stratum, ll2strat(lon, lat, 0.5))]
-# newf[,sum(colSums(table(year, strat2)>0)==nyears)] # 0.5º grid gives you 11 strata seen every year
-#
-# newf[,strat2:=paste(stratum, ll2strat(lon, lat, 0.25))]
-# newf[,sum(colSums(table(year, strat2)>0)==nyears)] # 0.25º grid gives you 118 strata seen every year
-#
-# nstrata <- c()
-# nstrata.orig <- c()
-# for(i in 0:(nyears-1)){
-# 	nstrata[i+1] <- newf[,sum(colSums(table(year, strat2)>0)>=(nyears-i))]
-# 	nstrata.orig[i+1] <- newf[,sum(colSums(table(year, stratum)>0)>=(nyears-i))]
-# }
-# dev.new(width=4)
-# par(mfrow=c(2,1), mar=c(2.5,2,1.5,0.2), cex=1, ps=10, mgp=c(1.25, 0.15, 0), tcl=-0.25)
-# plot(0:(nyears-1), nstrata, type="o", xlab="threshold # years missing", ylab="# strata below threshold missingness", main="# strata vs. tolerance of missingness")
-# lines(0:(nyears-1), nstrata.orig, type="o", col="red")
-# legend("topleft", legend=c("original strata definition", "1 degree grid definition"), lty=1, pch=21, col=c("red","black"))
-# image(x=newf[,sort(unique(year))], y=newf[,1:length(unique(strat2))], z=newf[,table(year, strat2)>0], xlab="year", ylab="1 degree stratum ID", main="stratum presence vs. time; red is absent")
-
-# lat.range <- newf[,range(lat, na.rm=TRUE)]
-# lon.range <- newf[,range(lon, na.rm=TRUE)]
-#
-# dev.new(width=3, height=8.5)
-# par(mfrow=c(6,1), mar=c(1.25,1.25,0.1,0.1), mgp=c(1,0.15,0), tcl=-0.15, ps=8, cex=1, family="Times")
-# tol0 <- newf[strat2%in%newf[,names(colSums(table(year, strat2)>0))[colSums(table(year, strat2)>0)>=(nyears)]]]
-# tol0[,c("lat","lon"):=list(roundGrid(lat),roundGrid(lon))]
-# setkey(tol0, lat, lon)
-# tol0 <- unique(tol0)
-# tol0[,plot(lon, lat, xlab="", ylab="", xlim=lon.range, ylim=lat.range)]
-# legend("topleft", "0 missing years permitted", inset=c(-0.1, -0.12), bty="n")
-#
-# tol1 <- newf[strat2%in%newf[,names(colSums(table(year, strat2)>0))[colSums(table(year, strat2)>0)>=(nyears-1)]]]
-# tol1[,c("lat","lon"):=list(roundGrid(lat),roundGrid(lon))]
-# setkey(tol1, lat, lon)
-# tol1 <- unique(tol1)
-# tol1[,plot(lon, lat, xlab="", ylab="", xlim=lon.range, ylim=lat.range, col=1+(!paste(lon,lat)%in%tol0[,paste(lon,lat)]))]
-# legend("topleft", "1 missing year permitted", inset=c(-0.1, -0.12), bty="n")
-#
-# tol2 <- newf[strat2%in%newf[,names(colSums(table(year, strat2)>0))[colSums(table(year, strat2)>0)>=(nyears-2)]]]
-# tol2[,c("lat","lon"):=list(roundGrid(lat),roundGrid(lon))]
-# setkey(tol2, lat, lon)
-# tol2 <- unique(tol2)
-# tol2[,plot(lon, lat, xlab="", ylab="", xlim=lon.range, ylim=lat.range, col=1+(!paste(lon,lat)%in%tol0[,paste(lon,lat)]))]
-# legend("topleft", "2 missing years permitted", inset=c(-0.1, -0.12), bty="n")
-#
-#
-# tol3 <- newf[strat2%in%newf[,names(colSums(table(year, strat2)>0))[colSums(table(year, strat2)>0)>=(nyears-3)]]]
-# tol3[,c("lat","lon"):=list(roundGrid(lat),roundGrid(lon))]
-# setkey(tol3, lat, lon)
-# tol3 <- unique(tol3)
-# tol3[,plot(lon, lat, xlab="", ylab="", xlim=lon.range, ylim=lat.range, col=1+(!paste(lon,lat)%in%tol0[,paste(lon,lat)]))]
-# legend("topleft", "3 missing years permitted", inset=c(-0.1, -0.12), bty="n")
-#
-#
-# tol4 <- newf[strat2%in%newf[,names(colSums(table(year, strat2)>0))[colSums(table(year, strat2)>0)>=(nyears-4)]]]
-# tol4[,c("lat","lon"):=list(roundGrid(lat),roundGrid(lon))]
-# setkey(tol4, lat, lon)
-# tol4 <- unique(tol4)
-# tol4[,plot(lon, lat, xlab="", ylab="", xlim=lon.range, ylim=lat.range, col=1+(!paste(lon,lat)%in%tol0[,paste(lon,lat)]))]
-# legend("topleft", "4 missing years permitted", inset=c(-0.1, -0.12), bty="n")
-#
-# tol5 <- newf[strat2%in%newf[,names(colSums(table(year, strat2)>0))[colSums(table(year, strat2)>0)>=(nyears-5)]]]
-# tol5[,c("lat","lon"):=list(roundGrid(lat),roundGrid(lon))]
-# setkey(tol5, lat, lon)
-# tol5 <- unique(tol5)
-# tol5[,plot(lon, lat, xlab="", ylab="", xlim=lon.range, ylim=lat.range, col=1+(!paste(lon,lat)%in%tol0[,paste(lon,lat)]))]
-# legend("topleft", "5 missing years permitted", inset=c(-0.1, -0.12), bty="n")
-
-
-toleranceChoice <- 1
-
-
-goodStrat2 <- newf[,names(colSums(table(year, strat2)>0))[colSums(table(year, strat2)>0)>=(nyears-toleranceChoice)]]
-newf <- newf[strat2%in%goodStrat2]
-newf[,stratum:=strat2]
-newf[,strat2:=NULL]
-
+# ==============
+# = Fix Strata =
+# ==============
+newf <- makeStrat(newf, regName="newf")
 
 
 # =============
