@@ -86,7 +86,7 @@ makeStrat <- function(x, regName, doLots=NULL){
 		# ===============================
 		# = Read in Extent of Tolerance =
 		# ===============================
-		toleranceChoice <- as.integer(read.table(file=paste0(tolLoc,tol.txt))[,"tolerance"])
+		toleranceChoice <- as.integer(read.table(file=paste0(tolLoc,tol.txt), header=TRUE)[,"tolerance"])
 	}
 	
 	
