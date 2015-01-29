@@ -12,7 +12,7 @@ library(taxize)
 # =========================
 # = Memory-saving options =
 # =========================
-delOldTrawl <- c(FALSE, TRUE)[1]
+delOldTrawl <- c(FALSE, TRUE)[2]
 
 # =======================
 # = Load data functions =
@@ -451,6 +451,54 @@ if(delOldTrawl){
 # 	},
 # 	by=c("s.reg")
 # ]
+
+
+# =========================================
+# = # ===================================
+# = # =============================
+# = # =======================
+# = Begin new approach? =
+# ======================= =
+# ============================= =
+# =================================== =
+# =========================================
+testT2 <- melt(trawl2, id.vars=c("s.reg","year","stratum","K","correctSpp","taxLvl","phylum","spp","common"), measure.vars=c("wtcpue","stemp","btemp","lat","lon","depth"))
+
+# create a test community matrix for an msom
+testCM <- cast(
+	data=testT2[variable=="wtcpue" & s.reg=="gmex" & (!is.na(taxLvl)&taxLvl=="Species") & correctSpp==TRUE], 
+	formula=stratum~K~year~spp, 
+	drop=FALSE, # don't drop missing combinations!
+	fill=0, # fill missing combinations with 0's; this is problematic because missing stratum-year-K combinations should result in NA's, whereas missingness due to absent species should be filled with 0's. A solution might be to first recast part of it before creating the huge array. Another option might be to create the array in this manner, then if all elements across the relevant dimensions are 0, then make it an NA.
+)
+
+testCM[1:3, , 1:2, 1:2]
+
+
+# ==============================================
+# = # If all species are 0, then replace w/ NA =
+# ==============================================
+testCM2 <- testCM 
+testCM2.0s <- apply(testCM2, c(1,2,3), sum)
+dimnames(testCM2.0s) <- NULL
+CM.0toNA.ind <- which(testCM2.0s==0, arr.ind=TRUE)
+CM.0toNA.ind2 <- matrix(
+	c(
+		rep(c(CM.0toNA.ind), each=dim(testCM2)[4]), # simply the array indices from the which() line
+		rep(1:dim(testCM2)[4], nrow(CM.0toNA.ind)) # adding in a 4th column
+	), 
+	ncol=4, 
+	dimnames=list(NULL,c("dim1","dim2","dim3","dim4"))
+)
+testCM2[CM.0toNA.ind2] <- NA
+
+testCM2[1:3, , 1:2, 1:2]
+apply(testCM2, c(1,2,3), sum)
+
+
+
+
+
 
 
 allSpp0 <- trawl2[, 
