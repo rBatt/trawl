@@ -122,3 +122,42 @@ ai2[,s.reg:="ai"]
 # ========
 save(ai2, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/cleanedRegions/ai2.RData")
 
+# ai2[,length(unique(stratum))] # 42
+# ai2[,length(unique(year))] # 11
+# ai2[,length(unique(datetime))] # 4154
+# ai2[,length(unique(haulid))] # 4217
+#
+# dev.new(height=8.5, width=7)
+# par(mfrow=c(4,3), mar=c(1.5,1.5,0.5,0.5), ps=8, cex=1, mgp=c(1,0.15,0), tcl=-0.15)
+# ai2[,K:=length(unique((datetime))), by=c("year","stratum")]
+# maxK <- ai2[,max(K)]
+#
+# ai2[,plot(table(lu(haulid),stratum)), by="year"]
+#
+# test <- ai2[,unique(datetime)[1:4]]
+#
+# ai2[,
+# 	j={
+# 		plot(table(.SD[,list(K=max(K)),by=c("stratum")][,K]),xlab="", ylab="", xlim=c(0,maxK))
+#
+# 	},
+# 	by="year"
+# ]
+#
+#
+# heat.cols <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(maxK)
+# ai3 <- ai2
+# setkey(ai3, stratum, year)
+# ai3 <- unique(ai3)
+# xl <- ai3[,range(roundGrid(lon))]
+# yl <- ai3[,range(roundGrid(lat))]
+# ai3[,
+# 	j={
+# 		# plot(roundGrid(lon),roundGrid(lat), bg=heat.cols[K], pch=21, xlim=xl, ylim=yl, xlab="", ylab="")
+# 		# legend("top", legend=unique(year))
+# 		plot(table())
+# 	}
+#
+# 	,by="year"
+# ]
+#
