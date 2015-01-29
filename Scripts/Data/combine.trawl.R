@@ -12,7 +12,7 @@ library(taxize)
 # =========================
 # = Memory-saving options =
 # =========================
-delOldTrawl <- c(FALSE, TRUE)[2]
+delOldTrawl <- c(FALSE, TRUE)[1]
 
 # =======================
 # = Load data functions =
@@ -68,7 +68,7 @@ trawl00 <- trawl000[!.(badSpp),]
 # = Save Memory #1 =
 # ==================
 if(delOldTrawl){
-	rm(list=trawl000)
+	rm(list="trawl000")
 }
 
 
@@ -172,8 +172,6 @@ if("spp.cmmn1.RData"%in%tax.files){
 save(spp.cmmn1, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/spp.cmmn1.RData")
 
 
-
-
 # ===========================================
 # = Merge sppCorr and common names together =
 # ===========================================
@@ -186,6 +184,7 @@ trawl.newSpp[!grepl("[a-zA-Z]", common)|common=="", common:=as.character(NA)] # 
 # check for duplicates (arising because of different original "spp" value, but resolved to be same sppCorr & common values)
 setkey(trawl.newSpp, sppCorr, common)
 trawl.newSpp <- unique(trawl.newSpp)
+
 
 # ================================
 # = Get Taxonomic Classification =
@@ -258,7 +257,7 @@ if(taxLvl1[,sum(is.na(sppCorr))]==0){
 # ===========================
 # = Trim trawl columns down =
 # ===========================
-trawl4 <- trawl0[,list(region, s.reg, spp, taxLvl, common, year, datetime, stratum, lat, lon, depth, stemp, btemp, wtcpue, cntcpue, correctSpp)]
+trawl4 <- trawl0[,list(region, s.reg, spp, taxLvl, common, year, datetime, haulid, stratum, lat, lon, depth, stemp, btemp, wtcpue, cntcpue, correctSpp)]
 setkey(trawl4, s.reg, taxLvl, spp, year, stratum)
 
 # ==================
@@ -302,6 +301,20 @@ trawl3 <- merge(trawl4, trawl.posix, all.x=TRUE)
 trawl3[,datetime:=datetimeP]
 trawl3 <- trawl3[,j=names(trawl3)[names(trawl3)!="datetimeP"], with=FALSE]
 
+
+# ==========================================
+# = # ====================================
+# = # ==============================
+# = # TODO left off HERE!!!!!! =
+# ============================== =
+# ==================================== =
+# ==========================================
+trawl3[,groupID:=as.character(datetime)]
+trawl3[s.reg=="neus",groupID:=as.character(haulid)]
+dev.new(); par(mfrow=c(4,3))
+trawl3[,lu(paste0(roundGrid(lat,1/3),roundGrid(lon,1/3))),by=c("s.reg","year","stratum")][,plot(table(V1), main=as.character(s.reg)), by="s.reg"]
+
+trawl3[,lu(paste0(roundGrid(lat,1/3),roundGrid(lon,1/3))),by=c("s.reg","year","stratum")][,sum(table(V1)), by="s.reg"] # the number of rep–year–strat combinations per region ... yikes.
 
 # ==================
 # = Save Memory #4 =
@@ -358,7 +371,8 @@ trawl2 <- trawl3[,
 			taxLvl=unique(taxLvl[correctSpp])
 		) 
 	},
-	by=c("region","s.reg","spp","year","stratum")
+	by=c("region","s.reg","spp","year","stratum") # TODO Need to add DoY here; then define the haulid; see example of how i might do this below
+	# uhaulid <- unique(haulid); nhaulid <- length(uhaulid); haulName <- paste(uhaulid[1],nhaulid, sep="-n."); list(...,haulid=haulName, nhaulid=nhaulid)
 ] # note that sometimes wtcpue is 0 when cntcpue is non-0, hence why you can have normal numerics for depth and temp even though there is 0 cpue (which would seemingly imply a no-obs, but that's not necessarily true)
 
 setkey(trawl2, spp, s.reg, year, stratum)
@@ -399,7 +413,7 @@ if(delOldTrawl){
 
 allSpp0 <- trawl2[, 
 	j={
-		yr.strat <- .SD[,list(year=year, stratum=stratum)]
+		yr.strat <- .SD[,list(year=year, stratum=stratum)] # TODO I think it is here that I need to add haulid or DoY so that I can retain hauls and pad
 		setkey(yr.strat, year, stratum)
 		yr.strat <- unique(yr.strat)
 		yr.strat[,ysID:=1:nrow(.SD)]
@@ -447,13 +461,20 @@ trawl1.1[, c("stemp","btemp"):=list(fill.mean(stemp), fill.mean(btemp)), by=c("s
 # = Pad w/ true missingness (as opposed to observed absence) =
 # ============================================================
 # Create the data.table that will hold the spp, s.reg, year, stratum such that for a given species in a given place, we can build a complete time series (missing data gaps to be filled in w/ NA's)
-# allSpp <- trawl2[,CJ(spp=unique(spp)[!is.na(unique(spp))], year=as.character(do.call(":", list(min(year), max(year)))), stratum=unique(stratum)[!is.na(unique(stratum))]), by="s.reg"] # build combinations
-allSpp <- trawl2[,CJ(spp=unique(spp)[!is.na(unique(spp))], year=as.character(unique(year)), stratum=unique(stratum)[!is.na(unique(stratum))]), by="s.reg"] # build combinations
+# allSpp <- trawl2[,CJ(spp=unique(spp)[!is.na(unique(spp))], year=as.character(unique(year)), stratum=unique(stratum)[!is.na(unique(stratum))]), by="s.reg"] # build combinations
+allSpp <- trawl2[,
+			CJ( # TODO K can only be defined once I've decided how to define a rep. I might have to pad the species wtcpue to include unique combinations of days (but not times), so that hauls on the same day are first averaged. Need to pad species wtcpue to have 0's for the different hauls (I'm assuming each haul start at least at a different time of day, even if on same day of year) b/c I obviously need to account for 0's in each haul (I need to linearly remove the effect of effort [put effort in the denominator])
+				spp=unique(spp)[!is.na(unique(spp))], 
+				year=as.character(unique(year)), 
+				stratum=unique(stratum)[!is.na(unique(stratum))],
+				K=unique(K)[!is.na(unique(K))] # K is a rep, or haul; not calling it haul so it doesn't get confused with original haulid (this is necessary b/c I redefine statum, so it's possible for two hauls to actually be reps when they were originally in different strata)
+			 ), 
+			 by="s.reg"] # build combinations
 
 
 # Set keys before merge
-setkey(trawl2, s.reg, spp, year, stratum)
-setkey(allSpp, s.reg, spp, year, stratum) 
+setkey(trawl2, s.reg, spp, year, stratum, K)
+setkey(allSpp, s.reg, spp, year, stratum, K) 
 
 
 
@@ -467,18 +488,18 @@ setkey(allSpp, s.reg, spp, year, stratum)
 if(sum(duplicated(allSpp))==0){
 	# trawl1 <- merge(allSpp, trawl2, all=TRUE, by=c("s.reg","spp","year","stratum"))
 	trawl1.2 <- trawl1.1[allSpp, allow.cartesian=TRUE] # MERGE
-	setkey(trawl1.2, s.reg, spp, year, stratum)
+	setkey(trawl1.2, s.reg, spp, year, stratum, K)
 }else{
 	# Hopefully it never enters this, will probably throw an error if it does
 	trawl1.2 <- trawl1.1[allSpp] # MERGE
-	setkey(trawl1, s.reg, spp, year, stratum)
+	setkey(trawl1, s.reg, spp, year, stratum, K)
 }
 
 # Finish indicating which rows were actually "absence" data vs. "no observation" data
 trawl1.2[is.na(Obsd), Obsd:=FALSE]
 
 # Strip down to names that I want to keep
-trawl1 <- trawl1.2[,list(s.reg, spp, year, stratum, lat, lon, depth, stemp, btemp, wtcpue, Obsd)]
+trawl1 <- trawl1.2[,list(s.reg, spp, year, stratum, K, lat, lon, depth, stemp, btemp, wtcpue, Obsd)]
 
 
 # ==================================================
@@ -505,19 +526,23 @@ trawl2.tax2 <- trawl2.tax[,
 ]
 setkey(trawl2.tax2) # set key in preparation for merge
 
-trawl <- merge(trawl1, trawl2.tax2, by=c("s.reg","spp")) # merge trawl data with rebuilt taxonomic classification
-setkey(trawl, s.reg, spp, stratum, year) # set key
+trawlK <- merge(trawl1, trawl2.tax2, by=c("s.reg","spp")) # merge trawl data with rebuilt taxonomic classification
+setkey(trawlK, s.reg, spp, stratum, year, K) # set key
 
 
 # Need to rebuild numeric variables (but not CPUE data) after filling in time series w/ NA's
 # This has already been done in cases where Obsd is TRUE (done in trawl1.1)
 # Subsetting to !(Obsd) avoid redundancy w/ what was already done in trawl1.1 – should speed up slightly :)
-trawl[!(Obsd), c("lat","lon","depth"):=list(fill.mean(lat), fill.mean(lon), fill.mean(depth)), by=c("s.reg", "stratum")]
-trawl[!(Obsd), c("stemp","btemp"):=list(fill.mean(stemp), fill.mean(btemp)), by=c("s.reg","stratum","year")]
+trawlK[!(Obsd), c("lat","lon","depth"):=list(fill.mean(lat), fill.mean(lon), fill.mean(depth)), by=c("s.reg", "stratum")]
+trawlK[!(Obsd), c("stemp","btemp"):=list(fill.mean(stemp), fill.mean(btemp)), by=c("s.reg","stratum","year", "K")]
+
+
+# Then aggregate across hauls (to be back compat) and generate "trawl"
+
 
 
 # ========
 # = Save =
 # ========
-setkey(trawl, s.reg, spp, year, stratum)
-save(trawl, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/trawl.RData")
+setkey(trawlK, s.reg, spp, year, stratum, K)
+save(trawlK, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/trawlK.RData")
