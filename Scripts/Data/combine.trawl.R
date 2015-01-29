@@ -220,11 +220,47 @@ manualTax[,spp:=cullParen(cullSp(fixCase(cullExSpace(spp))))]
 setkey(manualTax, spp)
 manualTax <- unique(manualTax)
 
+# check to make sure the same sppCorr doesn't match to more than 1 common name in the manual taxonomy
+# checkManDupCmmn <- manualTax[,list(nCmmn=lu(common),cmmn=paste0(unique(common))),by="sppCorr"]
+# checkManDupCmmn[nCmmn!=1]
 
-tns.in.man <- trawl.newSpp[,spp]%in%manualTax[,spp] # find the trawl names in the manual file
-# man.in.tns <- manualTax[,spp]%in%trawl.newSpp[,spp] # find the manual names in the trawl object
-trawl.newSpp2 <- rbind(trawl.newSpp[!tns.in.man], manualTax[, list(sppCorr, spp, common)]) # take all of the trawl object names not found in the manual file, then bind it to all of the manual names that were found in the trawl object
+# ========================================================================
+# = Define intersections of information in automated and manual tax info =
+# ========================================================================
+trawl.newSpp[,c("defined","share.spp","share.sppCorr"):=list("auto",FALSE,FALSE)]
+manualTax[,c("defined","share.spp","share.sppCorr"):=list("manu",FALSE,FALSE)]
 
+shared.spp <- intersect(trawl.newSpp[,spp],manualTax[,spp])
+trawl.newSpp[spp%in%shared.spp, share.spp:=TRUE]
+manualTax[spp%in%shared.spp, share.spp:=TRUE]
+
+shared.sppCorr <- intersect(trawl.newSpp[,sppCorr],manualTax[,sppCorr])
+trawl.newSpp[sppCorr%in%shared.sppCorr, share.sppCorr:=TRUE]
+manualTax[sppCorr%in%shared.sppCorr, share.sppCorr:=TRUE]
+
+# ===============================
+# = Combine Sources of tax info =
+# ===============================
+trawl.newSpp2 <- rbind(manualTax[,list(sppCorr, spp, common, defined, share.spp, share.sppCorr)], trawl.newSpp) # combine sources
+trawl.newSpp2 <- trawl.newSpp2[!share.spp | (share.spp & defined=="manu"),] # remove auto-defs where manu-defs exist
+
+
+# ======================================================================
+# = Check for multiple common names per sppCorr after combine tax info =
+# ======================================================================
+# Check to see if need to replace auto-defined commons with manu-defined commons when share.spp==FALSE & share.sppCorr==TRUE and the two sources don't have the same common names
+check2DupCmmn <- trawl.newSpp2[,list(nCmmn=lu(common),cmmn=paste0(unique(common))),by="sppCorr"]
+if(check2DupCmmn[,any(nCmmn!=1)]){ # don't want to do this automatically b/c it's kinda weird, and I it's currently not necessary
+	trawl.newSpp2 <- trawl.newSpp2[(share.sppCorr), common:=.SD[defined=="manu",unique(common)], by="sppCorr"]
+}
+
+# Check again, just to make sure it worked
+check2DupCmmn2 <- trawl.newSpp2[,list(nCmmn=lu(common),cmmn=paste0(unique(common))),by="sppCorr"]
+if(check2DupCmmn2[,any(nCmmn!=1)]){
+	stop("Something terrible has happened! Well, just duplicate common names per sppCorr, and my correction for this failed ...")
+}else{
+	trawl.newSpp2 <- trawl.newSpp2[,list(sppCorr,spp,common)]
+}
 
 
 # ======================================
