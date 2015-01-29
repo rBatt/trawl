@@ -455,8 +455,8 @@ if(delOldTrawl){
 
 allSpp0 <- trawl2[, 
 	j={
-		yr.strat <- .SD[,list(year=year, stratum=stratum)] # TODO I think it is here that I need to add haulid or DoY so that I can retain hauls and pad
-		setkey(yr.strat, year, stratum)
+		yr.strat <- .SD[,list(year=year, stratum=stratum, K=K)] # TODO I think it is here that I need to add haulid or DoY so that I can retain hauls and pad
+		setkey(yr.strat, year, stratum, K)
 		yr.strat <- unique(yr.strat)
 		yr.strat[,ysID:=1:nrow(.SD)]
 		
@@ -470,28 +470,28 @@ allSpp0 <- trawl2[,
 ]
 
 # Set keys before merge
-setkey(trawl2, s.reg, spp, year, stratum)
-setkey(allSpp0, s.reg, spp, year, stratum) 
+setkey(trawl2, s.reg, spp, year, stratum, K)
+setkey(allSpp0, s.reg, spp, year, stratum, K) 
 
 
 if(sum(duplicated(allSpp0))==0){
 	# trawl1.1 <- merge(allSpp0, trawl2, all=TRUE, by=c("s.reg","spp","year","stratum"))
 	trawl1.1 <- trawl2[allSpp0, allow.cartesian=TRUE] # MERGE
-	setkey(trawl1.1, s.reg, spp, year, stratum)
+	setkey(trawl1.1, s.reg, spp, year, stratum, K)
 }else{
 	# Hopefully it never enters this, will probably throw an error if it does
 	trawl1.1 <- trawl2[allSpp0] # MERGE
-	setkey(trawl1.1, s.reg, spp, year, stratum)
+	setkey(trawl1.1, s.reg, spp, year, stratum, K)
 }
 
-trawl1.1[,length(unique(spp)), by=c("s.reg","stratum","year")]
+# trawl1.1[,length(unique(spp)), by=c("s.reg","stratum","year","K")]
 
 # Indicate that all of these rows were actually observed stratum-year combinations (and possibly obs absences of spp)
 trawl1.1[,Obsd:=TRUE] # mark all rows as being "observed"
 trawl1.1[is.na(wtcpue)&Obsd, wtcpue:=0] # mark observed absences (which are often not recorded, thus NA at this point) as 0's
 
 # Strip down to names that I want to keep
-trawl1.1 <- trawl1.1[,list(s.reg, spp, year, stratum, lat, lon, depth, stemp, btemp, wtcpue, Obsd)]
+trawl1.1 <- trawl1.1[,list(s.reg, year, stratum, nK, K, lat, lon, depth, stemp, btemp, phylum, spp, wtcpue, Obsd)]
 
 
 # Rebuild lat, lon, depth, btemp, stemp
@@ -514,9 +514,26 @@ allSpp <- trawl2[,
 			 by="s.reg"] # build combinations
 
 
+# ============================================================================
+# = # ======================================================================
+# = # ================================================================
+# = # ==========================================================
+# = # ====================================================
+# = left off here .... taking up way too much memory =
+# ==================================================== =
+# ========================================================== =
+# ================================================================ =
+# ====================================================================== =
+# ============================================================================
+# Fix classes for merge (addressing some error message about K being integer and stratum being character)
+trawl1.1[,K:=as.character(K)]
+trawl1.1[,year:=as.character(year)]
+allSpp[,K:=as.character(K)]
+
 # Set keys before merge
-setkey(trawl2, s.reg, spp, year, stratum, K)
-setkey(allSpp, s.reg, spp, year, stratum, K) 
+setkey(trawl1.1, s.reg, year, stratum, K, spp)
+setkey(trawl2, s.reg, year, stratum, K, spp)
+setkey(allSpp, s.reg, year, stratum, K, spp) 
 
 
 
@@ -530,18 +547,18 @@ setkey(allSpp, s.reg, spp, year, stratum, K)
 if(sum(duplicated(allSpp))==0){
 	# trawl1 <- merge(allSpp, trawl2, all=TRUE, by=c("s.reg","spp","year","stratum"))
 	trawl1.2 <- trawl1.1[allSpp, allow.cartesian=TRUE] # MERGE
-	setkey(trawl1.2, s.reg, spp, year, stratum, K)
+	setkey(trawl1.2, s.reg, year, stratum, K, spp)
 }else{
 	# Hopefully it never enters this, will probably throw an error if it does
 	trawl1.2 <- trawl1.1[allSpp] # MERGE
-	setkey(trawl1, s.reg, spp, year, stratum, K)
+	setkey(trawl1, s.reg, year, stratum, K, spp)
 }
 
 # Finish indicating which rows were actually "absence" data vs. "no observation" data
 trawl1.2[is.na(Obsd), Obsd:=FALSE]
 
 # Strip down to names that I want to keep
-trawl1 <- trawl1.2[,list(s.reg, spp, year, stratum, K, lat, lon, depth, stemp, btemp, wtcpue, Obsd)]
+trawl1 <- trawl1.2[,list(s.reg, year, stratum, nK, K, lat, lon, depth, stemp, btemp, phylum, spp, wtcpue, Obsd)]
 
 
 # ==================================================
