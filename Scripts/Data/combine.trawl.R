@@ -222,8 +222,8 @@ manualTax <- unique(manualTax)
 
 
 tns.in.man <- trawl.newSpp[,spp]%in%manualTax[,spp] # find the trawl names in the manual file
-man.in.tns <- manualTax[,spp]%in%trawl.newSpp[,spp] # find the manual names in the trawl object
-trawl.newSpp2 <- rbind(trawl.newSpp[!tns.in.man], manualTax[man.in.tns, list(sppCorr, spp, common)]) # take all of the trawl object names not found in the manual file, then bind it to all of the manual names that were found in the trawl object
+# man.in.tns <- manualTax[,spp]%in%trawl.newSpp[,spp] # find the manual names in the trawl object
+trawl.newSpp2 <- rbind(trawl.newSpp[!tns.in.man], manualTax[, list(sppCorr, spp, common)]) # take all of the trawl object names not found in the manual file, then bind it to all of the manual names that were found in the trawl object
 
 
 
@@ -233,6 +233,7 @@ trawl.newSpp2 <- rbind(trawl.newSpp[!tns.in.man], manualTax[man.in.tns, list(spp
 setkey(trawl.newSpp2, spp)
 setkey(trawl00, spp)
 trawl0 <- merge(trawl00, trawl.newSpp2, all.x=TRUE, by="spp") #trawl[trawl.newSpp]
+
 
 # ==================
 # = Save Memory #2 =
@@ -257,8 +258,8 @@ if(taxLvl1[,sum(is.na(sppCorr))]==0){
 # ===========================
 # = Trim trawl columns down =
 # ===========================
-trawl4 <- trawl0[,list(region, s.reg, spp, taxLvl, common, year, datetime, haulid, stratum, lat, lon, depth, stemp, btemp, wtcpue, cntcpue, correctSpp)]
-setkey(trawl4, s.reg, taxLvl, spp, year, stratum)
+trawl4 <- trawl0[,list(region, s.reg, phylum, spp, taxLvl, common, year, datetime, haulid, stratum, lat, lon, depth, stemp, btemp, wtcpue, cntcpue, correctSpp)] # this is where I drop all of the other pieces of taxonomic information
+setkey(trawl4, s.reg, taxLvl, phylum, spp, year, stratum)
 
 # ==================
 # = Save Memory #3 =
@@ -302,19 +303,19 @@ trawl3[,datetime:=datetimeP]
 trawl3 <- trawl3[,j=names(trawl3)[names(trawl3)!="datetimeP"], with=FALSE]
 
 
-# ==========================================
-# = # ====================================
-# = # ==============================
-# = # TODO left off HERE!!!!!! =
-# ============================== =
-# ==================================== =
-# ==========================================
-trawl3[,groupID:=as.character(datetime)]
-trawl3[s.reg=="neus",groupID:=as.character(haulid)]
-dev.new(); par(mfrow=c(4,3))
-trawl3[,lu(paste0(roundGrid(lat,1/3),roundGrid(lon,1/3))),by=c("s.reg","year","stratum")][,plot(table(V1), main=as.character(s.reg)), by="s.reg"]
+# =================================================
+# = Add Replicates (new version of haulid, kinda) =
+# =================================================
+# trawl3[,groupID:=as.character(datetime)]
+# trawl3[s.reg=="neus",groupID:=as.character(haulid)]
+# dev.new(); par(mfrow=c(4,3))
+# trawl3[,lu(paste0(roundGrid(lat,1/3),roundGrid(lon,1/3))),by=c("s.reg","year","stratum")][,plot(table(V1), main=as.character(s.reg)), by="s.reg"]
+#
+# trawl3[,lu(paste0(roundGrid(lat,1/3),roundGrid(lon,1/3))),by=c("s.reg","year","stratum")][,sum(table(V1)), by="s.reg"] # the number of rep–year–strat combinations per region ... yikes.
 
-trawl3[,lu(paste0(roundGrid(lat,1/3),roundGrid(lon,1/3))),by=c("s.reg","year","stratum")][,sum(table(V1)), by="s.reg"] # the number of rep–year–strat combinations per region ... yikes.
+trawl3[,haulid:=paste0(round(roundGrid(lat,1/3),3),round(roundGrid(lon,1/3),3)), by=c("s.reg","year","stratum")]
+trawl3[,K:=as.integer(as.factor(haulid)), by=c("s.reg","year","stratum")]
+trawl3[,nK:=max(K), by=c("s.reg","year","stratum")]
 
 # ==================
 # = Save Memory #4 =
@@ -369,13 +370,18 @@ trawl2 <- trawl3[,
 			# taxLvl=.SD[correctSpp,unique(taxLvl)]
 			common=unique(common[correctSpp]),
 			taxLvl=unique(taxLvl[correctSpp])
+			
 		) 
 	},
-	by=c("region","s.reg","spp","year","stratum") # TODO Need to add DoY here; then define the haulid; see example of how i might do this below
-	# uhaulid <- unique(haulid); nhaulid <- length(uhaulid); haulName <- paste(uhaulid[1],nhaulid, sep="-n."); list(...,haulid=haulName, nhaulid=nhaulid)
+	by=c("region", "s.reg", "year", "stratum", "K", "nK", "phylum", "spp")
+	 # I wonder if it's faster to include something like "phylum" in the "by" argument, or if I should do somethign more like what I did with common names or taxLvl and just set it as a unique value in the output
 ] # note that sometimes wtcpue is 0 when cntcpue is non-0, hence why you can have normal numerics for depth and temp even though there is 0 cpue (which would seemingly imply a no-obs, but that's not necessarily true)
+setkey(trawl2, s.reg, year, stratum, nK, K, phylum, spp)
 
-setkey(trawl2, spp, s.reg, year, stratum)
+# test <- data.table(
+# 		"t1"=c(rep("chor",20), rep("other",20))
+# 	)
+
 # sum(duplicated(trawl2))
 
 
