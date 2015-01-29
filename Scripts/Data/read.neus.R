@@ -67,6 +67,9 @@ neus000[,c("SEASON", "SVSPP"):=list(as.character(SEASON), as.character(SVSPP))]
 setkey(neus000, SEASON)
 neus00 <- neus000["SPRING"]
 
+# neus00[,lu(STATION),by=c("CRUISE6","STRATUM")][,plot(table(V1))]
+
+
 neus0 <- neus00[j=lapply(list(BIOMASS=BIOMASS, ABUNDANCE=ABUNDANCE), FUN=sumna), by=list(YEAR, SEASON, LAT, LON, DEPTH, CRUISE6, STATION, STRATUM, SVSPP)] # sum different sexes of same spp together; also, as a byproduct, this drops the key from neus000
 # setnames(neus00, 'V1', 'wtcpue')
 setkey(neus0, SEASON, SVSPP, YEAR, LAT, LON, DEPTH, CRUISE6, STATION, STRATUM) # resetting key that was lost during combining sexes
@@ -131,10 +134,19 @@ if(any(i)){
 # =============
 # = Aggregate =
 # =============
-neus[,datetime:=as.character(year)]
+neus[,datetime:=paste(as.character(year),substr(CRUISE6,5,6),"01",sep="-")]
 # setkey(neus, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth, btemp, stemp)
 # neus2 <- neus[j=lapply(list(wtcpue=wtcpue, cntcpue=cntcpue), FUN=sumna), by=key(neus)]
 # neus2 <- neus[j=lapply(list(wtcpue=wtcpue, cntcpue=cntcpue), FUN=meanna), by=key(neus)] # I think cpue should be avgd
+
+
+# neus[,lu(STATION),by=c("CRUISE6","STRATUM")][,plot(table(V1))]
+# =================================
+# = # ===========================
+# = # TODO GOOD IDEA HERE!! =
+# =========================== =
+# =================================
+# neus[,lu(paste0(roundGrid(lat,0.25),roundGrid(lon,0.25))),by=c("year","stratum")][,plot(table(V1))] # this works like a charm! and will be applicable to all regions!!! instead of calling a "replicate" (K) a haul, or a unique day, etc, just define it spatially – substratum! So round the latitude and longitude of a haul to the nearest 1/3 of a º, and you can't have more than 9 reps!
 
 setkey(neus, year, datetime, spp, haulid, stratum, stratumarea, lat, lon, depth)
 neus2 <- neus[j=lapply(list(stemp=stemp, btemp=btemp, wtcpue=wtcpue, cntcpue=cntcpue), FUN=meanna), by=key(neus)]
