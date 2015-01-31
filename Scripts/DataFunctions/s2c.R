@@ -17,7 +17,7 @@ s2c <- function(x, type="list"){
 #
 # oc <- CJ(one=first[,(one)], cray=second[[1]])
 #
-# sub <- sl(c("one","cray"))
+# sub <- s2c(c("one","cray"))
 #
 # oc[,eval(sub)]
 
