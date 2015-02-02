@@ -26,9 +26,13 @@
 #'@param maxOut the maximum number of allowable elements in the output array or data.table. In place to prevent early detection of a huge number of combinations that might use up a larger-than-expected amount of memory.
 
 
-expand.data <- function(comD, arr.dim, fillID=arr.dim, fillValue=NA, Rule, keyID=key(comD), keyValue="value", gScope=NULL, fScope, vScope, redID=NULL, redValue=NULL, arrayOut=FALSE, aggFun=NULL, maxOut=Inf){
+expand.data <- function(comD, arr.dim, fillID=arr.dim, fillValue=NA, Rule, keyID=NULL, keyValue="value", gScope=NULL, fScope, vScope, redID=NULL, redValue=NULL, arrayOut=FALSE, aggFun=NULL, maxOut=Inf){
 
-
+	# =========
+	# = Setup =
+	# =========
+	if(is.null(keyID)){keyID <- key(comD)}
+	
 	# ==========
 	# = Checks =
 	# ==========
@@ -67,12 +71,12 @@ expand.data <- function(comD, arr.dim, fillID=arr.dim, fillValue=NA, Rule, keyID
 	# = Fill out a subset of dimensions =
 	# ===================================
 	# Fill out a subset of dimensions; i.e., the elements of fillID that are not equivalent to arr.dim		
-	setkeyv(comD, c(keyID))
+	setkeyv(comD, c(IDs))
 	
 	id.dt <- comD[,
 		j={
-			idset <- do.call(CJ, lapply(eval(s2c(setdiff(keyID,gScope))), unique))
-			setnames(idset, names(idset), setdiff(keyID,gScope))
+			idset <- do.call(CJ, lapply(eval(s2c(setdiff(IDs,gScope))), unique))
+			setnames(idset, names(idset), setdiff(IDs,gScope))
 			idset
 		},
 		by=c(gScope)
@@ -80,12 +84,17 @@ expand.data <- function(comD, arr.dim, fillID=arr.dim, fillValue=NA, Rule, keyID
 	# setorder(id.dt, s.reg, year, stratum, K, spp)
 	# id.dt[,max(K),by=c("year","stratum")][,lu((V1)),by="year"]
 	
-	setkeyv(id.dt, keyID)
+	setkeyv(id.dt, IDs)
+	# comD[1, value:=NA]
 	expD <- comD[id.dt]
+	keepNA <- expD[is.na(value)&!is.na(comD[id.dt, which=TRUE])] # keeping track of where NA's are in original data set
 	# expD[sample(1:nrow(expD), 100),]
-	if(length(fillID)>1){
+	if(length(fillID)>0){
+		
 		for(i in 1:length(fillID)){
+			
 			t.fID <- fillID[i]
+			
 			if(Rule[i]=="scope"){
 				t.cols <- c(fScope[[i]], t.fID)
 				orig <- unique(data.table(comD[,eval(s2c(t.cols))], key=c(t.cols))) # the original combinations of IDs
@@ -100,8 +109,15 @@ expand.data <- function(comD, arr.dim, fillID=arr.dim, fillValue=NA, Rule, keyID
 				
 				setkeyv(expD, key(orig))
 				expD[orig, t.fill:=fillValue[i]] # new column w/ NA or, if orig IDs found, fillValue
-				expD <- expD[is.na(value), value:=t.fill]
+				expD <- expD[is.na(value), value:=t.fill] # this replaces NAs in the original data set with 0's, see fix in keepNA
 				expD[,t.fill:=NULL]
+				
+				if(nrow(keepNA)>0){ # NAs in original data set will (or can) be replaced by t.fill value, so changing back to NA's
+					setkeyv(expD, IDs)
+					setkeyv(keepNA, IDs)
+					expD[keepNA[,eval(s2c(IDs))],value:=NA]
+				}
+				
 			}
 		}
 	}
@@ -149,35 +165,47 @@ expand.data <- function(comD, arr.dim, fillID=arr.dim, fillValue=NA, Rule, keyID
 
 
 
-
-
-msom.array <- expand.data(
-	comD = testT.sub2,
-	arr.dim = c("stratum", "K", "spp"), # should uniquely define the keyValue when combined with fScope
-	fillID=c("spp","K"),
-	fillValue=c(0,NA), # values to fill with, for a fillID
-	Rule=c("value", "scope"), # does fillID use a non-NA fill value, or does it have restricted (more specific than "global") scope?
-	keyID=key(comD), # column names whose values uniquely identify rows
-	keyValue="value", # the column whose values would fill the array 
-	gScope="s.reg", # global scope
-	fScope=list("s.reg", c("s.reg","year")), # 
-	vScope=list(c("s.reg","stratum","year","K"), NULL),
-	redID=list(c("spp")), redValue=list(c("correctSpp","taxLvl","phylum","common")),
-	arrayOut=TRUE, aggFun=meanna, maxOut=Inf
-)
-
-
-array.filled <- expand.data( # this test the aggregate functionality, data.table output, non-NA fill, 1 fillID
-	comD = testT.sub,
-	arr.dim = c("stratum", "year", "spp"), # should uniquely define the keyValue when combined with fScope
-	fillID=c("spp"),
-	fillValue=c(0), # values to fill with, for a fillID
-	Rule=c("value"), # does fillID use a non-NA fill value, or does it have restricted (more specific than "global") scope?
-	keyID=c("s.reg", "stratum","year","spp"), # column names whose values uniquely identify rows in the input
-	keyValue="value", # the column whose values would fill the array 
-	gScope="s.reg", # global scope
-	fScope=list("s.reg"), # 
-	vScope=list(c("s.reg","stratum","year","spp")),
-	redID=list(c("spp")), redValue=list(c("correctSpp","taxLvl","phylum","common")),
-	arrayOut=FALSE, aggFun=meanna, maxOut=Inf
-)
+# ============
+# = Examples =
+# ============
+# testT2 <- as.data.table(melt(trawl2, id.vars=c("s.reg","year","stratum","K","correctSpp","taxLvl","phylum","spp","common"), measure.vars=c("wtcpue","stemp","btemp","lat","lon","depth")))
+#
+# testT.sub <- testT2[variable=="wtcpue" & s.reg=="gmex" & (!is.na(taxLvl)&taxLvl=="Species") & correctSpp==TRUE]
+# setkey(testT.sub, stratum, K, year, spp)
+#
+# testT.sub <- testT2[variable=="wtcpue" & (!is.na(taxLvl)&taxLvl=="Species") & correctSpp==TRUE]
+# setkey(testT.sub, stratum, K, year, spp)
+#
+# msom.array <- expand.data( # takes ~1.5 seconds (just gmex, wtcpue, Species, correctSpp), original code took 63.6 seconds
+# 	comD = testT.sub,
+# 	arr.dim = c("stratum", "K", "spp"), # should uniquely define the keyValue when combined with fScope
+# 	fillID=c("spp","K"),
+# 	fillValue=c(0,NA), # values to fill with, for a fillID
+# 	Rule=c("value", "scope"), # does fillID use a non-NA fill value, or does it have restricted (more specific than "global") scope?
+# 	keyID=key(comD), # column names whose values uniquely identify rows
+# 	keyValue="value", # the column whose values would fill the array
+# 	gScope="s.reg", # global scope
+# 	fScope=list("s.reg", c("s.reg","year")), #
+# 	vScope=list(c("s.reg","stratum","year","K"), NULL),
+# 	redID=list(c("spp")), redValue=list(c("correctSpp","taxLvl","phylum","common")),
+# 	arrayOut=TRUE, aggFun=meanna, maxOut=Inf
+# )
+#
+#
+# array.filled <- expand.data( # this test the aggregate functionality, data.table output, non-NA fill, 1 fillID
+# 	comD = testT.sub,
+# 	arr.dim = c("stratum", "year", "spp"), # should uniquely define the keyValue when combined with fScope
+# 	fillID=c("spp"),
+# 	fillValue=c(0), # values to fill with, for a fillID
+# 	Rule=c("value"), # does fillID use a non-NA fill value, or does it have restricted (more specific than "global") scope?
+# 	keyID=NULL, #c("s.reg", "stratum","year","spp", "K"), # column names whose values uniquely identify rows in the input
+# 	keyValue="value", # the column whose values would fill the array
+# 	gScope="s.reg", # global scope
+# 	fScope=list("s.reg"), #
+# 	vScope=list(c("s.reg","stratum","year")),
+# 	redID=list(c("spp")), redValue=list(c("correctSpp","taxLvl","phylum","common")),
+# 	arrayOut=FALSE, aggFun=meanna, maxOut=Inf
+# )
+#
+#
+# array.filled[sample(1:nrow(array.filled), 100),]
