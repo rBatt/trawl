@@ -154,9 +154,9 @@ expand.data <- function(comD, arr.dim, fillID=arr.dim, fillValue=NA, Rule, keyID
 	# ================================================================== 
 		if(!is.null(redID)){ # if there are redID's that should be added back in ...
 			for(i in 1:length(redID)){ # for each redundant id/ value ...
-				redNames <- c(redID[[i]], redValue[[i]]) # get the names of the redundant ID (the value chosen to represent others), and the redundant values
-				setkey(expD, spp) # set the key of expD to be 
-				expD <- unique(data.table(comD0[,eval(s2c(redNames))], key=c(redNames)))[expD,][,eval(s2c(c(names(expD),redValue[[i]])))]
+				rN <- c(redID[[i]], redValue[[i]]) # get the names of the redundant ID (the value chosen to represent others), and the redundant values
+				setkeyv(expD, redValue[[i]]) # set the key of expD to be the redID
+				expD <- unique(data.table(comD0[,eval(s2c(rN))], key=c(rN)))[expD,][,eval(s2c(c(names(expD),redValue[[i]])))]
 			} # end loop through redID
 		} # end redID if
 		return(expD)
