@@ -9,14 +9,11 @@ library(reshape2)
 library(data.table)
 
 
-# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rmWhite.R")
-# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/sumna.R")
-# source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/meanna.R")
-
 # =========================
 # = Memory-saving options =
 # =========================
 delOldTrawl <- c(FALSE, TRUE)[1]
+
 
 # =======================
 # = Load data functions =
@@ -119,6 +116,7 @@ raw.and.spp <- unique(raw.and.spp)
 save(raw.and.spp, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/raw.and.spp.RData")
 
 trawl00[,isSpecies:=is.species(spp)] # infer whether the taxa are identified to species or to genus (1 or 2 words)
+
 
 # =============================
 # = Watch out for duplicates? =
@@ -249,15 +247,11 @@ manualTax[sppCorr%in%shared.sppCorr, share.sppCorr:=TRUE]
 trawl.newSpp2 <- rbind(manualTax[,list(sppCorr, spp, common, defined, share.spp, share.sppCorr)], trawl.newSpp) # combine sources
 trawl.newSpp2 <- trawl.newSpp2[!share.spp | (share.spp & defined=="manu"),] # remove auto-defs where manu-defs exist
 
-# searching for why sometimes there are conflicting values of common/phylum/taxLvl/correctSpp etc per value of spp in trawl2
-# trawl.newSpp2[(!share.spp | (share.spp & defined=="manu"))&share.sppCorr, ][duplicated(sppCorr)|duplicated(sppCorr, fromLast=T)]
-
 
 # ======================================================================
 # = Check for multiple common names per sppCorr after combine tax info =
 # ======================================================================
 # Check to see if need to replace auto-defined commons with manu-defined commons when share.spp==FALSE & share.sppCorr==TRUE and the two sources don't have the same common names
-# trawl.newSpp2[, V1:=lu(common), by="sppCorr"][V1!=1] # use this to see where these duplciates happen; the differences in common names between auto and manu indicate that the common names are rather similar
 check2DupCmmn <- trawl.newSpp2[,list(nCmmn=lu(common),cmmn=paste0(unique(common))),by="sppCorr"]
 if(check2DupCmmn[,any(nCmmn!=1)]){ # don't want to do this automatically b/c it's kinda weird, and I it's currently not necessary
 	trawl.newSpp2 <- trawl.newSpp2[(share.sppCorr), common:=.SD[defined=="manu",unique(common)], by="sppCorr"]
@@ -271,13 +265,6 @@ if(check2DupCmmn2[,any(nCmmn!=1)]){
 	trawl.newSpp2 <- trawl.newSpp2[,list(sppCorr,spp,common)]
 }
 
-# checks out
-# trawl.newSpp2[, V1:=lu(common), by="spp"][V1!=1]
-# trawl.newSpp2[,V1:=NULL]
-
-# checks out
-# trawl.newSpp2[, V1:=lu(sppCorr), by="spp"][V1!=1]
-# trawl.newSpp2[,V1:=NULL]
 
 # ======================================
 # = Update species names in trawl data =
@@ -285,24 +272,6 @@ if(check2DupCmmn2[,any(nCmmn!=1)]){
 setkey(trawl.newSpp2, spp)
 setkey(trawl00, spp)
 trawl0 <- merge(trawl00, trawl.newSpp2, all.x=TRUE, by="spp") #trawl[trawl.newSpp]
-
-
-# trawl.newSpp2[!sppCorr%in%spp]
-
-# trawl0[,correctSpp2:=(spp%in%trawl.newSpp2[,spp])]
-
-# checks out
-# trawl0[, V1:=lu(common), by="spp"][V1!=1]
-# trawl0[,V1:=NULL]
-
-# checks out
-# trawl0[, V1:=lu(sppCorr), by="spp"][V1!=1]
-# trawl0[,V1:=NULL]
-
-# this checks
-# rN <- c("spp", "common", "sppCorr")
-# redSet <- unique(data.table(trawl0[,eval(s2c(rN))], key=c(rN)))
-# print(redSet[,{if(.N>1){.SD}},by=c("spp")])
 
 
 # ==================
@@ -314,41 +283,6 @@ if(delOldTrawl){
 
 trawl0[!is.na(sppCorr),spp:=sppCorr]
 trawl0[,correctSpp:=!is.na(sppCorr)]
-
-# booyah! this checks only after not removing different original spp tied to same sppCorr in trawl.newSpp! bug fixed
-# rN <- c("spp", "common", "sppCorr")
-# redSet <- unique(data.table(trawl0[,eval(s2c(rN))], key=c(rN)))
-# print(redSet[,{if(.N>1){.SD}},by=c("spp")])
-
-# these all check out there – no mismatches yet
-# trawl0[(correctSpp - correctSpp2)!=0,]
-# trawl0[, V1:=lu(correctSpp), by="sppCorr"][V1!=1]
-# trawl0[,V1:=NULL]
-
-# trawl0[, V1:=lu(common), by="spp"][V1!=1]
-# trawl0[,V1:=NULL]
-#
-# trawl0[, V1:=lu(common), by="sppCorr"][V1!=1]
-# trawl0[,V1:=NULL]
-#
-# trawl0[(!is.na(sppCorr)), V1:=lu(spp), by="sppCorr"][V1!=1][sppCorr=="Anchoa mitchilli", unique(spp)]
-# trawl0[,V1:=NULL]
-#
-# trawl0[, V1:=lu(correctSpp), by="spp"][V1!=1]
-# trawl0[,V1:=NULL]
-
-# checks out
-# trawl0[, V1:=lu(sppCorr), by="spp"][V1!=1]
-# trawl0[,V1:=NULL]
-
-# doesn't check, lots of FALSE correctSpp
-# trawl0[, V1:=lu(common), by="spp"][V1!=1]
-# trawl0[,V1:=NULL]
-
-# doesn't check, but far fewer than previous
-# trawl0[, V1:=lu(common), by="spp"][V1!=1 & (correctSpp)]
-# trawl0[,V1:=NULL]
-
 trawl0[,sppCorr:=NULL]
 
 setkey(trawl0, spp)
@@ -360,15 +294,14 @@ if(taxLvl1[,sum(is.na(spp))]==0){
 	print("NA's in sppCorr in taxLvl1 !!")
 }
 
-# checks
-# trawl0[, V1:=lu(phylum), by="spp"][V1!=1]
-# trawl0[,V1:=NULL]
 
 # ===========================
 # = Trim trawl columns down =
 # ===========================
 trawl4 <- trawl0[,list(region, s.reg, phylum, spp, taxLvl, common, year, datetime, haulid, stratum, lat, lon, depth, stemp, btemp, wtcpue, cntcpue, correctSpp)] # this is where I drop all of the other pieces of taxonomic information
 setkey(trawl4, s.reg, taxLvl, phylum, spp, year, stratum)
+trawl4[,depth:=as.numeric(depth)]
+
 
 # ==================
 # = Save Memory #3 =
@@ -377,7 +310,6 @@ if(delOldTrawl){
 	rm(list="trawl0")
 }
 
-trawl4[,depth:=as.numeric(depth)]
 
 
 # ====================
@@ -388,18 +320,12 @@ pat2y <- "^(\\d{1,2})(?:[\\/-])(\\d{1,2})(?:[\\/-])(\\d{2})(?=\\s|$)" # for date
 pat4y <- "^(\\d{1,2})(?:[\\/-])(\\d{1,2})(?:[\\/-])(\\d{4})(?=\\s|$)" # for dates like 6/23/2007, or 06/23/2007, etc
 pat4y.only <- "^(\\d{4})$" # for dates that are just the year, e.g., 2007
 
-# test <- c("7/15/10 17:59", "08/03/1997 17:58", "09/01/1987 18:00", "07-17-1991")
-# gsub(pat2y, "20\\3-\\1-\\2", test, perl=TRUE)
-# gsub(pat4y, "\\3-\\1-\\2", test, perl=TRUE)
-# pat.mdy <- "^(\\d{1,2})(?:[\\/-])(\\d{1,2})(?:[\\/-])"
-
 trawl4[,datetime:=gsub(pat2y, "20\\3-\\1-\\2", datetime, perl=TRUE)] # e.g., switch out 6/23/07 for 2007-6-23
 
 trawl4[,datetime:=gsub(pat4y, "\\3-\\1-\\2", datetime, perl=TRUE)] # e.g., switch out 6/23/2007 for 2007-6-23
 
 trawl4[,datetime:=gsub(pat4y.only, "\\1-01-01", datetime, perl=TRUE)] # e.g., switch out 2007 for 2007-01-01
 
-# trawl[,datetime:=as.POSIXct(datetime, tz="GMT")] # note that the times get truncated # too slow, see below for better solution
 
 # ======================
 # = Add POSIX to trawl =
@@ -411,24 +337,13 @@ trawl3 <- merge(trawl4, trawl.posix, all.x=TRUE)
 trawl3[,datetime:=datetimeP]
 trawl3 <- trawl3[,j=names(trawl3)[names(trawl3)!="datetimeP"], with=FALSE]
 
-#checks
-# trawl3[, V1:=lu(phylum), by="spp"][V1!=1]
-# trawl3[,V1:=NULL]
-
 
 # =================================================
 # = Add Replicates (new version of haulid, kinda) =
 # =================================================
-# trawl3[,groupID:=as.character(datetime)]
-# trawl3[s.reg=="neus",groupID:=as.character(haulid)]
-# dev.new(); par(mfrow=c(4,3))
-# trawl3[,lu(paste0(roundGrid(lat,1/3),roundGrid(lon,1/3))),by=c("s.reg","year","stratum")][,plot(table(V1), main=as.character(s.reg)), by="s.reg"]
-#
-# trawl3[,lu(paste0(roundGrid(lat,1/3),roundGrid(lon,1/3))),by=c("s.reg","year","stratum")][,sum(table(V1)), by="s.reg"] # the number of rep–year–strat combinations per region ... yikes.
-
 trawl3[,haulid:=paste0(round(roundGrid(lat,1/3),3),round(roundGrid(lon,1/3),3)), by=c("s.reg","year","stratum")]
 trawl3[,K:=as.integer(as.factor(haulid)), by=c("s.reg","year","stratum")]
-# trawl3[,nK:=max(K), by=c("s.reg","year","stratum")]
+
 
 # ==================
 # = Save Memory #4 =
@@ -437,35 +352,6 @@ if(delOldTrawl){
 	rm(list="trawl4")
 }
 
-
-# ======================================================================
-# = In the past, my save object was basically the equivalent of trawl3 =
-# ======================================================================
-
-# ================================
-# = Aggregate and Pad Trawl Data =
-# ================================
-# Make sure each species in each stratum (by=s.reg) has a row
-# Then aggregate by averaging wtcpue
-
-# First, need to do a bit of aggregating to make sure that duplicates weren't creating when finding the correct species names
-# Ha, they were definitely created
-# I think the problem (or part of it, at least), may be related to the way in which I build upon the common, tax lvl, and spp name files; in particular, I think that because I've begun to institutte new restrictions on what constitutes a valid common name, that now there are both "corrSpp" TRUE and FALSE for the same original raw species name. The particular case of this that I'm thinking of while writing this is where I strip out any name matches (for common) with foriegn characters. Not entirely sure where this lack of match ends up converting into a corrSpp being F, though
-# Anyway, I need to do some condensing here.
-
-# checks ...
-# trawl3[, V1:=lu(phylum), by="spp"][V1!=1]
-# trawl3[,V1:=NULL]
-
-# doesn't check, appears to be just b/c correctSpp isn't matched for for all for a given spp ... really weird, to me 
-# trawl3[, V1:=lu(common), by="spp"][V1!=1][,list(lu(spp), lu(common))]
-# trawl3[,V1:=NULL]
-
-trawl3[spp=="Squatina dumeril", unique(common)]
-
-# rN <- c("spp", "common", "phylum", "correctSpp", "taxLvl")
-# redSet <- unique(data.table(trawl3[,eval(s2c(rN))], key=c(rN)))
-# print(redSet[,{if(.N>1){.SD}},by=c("spp")])
 
 # ==================================
 # = Prepare Padding by Aggregating =
