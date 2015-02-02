@@ -1,9 +1,13 @@
 
 
-library(data.table)
+
 library(rfishbase)
-library(plyr)
 library(taxize)
+library(plyr)
+library(reshape)
+library(reshape2)
+library(data.table)
+
 
 # source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/rmWhite.R")
 # source("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions/sumna.R")
@@ -428,6 +432,52 @@ if(delOldTrawl){
 	rm(list="trawl3")
 }
 
+
+# ===============================================
+# = Add missing species, padding w/ 0's or NA's =
+# ===============================================
+# ============================
+# = Add missing combinations =
+# ============================
+# Make sure all of a region's strata are present in all years
+# Make sure all of a region's species are present in each stratum in each year
+# If the s.reg-stratum-year was present, but the s.reg-stratum-year-spp was not, fill in w/ 0, NA otherwise
+# Aggregate among "K" replicate hauls (substrata)
+trawl <- array.filled <- expand.data( # this test the aggregate functionality, data.table output, non-NA fill, 1 fillID
+	comD = testT.sub,
+	arr.dim = c("stratum", "year", "spp"), # should uniquely define the keyValue when combined with fScope
+	fillID=c("spp"),
+	fillValue=c(0), # values to fill with, for a fillID
+	Rule=c("value"), # does fillID use a non-NA fill value, or does it have restricted (more specific than "global") scope?
+	keyID=NULL, #c("s.reg", "stratum","year","spp", "K"), # column names whose values uniquely identify rows in the input
+	keyValue="value", # the column whose values would fill the array
+	gScope="s.reg", # global scope
+	fScope=list("s.reg"), #
+	vScope=list(c("s.reg","stratum","year")),
+	redID=list(c("spp")), redValue=list(c("correctSpp","taxLvl","phylum","common")),
+	arrayOut=FALSE, aggFun=meanna, maxOut=Inf
+)
+
+
+# array.filled <- expand.data( # this test the aggregate functionality, data.table output, non-NA fill, 1 fillID
+# 	comD = testT.sub,
+# 	arr.dim = c("stratum", "year", "spp"), # should uniquely define the keyValue when combined with fScope
+# 	fillID=c("spp"),
+# 	fillValue=c(0), # values to fill with, for a fillID
+# 	Rule=c("value"), # does fillID use a non-NA fill value, or does it have restricted (more specific than "global") scope?
+# 	keyID=NULL, #c("s.reg", "stratum","year","spp", "K"), # column names whose values uniquely identify rows in the input
+# 	keyValue="value", # the column whose values would fill the array
+# 	gScope="s.reg", # global scope
+# 	fScope=list("s.reg"), #
+# 	vScope=list(c("s.reg","stratum","year")),
+# 	redID=list(c("spp")), redValue=list(c("correctSpp","taxLvl","phylum","common")),
+# 	arrayOut=FALSE, aggFun=meanna, maxOut=Inf
+# )
+
+
+
+
+
 # save.image("~/Desktop/quickPickUp_combineTrawl.asdf982734FAK.RData")
 # =====================================================
 # = Pad species absences (actual observations of 0's) =
@@ -452,6 +502,14 @@ if(delOldTrawl){
 # 	by=c("s.reg")
 # ]
 
+# =========================================================================================================
+# # = # ===================================================================================================
+# # = # =============================================================================================
+# save.image("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Results/ctSave.RData")
+# load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Results/ctSave.RData")
+# # ============================================================================================= =
+# # =================================================================================================== =
+# # =========================================================================================================
 
 # =========================================
 # = # ===================================
@@ -466,15 +524,96 @@ if(delOldTrawl){
 # ==================================
 # = Example of how to prepare MSOM =
 # ==================================
-testT2 <- melt(trawl2, id.vars=c("s.reg","year","stratum","K","correctSpp","taxLvl","phylum","spp","common"), measure.vars=c("wtcpue","stemp","btemp","lat","lon","depth"))
+testT2 <- as.data.table(melt(trawl2, id.vars=c("s.reg","year","stratum","K","correctSpp","taxLvl","phylum","spp","common"), measure.vars=c("wtcpue","stemp","btemp","lat","lon","depth")))
+
+testT.sub <- testT2[variable=="wtcpue" & s.reg=="gmex" & (!is.na(taxLvl)&taxLvl=="Species") & correctSpp==TRUE]
+setkey(testT.sub, stratum, K, year, spp)
 
 # create a test community matrix for an msom
 testCM <- cast(
-	data=testT2[variable=="wtcpue" & s.reg=="gmex" & (!is.na(taxLvl)&taxLvl=="Species") & correctSpp==TRUE], 
+	data=testT.sub, 
 	formula=stratum~K~year~spp, 
 	drop=FALSE, # don't drop missing combinations!
 	fill=0, # fill missing combinations with 0's; this is problematic because missing stratum-year-K combinations should result in NA's, whereas missingness due to absent species should be filled with 0's. A solution might be to first recast part of it before creating the huge array. Another option might be to create the array in this manner, then if all elements across the relevant dimensions are 0, then make it an NA.
 )
+
+
+
+
+testT.sub2 <- testT.sub#[sample(1:nrow(testT.sub), 1E1)]
+setkey(testT.sub2, spp, stratum, year)
+
+
+
+# oc[,eval(parse(text="one"))]
+
+
+
+# fill$ID[[1]] <- "spp"
+# fill$Value[[1]] <- 0
+# fill$By[[1]] <- c("s.reg","stratum","year")
+
+# add in extra species to the existing year-stratum combinations, filling with 0's
+# make X the desired setup of keyID entries, then fill in with i as the original data set
+testT.sub3 <- testT.sub2[,list(value=meanna(value)), by=key(testT.sub2)] # aggregate step: used when not all of the values in keyID are part of 
+
+testT.sub3[,uid1:=.GRP, by=c("stratum","year")]
+setkey(testT.sub3, uid1)
+# id1.dt <- testT.sub3[,{idset<-CJ(unique(uid1), spp=unique(spp));cbind(.SD[idset[,V1],list(stratum,year)], idset[,.(spp)])}]
+id1.dt <- testT.sub3[,{idset<-CJ(uid1=unique(uid1), spp=unique(spp)); setkey(idset,uid1); idset[unique(.SD[,.(uid1, stratum, year)])]}]
+setkeyv(id1.dt, cols=c("spp", "stratum", "year"))
+setkeyv(testT.sub3, cols=c("spp","stratum","year"))
+fill.gaps <- testT.sub3[id1.dt, which=TRUE, allow.cartesian=TRUE]
+id1.dt[,c("value"):=testT.sub3[fill.gaps,.(value)]]
+id1.dt[is.na(fill.gaps),c("value"):=0]
+
+# Always the final step
+id1.dt[,uid1:=NULL]
+setkey(id1.dt, stratum, year, spp)
+expD <- id1.dt[do.call(CJ, lapply(eval(s2c(arr.dim)), unique))]
+setkey(expD, year, stratum, spp)
+
+# expD[sample(1:1E5, 1E2)] # just check to see what random parts of it look like
+
+
+
+
+
+
+
+
+
+testT.sub3[CJ(spp=unique(spp), stratum=stratum), which=NA, allow.cartesian=TRUE]
+
+J(CJ(c(1,1,1,2),c(1,2,3)), CJ(c(5,5,6,6),c(1,2,3)))
+
+
+# then add in any missing year-stratum-species combinations, filling with NA's
+
+
+
+
+testT.sub2[CJ(spp=unique(spp))]
+adsf <- testT.sub2[CJ(spp=unique(spp), stratum=unique(stratum), year=unique(year)), allow.cartesian=TRUE]
+
+testCM.dt2a <- 
+
+first <- data.table(cray=sample(letters,4),"one"=c(1,2,3,4), "two"=c(1,3,5,7))
+second <- data.table("cray"=sample(letters,35, TRUE))
+oc <- CJ(one=first[,(one)], cray=second[[1]])
+
+
+setkey(first, one, cray)
+setkey(second, cray)
+
+first[second, roll=TRUE, rollends=TRUE]
+
+
+first[oc, which=NA]
+
+tc <- CJ(two=first[,(two)], cray=second[[1]], key="cray")
+
+
 
 # testCM[1:3, , 1:2, 1:2]
 
@@ -495,8 +634,43 @@ CM.0toNA.ind2 <- matrix(
 )
 testCM2[CM.0toNA.ind2] <- NA
 
+
+test.a.m <- melt(testCM2, varnames=c("stratum","K","year","spp"), value.name="wtcpue")
+
+
 # testCM2[1:3, , 1:2, 1:2]
 # apply(testCM2, c(1,2,3), sum)
+
+# ================================================
+# = Create trawl for diverseData using cast melt =
+# ================================================
+
+# First, extract the tax info
+testTax <- testT2[,list(s.reg,taxLvl,phylum,spp,common)] # save this information for a merge later – currently just inflates factor combinations
+setkey(testTax, s.reg, spp)
+testTax <- unique(testTax)
+
+# Second, average across K, and cast out environmental/ geographical information (so that it can be removed, like tax info)
+# "DD" refers to diverse data
+testDD <- dcast.data.table(testT2, s.reg+year+stratum+spp~variable, meanna) # averages across K
+
+# Third, extract the environmental/geographical information (later to be covariates)
+testCov <- testDD[,list(s.reg, year, stratum, btemp, lat, lon, depth)]
+setkey(testCov, s.reg, year, stratum)
+testCov <- unique(testCov)
+
+# Fourth, include all combinations of year-stratum-spp within a region, and only cast wtcpue on RHS so Covariates are dropped
+# By including all combinations, missing values will be filled with 0. In a laster step, if all species have 0 for a Y-S-S combo, then change the wtcpue column to NA
+testDD2 <- dcast.data.table(testDD, s.reg+year+stratum~spp, value.var="wtcpue", drop=FALSE, fill=NA_real_)
+
+
+# testDD[ # expand to include all year-stratum-spp combinations
+# 	j={
+# 		dcast.data.table(.SD, year+stratum+spp~., value.var="wtcpue", drop=FALSE, fill=NA_real_)
+# 	},
+# 	by=c("s.reg")
+# ]
+
 
 
 
@@ -506,7 +680,7 @@ testCM2[CM.0toNA.ind2] <- NA
 
 allSpp0 <- trawl2[, 
 	j={
-		yr.strat <- .SD[,list(year=year, stratum=stratum]
+		yr.strat <- .SD[,list(year=year, stratum=stratum)]
 		setkey(yr.strat, year, stratum)
 		yr.strat <- unique(yr.strat)
 		yr.strat[,ysID:=1:nrow(.SD)]
@@ -577,14 +751,14 @@ allSpp <- trawl2[,
 # ====================================================================== =
 # ============================================================================
 # Fix classes for merge (addressing some error message about K being integer and stratum being character)
-trawl1.1[,K:=as.character(K)]
+# trawl1.1[,K:=as.character(K)]
 trawl1.1[,year:=as.character(year)]
-allSpp[,K:=as.character(K)]
+# allSpp[,K:=as.character(K)]
 
 # Set keys before merge
-setkey(trawl1.1, s.reg, year, stratum, K, spp)
-setkey(trawl2, s.reg, year, stratum, K, spp)
-setkey(allSpp, s.reg, year, stratum, K, spp) 
+setkey(trawl1.1, s.reg, year, stratum, spp)
+setkey(trawl2, s.reg, year, stratum, spp)
+setkey(allSpp, s.reg, year, stratum, spp) 
 
 
 
@@ -637,7 +811,7 @@ trawl2.tax2 <- trawl2.tax[,
 setkey(trawl2.tax2) # set key in preparation for merge
 
 trawl <- merge(trawl1, trawl2.tax2, by=c("s.reg","spp")) # merge trawl data with rebuilt taxonomic classification
-setkey(trawlK, s.reg, spp, stratum, year) # set key
+setkey(trawl, s.reg, spp, stratum, year) # set key
 
 
 # Need to rebuild numeric variables (but not CPUE data) after filling in time series w/ NA's
@@ -654,5 +828,5 @@ trawl[!(Obsd), c("stemp","btemp"):=list(fill.mean(stemp), fill.mean(btemp)), by=
 # ========
 # = Save =
 # ========
-setkey(trawlK, s.reg, spp, year, stratum)
-save(trawlK, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/trawl.RData")
+setkey(trawl, s.reg, spp, year, stratum)
+save(trawl, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/trawl.RData")
