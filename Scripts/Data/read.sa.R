@@ -79,6 +79,8 @@ setnames(sa.catch00, c("DATE", "COLLECTIONNUMBER", "SPECIESSCIENTIFICNAME", "SPE
 # ===========================================
 sa.catch0 <- sa.catch00[PROJECTNAME!=""&DEPTHZONE=="INNER", list(datetime, spp, common, haulid, stratum, LATITUDESTART, LATITUDEEND, LONGITUDESTART, LONGITUDEEND, stemp, btemp, cnt, wt, effort)]
 
+sa.catch0 <- sa.catch0[effort!=0 | is.na(effort)] # remove rows where the effort was reported as 0 (alternatively, these could be changed to NA, which might still be useful b/c you'd know that a species was observed, just not abundance or biomass)
+
 
 # ================================
 # = Fix lat/lon, add stratumarea =
