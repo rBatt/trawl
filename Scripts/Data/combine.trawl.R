@@ -16,7 +16,7 @@ library(data.table)
 # =========================
 # = Memory-saving options =
 # =========================
-delOldTrawl <- c(FALSE, TRUE)[2]
+delOldTrawl <- c(FALSE, TRUE)[1]
 
 # =======================
 # = Load data functions =
@@ -186,7 +186,8 @@ trawl.newSpp <- spp.corr1[unique(spp.cmmn1)]
 trawl.newSpp[!grepl("[a-zA-Z]", common)|common=="", common:=as.character(NA)] # remove any common names that don't contain english chars
 
 # check for duplicates (arising because of different original "spp" value, but resolved to be same sppCorr & common values)
-setkey(trawl.newSpp, sppCorr, common)
+# actually, i need to keep those different original spp values! otherwise I can't match back to original data set :(
+setkey(trawl.newSpp, spp, sppCorr, common)
 trawl.newSpp <- unique(trawl.newSpp)
 
 
@@ -248,11 +249,15 @@ manualTax[sppCorr%in%shared.sppCorr, share.sppCorr:=TRUE]
 trawl.newSpp2 <- rbind(manualTax[,list(sppCorr, spp, common, defined, share.spp, share.sppCorr)], trawl.newSpp) # combine sources
 trawl.newSpp2 <- trawl.newSpp2[!share.spp | (share.spp & defined=="manu"),] # remove auto-defs where manu-defs exist
 
+# searching for why sometimes there are conflicting values of common/phylum/taxLvl/correctSpp etc per value of spp in trawl2
+# trawl.newSpp2[(!share.spp | (share.spp & defined=="manu"))&share.sppCorr, ][duplicated(sppCorr)|duplicated(sppCorr, fromLast=T)]
+
 
 # ======================================================================
 # = Check for multiple common names per sppCorr after combine tax info =
 # ======================================================================
 # Check to see if need to replace auto-defined commons with manu-defined commons when share.spp==FALSE & share.sppCorr==TRUE and the two sources don't have the same common names
+# trawl.newSpp2[, V1:=lu(common), by="sppCorr"][V1!=1] # use this to see where these duplciates happen; the differences in common names between auto and manu indicate that the common names are rather similar
 check2DupCmmn <- trawl.newSpp2[,list(nCmmn=lu(common),cmmn=paste0(unique(common))),by="sppCorr"]
 if(check2DupCmmn[,any(nCmmn!=1)]){ # don't want to do this automatically b/c it's kinda weird, and I it's currently not necessary
 	trawl.newSpp2 <- trawl.newSpp2[(share.sppCorr), common:=.SD[defined=="manu",unique(common)], by="sppCorr"]
@@ -266,6 +271,13 @@ if(check2DupCmmn2[,any(nCmmn!=1)]){
 	trawl.newSpp2 <- trawl.newSpp2[,list(sppCorr,spp,common)]
 }
 
+# checks out
+# trawl.newSpp2[, V1:=lu(common), by="spp"][V1!=1]
+# trawl.newSpp2[,V1:=NULL]
+
+# checks out
+# trawl.newSpp2[, V1:=lu(sppCorr), by="spp"][V1!=1]
+# trawl.newSpp2[,V1:=NULL]
 
 # ======================================
 # = Update species names in trawl data =
@@ -273,6 +285,24 @@ if(check2DupCmmn2[,any(nCmmn!=1)]){
 setkey(trawl.newSpp2, spp)
 setkey(trawl00, spp)
 trawl0 <- merge(trawl00, trawl.newSpp2, all.x=TRUE, by="spp") #trawl[trawl.newSpp]
+
+
+# trawl.newSpp2[!sppCorr%in%spp]
+
+# trawl0[,correctSpp2:=(spp%in%trawl.newSpp2[,spp])]
+
+# checks out
+# trawl0[, V1:=lu(common), by="spp"][V1!=1]
+# trawl0[,V1:=NULL]
+
+# checks out
+# trawl0[, V1:=lu(sppCorr), by="spp"][V1!=1]
+# trawl0[,V1:=NULL]
+
+# this checks
+# rN <- c("spp", "common", "sppCorr")
+# redSet <- unique(data.table(trawl0[,eval(s2c(rN))], key=c(rN)))
+# print(redSet[,{if(.N>1){.SD}},by=c("spp")])
 
 
 # ==================
@@ -285,15 +315,54 @@ if(delOldTrawl){
 trawl0[!is.na(sppCorr),spp:=sppCorr]
 trawl0[,correctSpp:=!is.na(sppCorr)]
 
-setkey(trawl0, sppCorr)
+# booyah! this checks only after not removing different original spp tied to same sppCorr in trawl.newSpp! bug fixed
+# rN <- c("spp", "common", "sppCorr")
+# redSet <- unique(data.table(trawl0[,eval(s2c(rN))], key=c(rN)))
+# print(redSet[,{if(.N>1){.SD}},by=c("spp")])
+
+# these all check out there – no mismatches yet
+# trawl0[(correctSpp - correctSpp2)!=0,]
+# trawl0[, V1:=lu(correctSpp), by="sppCorr"][V1!=1]
+# trawl0[,V1:=NULL]
+
+# trawl0[, V1:=lu(common), by="spp"][V1!=1]
+# trawl0[,V1:=NULL]
+#
+# trawl0[, V1:=lu(common), by="sppCorr"][V1!=1]
+# trawl0[,V1:=NULL]
+#
+# trawl0[(!is.na(sppCorr)), V1:=lu(spp), by="sppCorr"][V1!=1][sppCorr=="Anchoa mitchilli", unique(spp)]
+# trawl0[,V1:=NULL]
+#
+# trawl0[, V1:=lu(correctSpp), by="spp"][V1!=1]
+# trawl0[,V1:=NULL]
+
+# checks out
+# trawl0[, V1:=lu(sppCorr), by="spp"][V1!=1]
+# trawl0[,V1:=NULL]
+
+# doesn't check, lots of FALSE correctSpp
+# trawl0[, V1:=lu(common), by="spp"][V1!=1]
+# trawl0[,V1:=NULL]
+
+# doesn't check, but far fewer than previous
+# trawl0[, V1:=lu(common), by="spp"][V1!=1 & (correctSpp)]
+# trawl0[,V1:=NULL]
+
+trawl0[,sppCorr:=NULL]
+
+setkey(trawl0, spp)
 # taxLvl1[,sum(is.na(sppCorr))] # this needs to be 0
-if(taxLvl1[,sum(is.na(sppCorr))]==0){
+setnames(taxLvl1, "sppCorr", "spp")
+if(taxLvl1[,sum(is.na(spp))]==0){
 	trawl0 <- merge(trawl0, taxLvl1, all.x=TRUE)
 }else{
 	print("NA's in sppCorr in taxLvl1 !!")
 }
 
-
+# checks
+# trawl0[, V1:=lu(phylum), by="spp"][V1!=1]
+# trawl0[,V1:=NULL]
 
 # ===========================
 # = Trim trawl columns down =
@@ -342,6 +411,10 @@ trawl3 <- merge(trawl4, trawl.posix, all.x=TRUE)
 trawl3[,datetime:=datetimeP]
 trawl3 <- trawl3[,j=names(trawl3)[names(trawl3)!="datetimeP"], with=FALSE]
 
+#checks
+# trawl3[, V1:=lu(phylum), by="spp"][V1!=1]
+# trawl3[,V1:=NULL]
+
 
 # =================================================
 # = Add Replicates (new version of haulid, kinda) =
@@ -355,7 +428,7 @@ trawl3 <- trawl3[,j=names(trawl3)[names(trawl3)!="datetimeP"], with=FALSE]
 
 trawl3[,haulid:=paste0(round(roundGrid(lat,1/3),3),round(roundGrid(lon,1/3),3)), by=c("s.reg","year","stratum")]
 trawl3[,K:=as.integer(as.factor(haulid)), by=c("s.reg","year","stratum")]
-trawl3[,nK:=max(K), by=c("s.reg","year","stratum")]
+# trawl3[,nK:=max(K), by=c("s.reg","year","stratum")]
 
 # ==================
 # = Save Memory #4 =
@@ -379,19 +452,38 @@ if(delOldTrawl){
 # Ha, they were definitely created
 # I think the problem (or part of it, at least), may be related to the way in which I build upon the common, tax lvl, and spp name files; in particular, I think that because I've begun to institutte new restrictions on what constitutes a valid common name, that now there are both "corrSpp" TRUE and FALSE for the same original raw species name. The particular case of this that I'm thinking of while writing this is where I strip out any name matches (for common) with foriegn characters. Not entirely sure where this lack of match ends up converting into a corrSpp being F, though
 # Anyway, I need to do some condensing here.
+
+# checks ...
+# trawl3[, V1:=lu(phylum), by="spp"][V1!=1]
+# trawl3[,V1:=NULL]
+
+# doesn't check, appears to be just b/c correctSpp isn't matched for for all for a given spp ... really weird, to me 
+# trawl3[, V1:=lu(common), by="spp"][V1!=1][,list(lu(spp), lu(common))]
+# trawl3[,V1:=NULL]
+
+trawl3[spp=="Squatina dumeril", unique(common)]
+
+# rN <- c("spp", "common", "phylum", "correctSpp", "taxLvl")
+# redSet <- unique(data.table(trawl3[,eval(s2c(rN))], key=c(rN)))
+# print(redSet[,{if(.N>1){.SD}},by=c("spp")])
+
 # ==================================
 # = Prepare Padding by Aggregating =
 # ==================================
-trawl2 <- trawl3[,
+# this could probably be made much faster by using lapply at the end, but that's a little difficult b/c different columns require different functions
+trawl2 <- trawl3[, # this aggregates among multiple hauls within the same substratum (K); 
 	{
-		# just some checks to make sure that weird things don't happen
-		if(length(unique(common[correctSpp]))>1){
-			print(unique(common[correctSpp]))
-			stop("trying to add too many common names – apparent correct match of species name to multiple commons")
+		if(length(unique(common))>1){
+			print(unique(common))
+			stop("trying to add too many common names – match of species name to multiple commons")
 		}
-		if(length(unique(taxLvl[correctSpp]))>1){
-			print(unique(taxLvl[correctSpp]))
-			stop("trying to add too many taxLvl – apparent correct match of species name to multiple taxonomic classifications")
+		if(length(unique(taxLvl))>1){
+			print(unique(taxLvl))
+			stop("trying to add too many taxLvl – match of species name to multiple taxonomic classifications")
+		}
+		if(length(unique(phylum))>1){
+			print(unique(phylum))
+			stop("trying to add too many phylum – match of species name to multiple taxonomic classifications")
 		}
 		
 		# OK, create condensed output list
@@ -408,22 +500,14 @@ trawl2 <- trawl3[,
 			correctSpp=any(correctSpp),
 			# common=.SD[correctSpp,unique(common)],
 			# taxLvl=.SD[correctSpp,unique(taxLvl)]
-			common=unique(common[correctSpp]),
-			taxLvl=unique(taxLvl[correctSpp])
-			
+			common=unique(common),
+			taxLvl=unique(taxLvl),
+			phylum=unique(phylum)	
 		) 
 	},
-	by=c("region", "s.reg", "year", "stratum", "K", "nK", "phylum", "spp")
-	 # I wonder if it's faster to include something like "phylum" in the "by" argument, or if I should do somethign more like what I did with common names or taxLvl and just set it as a unique value in the output
+	by=c("region", "s.reg", "year", "stratum", "K", "spp")
 ] # note that sometimes wtcpue is 0 when cntcpue is non-0, hence why you can have normal numerics for depth and temp even though there is 0 cpue (which would seemingly imply a no-obs, but that's not necessarily true)
-setkey(trawl2, s.reg, year, stratum, nK, K, phylum, spp)
-
-# test <- data.table(
-# 		"t1"=c(rep("chor",20), rep("other",20))
-# 	)
-
-# sum(duplicated(trawl2))
-
+setkey(trawl2, s.reg, year, stratum, K, phylum, spp)
 
 # ==================
 # = Save Memory #5 =
@@ -443,18 +527,27 @@ if(delOldTrawl){
 # Make sure all of a region's species are present in each stratum in each year
 # If the s.reg-stratum-year was present, but the s.reg-stratum-year-spp was not, fill in w/ 0, NA otherwise
 # Aggregate among "K" replicate hauls (substrata)
-trawl <- array.filled <- expand.data( # this test the aggregate functionality, data.table output, non-NA fill, 1 fillID
-	comD = testT.sub,
-	arr.dim = c("stratum", "year", "spp"), # should uniquely define the keyValue when combined with fScope
+trawl2[,nK:=NULL]
+setkey(trawl2, s.reg, year, stratum, K, spp)
+trawl <- expand.data(
+	comD = trawl2,
+	arr.dim = c("stratum", "year", "spp"), # should uniquely define the keyValue ONLY WHEN combined with fScope (don't accidentally include the gScope value here)
 	fillID=c("spp"),
 	fillValue=c(0), # values to fill with, for a fillID
 	Rule=c("value"), # does fillID use a non-NA fill value, or does it have restricted (more specific than "global") scope?
 	keyID=NULL, #c("s.reg", "stratum","year","spp", "K"), # column names whose values uniquely identify rows in the input
-	keyValue="value", # the column whose values would fill the array
+	keyValue="wtcpue", # the column whose values would fill the array
 	gScope="s.reg", # global scope
 	fScope=list("s.reg"), #
 	vScope=list(c("s.reg","stratum","year")),
-	redID=list(c("spp")), redValue=list(c("correctSpp","taxLvl","phylum","common")),
+	redID=list(
+		c("spp"),
+		c("s.reg","year","stratum","spp")
+	), 
+	redValue=list(
+		c("correctSpp","taxLvl","phylum","common"),
+		c("lat", "lon", "depth", "stemp", "btemp")
+	),
 	arrayOut=FALSE, aggFun=meanna, maxOut=Inf
 )
 
