@@ -35,7 +35,9 @@ expand.data <- function(comD, arr.dim, keyValue="value", fillID=NULL, fillValue=
 		stop("there is a bug in setting keyID from the key of comD ... I do not understand it either")
 		keyID <- key(comD)
 	}
-	comD0 <- comD
+	comD <- copy(comD)
+	setnames(comD, keyValue, "value")
+	# comD0 <- copy(comD)
 
 
 	# ==========
@@ -43,7 +45,7 @@ expand.data <- function(comD, arr.dim, keyValue="value", fillID=NULL, fillValue=
 	# ==========
 	stopifnot(require(data.table))
 	stopifnot(is.data.table(comD))
-	stopifnot(class(fillValue)==class(comD[,eval(parse(text=keyValue))]))
+	stopifnot(class(fillValue)==class(comD[,value]))
 	stopifnot(length(redID)==length(redValue))
 	stopifnot(length(fillID)==length(fillValue))
 	nrow.out <- comD[,prod(sapply(eval(s2c(keyID)), lu))]
@@ -60,20 +62,12 @@ expand.data <- function(comD, arr.dim, keyValue="value", fillID=NULL, fillValue=
 	# TODO  should probably implement a check to make sure that the values in redID don't imply that the output should contain more columns than what are suggested by arr.dim, gScope, and fScope combined.
 	
 	
-	# ============================================
-	# = Aggregate keyValue over marginal keyID's =
-	# ============================================
+	# ========================
+	# = A few initial values =
+	# ========================
 	IDs <- unique(c(gScope, unlist(fScope), arr.dim)) # basically the keyID of the *output* data.table. arr.dim defines the keyID of each array in the list, but the levels of the list (or data.tables stacked on each other, as opposed to crossed) are defined by gScope and fScope
 	aggID <- setdiff(keyID, IDs)
-	if(length(aggID)>0){ # determines if it's necessary to aggregate
-		if(is.null(aggFun)){stop("arr.dim is a subset of names in keyID; must provide an aggregation function via aggFun")}
-		aggFun <- match.fun(aggFun)
-		comD <- comD[,value:=eval(s2c(keyValue))] # I overwrite comD to save memory
-		comD <- comD[,list(value=aggFun(value)), by=IDs] # aggregate step: used when not all of the values in keyID are part of arr.dim
-	}else{ # if it's not necessary to aggregate, still need to format a bit and drop extra columns
-		comD <- comD[,value:=eval(s2c(keyValue))] # TODO should avoid creating a duplicate column just for naming convenience. either delete the old column then name it back later, or just stick to using the actual column name. The former is probably preferable b/c it would save computing eval(s2c()) over and over again
-		comD <- comD[,eval(s2c(c(IDs,"value")))]
-	}
+	aggFun <- match.fun(aggFun)
 	
 	
 	# ===========================================
@@ -86,28 +80,45 @@ expand.data <- function(comD, arr.dim, keyValue="value", fillID=NULL, fillValue=
 			trV <- redValue[[i]]
 			rN <- c(trID, trV) # get the names of the redundant ID (the value chosen to represent others), and the redundant values
 			
-			setkeyv(comD0, trID) # set the key of expD to be the redID
+			setkeyv(comD, trID) # set the key of expD to be the redID
 			
-			redSet <- unique(data.table(comD0[,eval(s2c(rN))], key=c(rN)))
-			
-			
+			redSet <- unique(data.table(comD[,eval(s2c(rN))], key=c(rN)))
 			
 			# Check to see if redID uniquely identifies the contents of redValue
-			isUnique.red <- nrow(redSet) == nrow(unique(data.table(comD0[,eval(s2c(trID))], key=c(trID))))
+			isUnique.red <- nrow(redSet) == comD[,(.GRP),by=c(trID)][,max(V1)]
 			if(!isUnique.red){
 				if(redSet[,any(sapply(eval(s2c(trV)), class)%in%c("factor","character"))]){
 					print(redSet[,{if(.N>1){.SD}},by=c(trID)]) # give user a hint at what went wrong
 					stop(paste0("redID ", "\"", trID, "\" ", "does not uniquely define redValue, and redValue contains factors and characters"))
 				}else{
 					# warning(paste0("redID ", "\"", trID, "\" ", "does not uniquely define redValue, using aggFun"))
-					redSet <- redSet[, lapply(eval(s2c(trV)), aggFun), keyby=c(trID)]
-					setnames(redSet, names(redSet), c(rN))
+					redSet <- redSet[, lapply(eval(s2c(trV)), aggFun), keyby=c(trID)] # aggregate numerics using something like mean
+					setnames(redSet, names(redSet), c(rN)) # change oclumn names
 				}
 			}
 			
 			redFill[[i]] <- redSet
 		} # end loop through redID
 	} # end redID if
+	
+	
+	
+	
+	# ============================================
+	# = Aggregate keyValue over marginal keyID's =
+	# ============================================
+
+	if(length(aggID)>0){ # determines if it's necessary to aggregate
+		if(is.null(aggFun)){stop("arr.dim is a subset of names in keyID; must provide an aggregation function via aggFun")}
+		# comD <- comD[,value:=eval(s2c(keyValue))] # I overwrite comD to save memory
+		comD <- comD[,list(value=aggFun(value)), by=IDs] # aggregate step: used when not all of the values in keyID are part of arr.dim
+	}else{ # if it's not necessary to aggregate, still need to format a bit and drop extra columns
+		# comD <- comD[,value:=eval(s2c(keyValue))] # TODO should avoid creating a duplicate column just for naming convenience. either delete the old column then name it back later, or just stick to using the actual column name. The former is probably preferable b/c it would save computing eval(s2c()) over and over again
+		comD <- comD[,eval(s2c(c(IDs,"value")))]
+	}
+	
+	
+	
 	
 	
 	# ===============================
@@ -128,7 +139,7 @@ expand.data <- function(comD, arr.dim, keyValue="value", fillID=NULL, fillValue=
 	# =======================================
 	# = Merge crossed IDs with data (value) =
 	# =======================================
-	setkeyv(comD, c(IDs))
+	setkeyv(comD, IDs)
 	setkeyv(id.dt, IDs)
 	expD <- comD[id.dt] # the merge
 	# note that an error messages in the previous line can result from not having the correct keyID (not specific enough keyID)
@@ -158,12 +169,13 @@ expand.data <- function(comD, arr.dim, keyValue="value", fillID=NULL, fillValue=
 			}
 			
 			if(Rule[i]=="value"){ # Change exploded NA's to fillValue
-				t.cols <- c(vScope[[i]])
+				t.cols <- vScope[[i]]
 				orig <- unique(data.table(comD[,eval(s2c(t.cols))], key=c(t.cols))) # the original combinations of IDs
 				
 				setkeyv(expD, key(orig))
 				expD[orig, t.fill:=fillValue[i]] # new column w/ NA or, if orig IDs found, fillValue
-				expD <- expD[is.na(value), value:=t.fill] # # Switch (all!) NA's to fillValue
+				# expD <- expD[is.na(value), value:=t.fill] # # Switch (all!) NA's to fillValue
+				expD[is.na(value), value:=t.fill] # # Switch (all!) NA's to t.fill
 				expD[,t.fill:=NULL]
 				
 				if(nrow(keepNA)>0){ # NAs in original data set will (or can) be replaced by t.fill value, so changing back to NA's
@@ -185,24 +197,37 @@ expand.data <- function(comD, arr.dim, keyValue="value", fillID=NULL, fillValue=
 		if(is.null(outScope)){
 			outsize <- 1
 		}else{
-			outsize <- nrow(unique(data.table(expD[,eval(s2c(outScope))], key=c(outScope)))) # the number of arrays
+			outsize <- expD[,(.GRP),by=c(outScope)][,max(V1)] # the number of arrays
+			# data.table(expD[,eval(s2c(outScope))], key=c(outScope))
+			# f1 <- function(){expD[,(.GRP),by=c(outScope)][,max(V1)]}
+			# f2 <- function(){nrow(unique(data.table(expD[,eval(s2c(outScope))], key=c(outScope))))}
+			# microbenchmark(f1(), f2())
+			# Unit: milliseconds
+			#  expr       min        lq    median        uq       max neval
+			#  f1()  5.392243  5.827234  7.086189  7.396109  19.42331   100
+			#  f2() 20.786155 28.467275 31.921193 37.772441 101.12979   100
 		}
 		
 		array.list <- vector("list", outsize) # preallocate data array
 		array.key <- vector("list", outsize) # the list of arrays can be long and hard to navigate; this key will supply the outScope combinations present in each element of the array.list output list
 		
-		# TODO might be a problem with array formation
+		# TODO might be a problem with array formation FIXED
 		# trawl2[s.reg=="ai"&year=="1983"&stratum=="-165.5 54.5"] # so that stratum doesn't exist
 		# test <- msom.dat[[1]][[1]]
 		# apply(test, c(1), sumna) # it is here, apparently ...
+		# apply(test, c(1,3), sumna)[1,] # it is here, apparently ...
 		# msom.dat[[2]][1,]
 		# good news is that this mistake doesn't seem to be present in the data.table output format:
 		# trawl[s.reg=="ai"&year=="1983"&stratum=="-165.5 54.5", sum(!is.na(value))]
 		
+		setkeyv(expD, c(outScope,rev(arr.dim)))
 		
+		# test <- expD[s.reg=="ai"&year==1983]
 		invisible(expD[, # within the j of this data.table, build each element of the output array list
 			j={
+				# dim.names <- lapply(test[,eval(s2c(arr.dim))], unique)
 				dim.names <- lapply(.SD[,eval(s2c(arr.dim))], unique)
+				# array.list[[.GRP]] <<- array(test[,value], dim=sapply(dim.names, length), dimnames=dim.names)
 				array.list[[.GRP]] <<- array(.SD[,value], dim=sapply(dim.names, length), dimnames=dim.names)
 				
 				if(!is.null(outScope)){
@@ -230,11 +255,13 @@ expand.data <- function(comD, arr.dim, keyValue="value", fillID=NULL, fillValue=
 			for(i in 1:length(redID)){ # for each redundant id/ value ...
 				setkeyv(expD, redID[[i]])
 				setkeyv(redFill[[i]], redID[[i]])
-				expD <- redFill[[i]][expD,][,eval(s2c(c(names(expD),redValue[[i]])))] # 1st part merges, 2nd reorders columns
+				# expD <- redFill[[i]][expD,][,eval(s2c(c(names(expD),redValue[[i]])))] # 1st part merges, 2nd reorders columns
+				expD <- setcolorder(redFill[[i]][expD,], c(names(expD), redValue[[i]])) # this should be faster
 			} # end loop through redID
 		} # end redID if
 	
 		setkeyv(expD, IDs)
+		setnames(expD, "value", keyValue)
 		return(expD) # return data.table 
 	
 	} # end if(){}else{} for arrayOut
