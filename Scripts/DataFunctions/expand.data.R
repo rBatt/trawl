@@ -26,13 +26,18 @@
 #'@param maxOut the maximum number of allowable elements in the output array or data.table. In place to prevent early detection of a huge number of combinations that might use up a larger-than-expected amount of memory.
 
 
-expand.data <- function(comD, arr.dim, fillID=arr.dim, fillValue=NA, Rule, keyID=NULL, keyValue="value", gScope=NULL, fScope, vScope, redID=NULL, redValue=NULL, arrayOut=FALSE, aggFun=NULL, maxOut=Inf){
+expand.data <- function(comD, arr.dim, keyValue="value", fillID=NULL, fillValue=NA, Rule=NULL, keyID=NULL, gScope=NULL, fScope=NULL, vScope=NULL, redID=NULL, redValue=NULL, arrayOut=FALSE, aggFun=NULL, maxOut=Inf){
 
 	# =========
 	# = Setup =
 	# =========
-	if(is.null(keyID)){keyID <- key(comD)}
-	
+	if(is.null(keyID)){
+		stop("there is a bug in setting keyID from the key of comD ... I do not understand it either")
+		keyID <- key(comD)
+	}
+	comD0 <- comD
+
+
 	# ==========
 	# = Checks =
 	# ==========
@@ -48,31 +53,68 @@ expand.data <- function(comD, arr.dim, fillID=arr.dim, fillValue=NA, Rule, keyID
 	}else{
 		stopifnot(size.out<=maxOut)
 	}
+	stopifnot(is.null(gScope) | !gScope%in%arr.dim)
+	if(is.null(fillID)){
+		stopifnot(is.null(unlist(list(fillID, fScope, vScope, Rule))))
+	}
+	# TODO  should probably implement a check to make sure that the values in redID don't imply that the output should contain more columns than what are suggested by arr.dim, gScope, and fScope combined.
 	
 	
-	# ===================================
-	# = Aggregate over marginal keyID's =
-	# ===================================
-	IDs <- unique(c(gScope, unlist(fScope), arr.dim)) # basically the keyID of the *output* data.table # TODO this definition is broken when trying to aggregate across K
+	# ============================================
+	# = Aggregate keyValue over marginal keyID's =
+	# ============================================
+	IDs <- unique(c(gScope, unlist(fScope), arr.dim)) # basically the keyID of the *output* data.table. arr.dim defines the keyID of each array in the list, but the levels of the list (or data.tables stacked on each other, as opposed to crossed) are defined by gScope and fScope
 	aggID <- setdiff(keyID, IDs)
-	comD0 <- comD
 	if(length(aggID)>0){ # determines if it's necessary to aggregate
 		if(is.null(aggFun)){stop("arr.dim is a subset of names in keyID; must provide an aggregation function via aggFun")}
 		aggFun <- match.fun(aggFun)
 		comD <- comD[,value:=eval(s2c(keyValue))] # I overwrite comD to save memory
 		comD <- comD[,list(value=aggFun(value)), by=IDs] # aggregate step: used when not all of the values in keyID are part of arr.dim
 	}else{ # if it's not necessary to aggregate, still need to format a bit and drop extra columns
-		comD <- comD[,value:=eval(s2c(keyValue))]
+		comD <- comD[,value:=eval(s2c(keyValue))] # TODO should avoid creating a duplicate column just for naming convenience. either delete the old column then name it back later, or just stick to using the actual column name. The former is probably preferable b/c it would save computing eval(s2c()) over and over again
 		comD <- comD[,eval(s2c(c(IDs,"value")))]
 	}
 	
 	
-	# ===================================
-	# = Fill out a subset of dimensions =
-	# ===================================
-	# Fill out a subset of dimensions; i.e., the elements of fillID that are not equivalent to arr.dim		
-	setkeyv(comD, c(IDs))
+	# ===========================================
+	# = Aggregate redValues over marginal keyID =
+	# ===========================================
+	if(!is.null(redID)){ # if there are redID's that should be added back in ...
+		redFill <- vector("list", length(redID))
+		for(i in 1:length(redID)){ # for each redundant id/ value ...
+			trID <- redID[[i]]
+			trV <- redValue[[i]]
+			rN <- c(trID, trV) # get the names of the redundant ID (the value chosen to represent others), and the redundant values
+			
+			setkeyv(comD0, trID) # set the key of expD to be the redID
+			
+			redSet <- unique(data.table(comD0[,eval(s2c(rN))], key=c(rN)))
+			
+			
+			
+			# Check to see if redID uniquely identifies the contents of redValue
+			isUnique.red <- nrow(redSet) == nrow(unique(data.table(comD0[,eval(s2c(trID))], key=c(trID))))
+			if(!isUnique.red){
+				if(redSet[,any(sapply(eval(s2c(trV)), class)%in%c("factor","character"))]){
+					print(redSet[,{if(.N>1){.SD}},by=c(trID)]) # give user a hint at what went wrong
+					stop(paste0("redID ", "\"", trID, "\" ", "does not uniquely define redValue, and redValue contains factors and characters"))
+				}else{
+					# warning(paste0("redID ", "\"", trID, "\" ", "does not uniquely define redValue, using aggFun"))
+					redSet <- redSet[, lapply(eval(s2c(trV)), aggFun), keyby=c(trID)]
+					setnames(redSet, names(redSet), c(rN))
+				}
+			}
+			
+			redFill[[i]] <- redSet
+		} # end loop through redID
+	} # end redID if
 	
+	
+	# ===============================
+	# = Cross all IDs not in gScope =
+	# ===============================
+	# I think of this as "exploding" the data.table (but uses gScope to "contain" the explosion)
+	# The explosion (id.dt) only contains the combinations of IDs, not the values
 	id.dt <- comD[,
 		j={
 			idset <- do.call(CJ, lapply(eval(s2c(setdiff(IDs,gScope))), unique))
@@ -81,41 +123,53 @@ expand.data <- function(comD, arr.dim, fillID=arr.dim, fillValue=NA, Rule, keyID
 		},
 		by=c(gScope)
 	]
-	# setorder(id.dt, s.reg, year, stratum, K, spp)
-	# id.dt[,max(K),by=c("year","stratum")][,lu((V1)),by="year"]
 	
+	
+	# =======================================
+	# = Merge crossed IDs with data (value) =
+	# =======================================
+	setkeyv(comD, c(IDs))
 	setkeyv(id.dt, IDs)
-	# comD[1, value:=NA]
-	expD <- comD[id.dt]
-	keepNA <- expD[is.na(value)&!is.na(comD[id.dt, which=TRUE])] # keeping track of where NA's are in original data set
-	# expD[sample(1:nrow(expD), 100),]
+	expD <- comD[id.dt] # the merge
+	# note that an error messages in the previous line can result from not having the correct keyID (not specific enough keyID)
+	
+		
+	# ==================================================
+	# = Trim and polish explosion in fillID dimensions =
+	# ==================================================
+	# The trim is if Rule = scope, and involves deleting some unecessary combinations
+	# The polish is if Rule = value, and involves altering the value of missings created by the explosion
 	if(length(fillID)>0){
 		
-		for(i in 1:length(fillID)){
+		# First, have to safeguard against polishing gone awry (changing an intentional NA to fillValue)
+		# Note that this next line needs to be executed before expD is altered (which is why it isn't under Rule[i]=="value")
+		keepNA <- expD[is.na(value)&!is.na(comD[id.dt, which=TRUE])] # keeping track of where NA's are in original data set
+		
+		for(i in 1:length(fillID)){ # For each dimension of the explosion that is to be tamed ...
 			
-			t.fID <- fillID[i]
+			t.fID <- fillID[i] # assign the temporary ID of the dimension
 			
-			if(Rule[i]=="scope"){
+			if(Rule[i]=="scope"){ # Remove unnecessary (wrong) combinations
 				t.cols <- c(fScope[[i]], t.fID)
 				orig <- unique(data.table(comD[,eval(s2c(t.cols))], key=c(t.cols))) # the original combinations of IDs
 		
 				setkeyv(expD, key(orig))
-				expD <- expD[orig]
+				expD <- expD[orig] # merge (join, subset, really)
 			}
 			
-			if(Rule[i]=="value"){
+			if(Rule[i]=="value"){ # Change exploded NA's to fillValue
 				t.cols <- c(vScope[[i]])
 				orig <- unique(data.table(comD[,eval(s2c(t.cols))], key=c(t.cols))) # the original combinations of IDs
 				
 				setkeyv(expD, key(orig))
 				expD[orig, t.fill:=fillValue[i]] # new column w/ NA or, if orig IDs found, fillValue
-				expD <- expD[is.na(value), value:=t.fill] # this replaces NAs in the original data set with 0's, see fix in keepNA
+				expD <- expD[is.na(value), value:=t.fill] # # Switch (all!) NA's to fillValue
 				expD[,t.fill:=NULL]
 				
 				if(nrow(keepNA)>0){ # NAs in original data set will (or can) be replaced by t.fill value, so changing back to NA's
 					setkeyv(expD, IDs)
 					setkeyv(keepNA, IDs)
-					expD[keepNA[,eval(s2c(IDs))],value:=NA]
+					expD[keepNA[,eval(s2c(IDs))],value:=NA] # Change original NA's back to NA
 				}
 				
 			}
@@ -128,7 +182,12 @@ expand.data <- function(comD, arr.dim, fillID=arr.dim, fillValue=NA, Rule, keyID
 	if(arrayOut){ # return if array
 		
 		outScope <- union(unlist(gScope), unlist(fScope)) # the output scope determiens the number of arrays that need to be formed
-		outsize <- nrow(unique(data.table(expD[,eval(s2c(outScope))], key=c(outScope)))) # the number of arrays
+		if(is.null(outScope)){
+			outsize <- 1
+		}else{
+			outsize <- nrow(unique(data.table(expD[,eval(s2c(outScope))], key=c(outScope)))) # the number of arrays
+		}
+		
 		array.list <- vector("list", outsize) # preallocate data array
 		array.key <- vector("list", outsize) # the list of arrays can be long and hard to navigate; this key will supply the outScope combinations present in each element of the array.list output list
 		
@@ -136,31 +195,41 @@ expand.data <- function(comD, arr.dim, fillID=arr.dim, fillValue=NA, Rule, keyID
 			j={
 				dim.names <- lapply(.SD[,eval(s2c(arr.dim))], unique)
 				array.list[[.GRP]] <<- array(.SD[,value], dim=sapply(dim.names, length), dimnames=dim.names)
-				array.key[[.GRP]] <<- c(unlist(.BY),.GRP) # grab the names of the by= groups, add them to the output key
+				
+				if(!is.null(outScope)){
+					array.key[[.GRP]] <<- c(unlist(.BY),.GRP) # grab the names of the by= groups, add them to the output key
+				}
+				
 			},
 			by=c(outScope)
 		])
 		
 		# lapply(array.list, dim)
 		
-		array.key <- data.table(matrix(unlist(array.key), ncol=length(outScope)+1, byrow=TRUE)) # build the key to the output array
-		setnames(array.key, names(array.key), c(outScope, "num")) # key the key
+		if(!is.null(outScope)){
+			array.key <- data.table(matrix(unlist(array.key), ncol=length(outScope)+1, byrow=TRUE)) # build the key to the output array
+			setnames(array.key, names(array.key), c(outScope, "num")) # key the key
+		}
 		
 		return(list(array.list=array.list, array.key=array.key)) # return the output array and its key (stops function)
 		
 	}else{ # end first half of if(arrayOut), begin alternative
-	# ==================================================================
-	# = If not an array, return formatted data table with "red" values =
-	# ================================================================== 
+		# ==================================================================
+		# = If not an array, return formatted data table with "red" values =
+		# ================================================================== 
 		if(!is.null(redID)){ # if there are redID's that should be added back in ...
 			for(i in 1:length(redID)){ # for each redundant id/ value ...
-				rN <- c(redID[[i]], redValue[[i]]) # get the names of the redundant ID (the value chosen to represent others), and the redundant values
-				setkeyv(expD, redValue[[i]]) # set the key of expD to be the redID
-				expD <- unique(data.table(comD0[,eval(s2c(rN))], key=c(rN)))[expD,][,eval(s2c(c(names(expD),redValue[[i]])))]
+				setkeyv(expD, redID[[i]])
+				setkeyv(redFill[[i]], redID[[i]])
+				expD <- redFill[[i]][expD,][,eval(s2c(c(names(expD),redValue[[i]])))] # 1st part merges, 2nd reorders columns
 			} # end loop through redID
 		} # end redID if
-		return(expD)
+	
+		setkeyv(expD, IDs)
+		return(expD) # return data.table 
+	
 	} # end if(){}else{} for arrayOut
+		
 } # end expand.data()
 
 
