@@ -1,0 +1,41 @@
+model{
+
+	#Define prior distributions for community-level model parameters
+	omega ~ dunif(0,1)
+
+	u.mean ~ dunif(0,1)
+	mu.u <- log(u.mean) - log(1-u.mean)
+
+	v.mean ~ dunif(0,1)
+	mu.v <- log(v.mean) - log(1-v.mean)
+
+	tau.u ~ dgamma(0.1,0.1)
+	tau.v ~ dgamma(0.1,0.1)
+
+	for(i in 1:(n+nzeroes)){
+		#Create priors for species i from the community level prior distributions
+		w[i] ~ dbern(omega)
+		u[i] ~ dnorm(mu.u, tau.u)
+		v[i] ~ dnorm(mu.v, tau.v)
+
+		#Create a loop to estimate the Z matrix (true occurrence for species i at point j.
+		for (j in 1:J){
+			logit(psi[j,i]) <- u[i]
+
+			mu.psi[j,i] <- psi[j,i]*w[i]
+			Z[j,i] ~ dbern(mu.psi[j,i])
+
+			#Create a loop to estimate detection for species i at point k during #sampling period k.
+			for(k in 1:K[j]){
+				logit(p[j,k,i]) <-  v[i]
+				mu.p[j,k,i] <- p[j,k,i]*Z[j,i]
+				X[j,k,i] ~ dbern(mu.p[j,k,i])
+			}   	
+		}		
+	}
+
+	#Sum all species observed (n) and unobserved species (n0) to find the
+	#total estimated richness
+	n0 <- sum(w[(n+1):(n+nzeroes)])
+	N <- n + n0
+}
