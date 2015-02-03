@@ -14,7 +14,14 @@ library(data.table)
 # =======================
 # = Load data functions =
 # =======================
-data.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions"
+# data.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions"
+# invisible(sapply(paste(data.location, list.files(data.location), sep="/"), source, .GlobalEnv))
+
+
+# =======================
+# = Load data functions =
+# =======================
+data.location <- "./trawl/Scripts/DataFunctions"
 invisible(sapply(paste(data.location, list.files(data.location), sep="/"), source, .GlobalEnv))
 
 
@@ -59,7 +66,8 @@ trawl <- expand.data(
 # = Save =
 # ========
 setkey(trawl, s.reg, spp, year, stratum)
-save(trawl, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/trawl.RData")
+# save(trawl, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/trawl.RData")
+save(trawl, file="./trawl/Data/trawl.RData")
 rm(list="trawl")
 
 	#
@@ -112,8 +120,8 @@ msom.dat <- expand.data(
 # ========
 # = Save =
 # ========
-save(msom.dat, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/msom.dat.RData")
-
+# save(msom.dat, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/msom.dat.RData")
+save(msom.dat, file="./trawl/Data/msom.dat.RData")
 
 #
 # trawl.test <- trawl2[s.reg%in%c("gmex","ai","neus") & year%in%c("1983","1986")]
@@ -133,11 +141,3 @@ save(msom.dat, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/m
 # aggFun=meanna
 # maxOut=Inf
 #
-
-
-
-
-
-
-
-
