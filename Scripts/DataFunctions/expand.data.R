@@ -191,6 +191,15 @@ expand.data <- function(comD, arr.dim, keyValue="value", fillID=NULL, fillValue=
 		array.list <- vector("list", outsize) # preallocate data array
 		array.key <- vector("list", outsize) # the list of arrays can be long and hard to navigate; this key will supply the outScope combinations present in each element of the array.list output list
 		
+		# TODO might be a problem with array formation
+		# trawl2[s.reg=="ai"&year=="1983"&stratum=="-165.5 54.5"] # so that stratum doesn't exist
+		# test <- msom.dat[[1]][[1]]
+		# apply(test, c(1), sumna) # it is here, apparently ...
+		# msom.dat[[2]][1,]
+		# good news is that this mistake doesn't seem to be present in the data.table output format:
+		# trawl[s.reg=="ai"&year=="1983"&stratum=="-165.5 54.5", sum(!is.na(value))]
+		
+		
 		invisible(expD[, # within the j of this data.table, build each element of the output array list
 			j={
 				dim.names <- lapply(.SD[,eval(s2c(arr.dim))], unique)
