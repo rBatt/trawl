@@ -222,6 +222,15 @@ expand.data <- function(comD, arr.dim, keyValue="value", fillID=NULL, fillValue=
 		
 		setkeyv(expD, c(outScope,rev(arr.dim)))
 		
+		# test.dt <- data.table(cbind(CJ(stratum=(1:7), K=(1:3), spp=c("cat","dog")), value=1:42), key=rev(c("stratum","K","spp")))
+		# test.dt[,value:=1:42]
+		# dim.names <- lapply(test.dt[,eval(s2c(c("stratum","K","spp")))], unique)
+		# array(test.dt[,value], dim=sapply(dim.names, length), dimnames=dim.names)
+		# cast(test.dt, stratum~K~spp)
+		
+		# expD[stratum=="-188.5 53.5" & year=="1983"]
+		# array.list[[1]]["-188.5 53.5",,"Albatrossia pectoralis"]
+		
 		# test <- expD[s.reg=="ai"&year==1983]
 		invisible(expD[, # within the j of this data.table, build each element of the output array list
 			j={
@@ -229,6 +238,7 @@ expand.data <- function(comD, arr.dim, keyValue="value", fillID=NULL, fillValue=
 				dim.names <- lapply(.SD[,eval(s2c(arr.dim))], unique)
 				# array.list[[.GRP]] <<- array(test[,value], dim=sapply(dim.names, length), dimnames=dim.names)
 				array.list[[.GRP]] <<- array(.SD[,value], dim=sapply(dim.names, length), dimnames=dim.names)
+				# array.list[[.GRP]] <<- cast(.SD, stratum~K~spp)
 				
 				if(!is.null(outScope)){
 					array.key[[.GRP]] <<- c(unlist(.BY),.GRP) # grab the names of the by= groups, add them to the output key
@@ -237,7 +247,9 @@ expand.data <- function(comD, arr.dim, keyValue="value", fillID=NULL, fillValue=
 			},
 			by=c(outScope)
 		])
-		
+		# apply(array.list[[1]], c(1,2), sumna)
+		# expD[,sumna(value),by=c("s.reg","year","stratum","K")][,any(V1==0)]
+		# comD[,sumna(value),by=c("s.reg","year","stratum","K")][,any(V1==0)]
 		# lapply(array.list, dim)
 		
 		if(!is.null(outScope)){
