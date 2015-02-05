@@ -56,7 +56,8 @@ if(Sys.info()["sysname"]=="Windows"){
 	nC <- floor(detectCores()*0.75)
 	registerDoParallel(cores=nC)
 }else if(Sys.info()["sysname"]=="Linux"){
-	registerDoParallel(cores=min(c(25,floor(detectCores()*0.75))))
+	# registerDoParallel(cores=min(c(25,floor(detectCores()*0.75))))
+	registerDoParallel(floor(detectCores()*0.75))
 }else{
 	registerDoParallel()
 }
