@@ -74,7 +74,7 @@ trawl <- expand.data(
 setkey(trawl, s.reg, spp, year, stratum)
 # save(trawl, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/trawl.RData")
 save(trawl, file="./trawl/Data/trawl.RData")
-rm(list="trawl")
+# rm(list="trawl")
 
 	#
 	#
