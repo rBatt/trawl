@@ -6,7 +6,6 @@ echo "Pushing to amphiprion"
 rsync -azP "./School&Work" ryanb@amphiprion.deenr.rutgers.edu:~/Documents/
 # rsync -aznP "./School&Work" ryanb@amphiprion.deenr.rutgers.edu:~/Documents/
 
-
 cd ..
 echo "Pulling from amphiprion"
 rsync -azP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work' "./Documents/"
@@ -23,5 +22,8 @@ rsync -aP --delete "./School&Work" ryanb@amphiprion.deenr.rutgers.edu:~/Document
 # Download the msom.dat.RData file from amphiprion
 cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
 rsync -azuP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Data/msom.dat.RData' "./Data/"
+
+# Download the trawl.RData file 
+rsync -azuP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Data/trawl.RData' "./Data/"
 
 
