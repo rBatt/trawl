@@ -1,4 +1,11 @@
 
+# ================
+# = JAGS Options =
+# ================
+nChains <- 5
+nIter <- 5E3
+n0s <- 100
+
 
 # =================
 # = Load packages =
@@ -10,6 +17,7 @@ library(reshape)
 library(reshape2)
 library(data.table)
 library(R2jags)
+library(doParallel)
 
 
 # ===============================
@@ -70,13 +78,13 @@ comb <- function(...){
 t.dat <- msom.dat[[1]][[1]] # subset to data for first run
 keep.strat <- apply(t.dat, 1, function(x)!all(is.na(x))) # which strata were never sampled?
 t.dat <- t.dat[keep.strat,,] # remove strata that were never sampled
-first.out <- rich.basic(t.dat, nzeroes=20, nChains=2, nIter=5E2) # run the model for the first subset
+first.out <- rich.basic(t.dat, nzeroes=n0s, nChains=nChains, nIter=nIter) # run the model for the first subset
 
 richness.basic.out <- foreach(i=(2:(length(msom.dat[[1]])-1)), .combine=comb, .init=first.out, .multicombine=TRUE) %dopar%{ # run all other subsets in parallel
 	t.dat <- msom.dat[[1]][[i]] # subset to current iteration
 	keep.strat <- apply(t.dat, 1, function(x)!all(is.na(x))) # figure out which strata to toss out
 	t.dat <- t.dat[keep.strat,,] # only keep observed strata
-	rich.basic(t.dat, nzeroes=20, nChains=2, nIter=1E2) # do analysis for this subset
+	rich.basic(t.dat, nzeroes=n0s, nChains=nChains, nIter=nIter) # do analysis for this subset
 }
 
 
@@ -85,5 +93,5 @@ richness.basic.out <- foreach(i=(2:(length(msom.dat[[1]])-1)), .combine=comb, .i
 # testing[[10]][[3]] # is the normal bugs output for the third run
 
 
-
+save(richness.basic.out, file="./trawl/Results/Richness/richness.basic.out.RData")
 
