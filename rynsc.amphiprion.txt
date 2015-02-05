@@ -1,0 +1,27 @@
+#!/bin/bash
+
+cd "/Users/Battrd/Documents"
+
+echo "Pushing to amphiprion"
+rsync -azP "./School&Work" ryanb@amphiprion.deenr.rutgers.edu:~/Documents/
+# rsync -aznP "./School&Work" ryanb@amphiprion.deenr.rutgers.edu:~/Documents/
+
+
+cd ..
+echo "Pulling from amphiprion"
+rsync -azP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work' "./Documents/"
+# rsync -aznP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work' "./Documents/"
+
+
+cd ./Documents
+echo "Deleting files on amphiprion if they don't exist locally"
+rsync -aP --delete "./School&Work" ryanb@amphiprion.deenr.rutgers.edu:~/Documents/
+
+# rsync -anP --delete "./School&Work" ryanb@amphiprion.deenr.rutgers.edu:~/Documents/
+
+
+# Download the msom.dat.RData file from amphiprion
+cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
+rsync -azuP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Data/msom.dat.RData' "./Data/"
+
+
