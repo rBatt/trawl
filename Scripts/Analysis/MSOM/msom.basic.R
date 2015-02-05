@@ -104,12 +104,25 @@ sp.inits <- list()
 for(i in 1:nChains){
 	sp.inits[[i]] <- make.inits()
 }
+omega <- sp.inits[[1]][1]
+w <- sp.inits[[1]][2]
+u <- sp.inits[[1]][3]
+v <- sp.inits[[1]][4]
+Z <- sp.inits[[1]][5]
+
+sp.inits2 <- list(spp.inits[[i]]) #list(names(sp.inits[[1]]))
 
 
 # ====================================
 # = Define data to be loaded to jags =
 # ====================================
 sp.data <- list(n=nSpp, nzeroes=n0s, J=nStrat, K=nK, X=Xaug1)
+n=nSpp
+nzeroes=n0s
+J=nStrat
+K=nK
+X=Xaug1
+sp.data2 <- list("n","nzeroes","J","K","X")
 
 
 # =======================================
@@ -129,6 +142,20 @@ fit.basic <- jags(
 	n.chains=nChains,
 	n.iter=nIter,
 	working.directory=paste0(getwd(),"/","trawl/Scripts/Analysis/JAGS")
+)
+
+
+fit.basic <- do.call(
+	jags.parallel,
+	list(
+		data=sp.data2,
+		inits=sp.inits[1],
+		parameters.to.save=sp.params,
+		model.file="msom.basic.txt",
+		n.chains=nChains,
+		n.iter=nIter,
+		working.directory=paste0(getwd(),"/","trawl/Scripts/Analysis/JAGS")
+	)
 )
 
 
