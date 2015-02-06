@@ -5,8 +5,9 @@ mode <- function(x){
 }
 
 get.modes <- function(x){
-	if(ncol(x)>1){
-		apply(x, 2, mode)
+	ldx <- length(dim(x))
+	if(ldx>1){
+		apply(x, (2:ldx), mode)
 	}else{
 		mode(x)
 	}
