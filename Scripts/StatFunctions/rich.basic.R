@@ -84,7 +84,7 @@ rich.basic <- function(data, nzeroes=100, nChains=3, nIter=2E3, doP=FALSE){
 	# =======================================
 	# = Define parameters for jags to track =
 	# =======================================
-	sp.params <- c("u", "v", "mu.u", "mu.v", "tau.u", "tau.v", "omega", "N")
+	sp.params <- c("Z","u", "v", "mu.u", "mu.v", "tau.u", "tau.v", "omega", "N")
 
 
 	# =============
