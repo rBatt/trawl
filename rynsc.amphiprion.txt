@@ -27,3 +27,14 @@ cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
 rsync -azuP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Data/trawl.RData' "./Data/"
 
 
+
+# Download the trawl.RData file
+cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
+rsync -azunP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Results/Richness/richness.basic.out.RData' "./Data/"
+
+
+
+# Download a figure
+cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
+rsync -azunP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Figures/first.out_test_basicRich_sppProb_avgOverStrata.pdf' "./Figures/"
+
