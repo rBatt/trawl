@@ -1,7 +1,10 @@
 
 
 
-rich.basic <- function(data, nzeroes=100, nChains=3, nIter=2E3, doP=FALSE){
+rich.basic <- function(data, nzeroes=100, nChains=3, nIter=2E3, nThin=NULL, doP=FALSE){
+	if(is.null(nThin)){
+		nThin <- max(1, floor((nIter - floor(nIter/2)) / 1000))
+	}
 
 	# =================
 	# = Load packages =
@@ -98,6 +101,7 @@ rich.basic <- function(data, nzeroes=100, nChains=3, nIter=2E3, doP=FALSE){
 			model.file="msom.basic.txt",
 			n.chains=nChains,
 			n.iter=nIter,
+			n.thin=nThin,
 			working.directory=paste0(getwd(),"/","trawl/Scripts/Analysis/JAGS")
 		)
 	}
@@ -113,6 +117,7 @@ rich.basic <- function(data, nzeroes=100, nChains=3, nIter=2E3, doP=FALSE){
 				model.file="msom.basic.txt",
 				n.chains=nChains,
 				n.iter=nIter,
+				n.thin=nThin,
 				working.directory=paste0(getwd(),"/","trawl/Scripts/Analysis/JAGS")
 			)
 		)
