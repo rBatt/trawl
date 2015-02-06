@@ -21,6 +21,6 @@ summary.jags <- function(x, conv.names=c(""), doPlot=TRUE, doPanels=TRUE){
 		}
 	}
 	
-	invisible(c(x.modes, list(list(x))))
+	invisible(c(x.modes, list(list(jags.out=x))))
 
 }
