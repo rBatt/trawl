@@ -10,10 +10,20 @@ library(raster)
 # library(caTools)
 
 
+# ===============================
+# = Guess appropriate directory =
+# ===============================
+if(Sys.info()["sysname"]=="Linux"){
+	setwd("~/Documents/School&Work/pinskyPost")
+}else{
+	setwd("~/Documents/School&Work/pinskyPost")
+}
+
+
 # =====================
 # = 1) Read the brick =
 # =====================
-sst000 <- brick("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/raw_data/HadISST/HadISST_sst.nc")
+sst000 <- brick("./trawl/Data/raw_data/HadISST/HadISST_sst.nc")
 
 
 # =========================
@@ -82,4 +92,4 @@ sst.mu <- stackApply(sst.ann, indices=rep(1, length(sst.ann)), fun=mean)
 # ================
 # = Save Results =
 # ================
-save(sst, sst.ann, sst.mu, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/HadISST.RData")
+save(sst, sst.ann, sst.mu, file="./trawl/Data/HadISST.RData")

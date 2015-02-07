@@ -7,11 +7,22 @@ library(raster)
 library(SDMTools)
 library(maps)
 
+
+# ===============================
+# = Guess appropriate directory =
+# ===============================
+if(Sys.info()["sysname"]=="Linux"){
+	setwd("~/Documents/School&Work/pinskyPost")
+}else{
+	setwd("~/Documents/School&Work/pinskyPost")
+}
+
+
 # ================
 # = Load Results =
 # ================
-load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Results/HadISST_tempGrads.RData")
-load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Results/HadISST_categories.RData")
+load("./trawl/Results/HadISST_tempGrads.RData")
+load("./trawl/Results/HadISST_categories.RData")
 # load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Results/HadISST_trajectoriesImage.RData")
 
 # =========================
@@ -27,7 +38,7 @@ axargs <- list(mgp=c(0.75,0.5,0))
 # ===============
 # Set up figure dimensions
 # dev.new(width=5, height=7.5)
-png("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/HadISST_Figures/HadISST_tempGrads.png", res=200, width=5, height=7.5, units="in")
+png("./trawl/Figures/HadISST_Figures/HadISST_tempGrads.png", res=200, width=5, height=7.5, units="in")
 par(mfrow=c(4,1), mar=c(2,2,2,0.1), ps=8, cex=1, mgp=c(0.5,0.15,0), tcl=-0.15, family="Times")
 
 # Plot average temperature
@@ -60,7 +71,7 @@ dev.off()
 # = Plot Trajectory Categories =
 # ==============================
 # dev.new(width=5, height=7.5)
-png("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/HadISST_Figures/HadISST_categories.png", res=200, width=5, height=8.5, units="in")
+png("./trawl/Figures/HadISST_Figures/HadISST_categories.png", res=200, width=5, height=8.5, units="in")
 par(mfrow=c(5,1), mar=c(2,2,0.5,0.1), ps=8, cex=1, mgp=c(0.5,0.15,0), tcl=-0.15, family="Times")
 
 # Source
@@ -105,7 +116,7 @@ col5 <- c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99", "#e31a1c")
 
 
 # dev.new(width=9.5, height=3)
-png("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Figures/HadISST_Figures/HadISST_combinedCategories.png", res=200, width=9.5, height=3, units="in")
+png("./trawl/Figures/HadISST_Figures/HadISST_combinedCategories.png", res=200, width=9.5, height=3, units="in")
 par(mfrow=c(1,1), mar=c(2,2,0.5,0.1), ps=8, cex=1, mgp=c(0.5,0.15,0), tcl=-0.15, family="Times")
 plot(cCat, smallplot=smplt, bigplot=bgplt, axis.args=axargs2, col=col5)
 invisible(map(add=TRUE, fill=FALSE, col="black", lwd=0.5))

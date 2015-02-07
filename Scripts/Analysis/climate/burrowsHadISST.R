@@ -6,17 +6,28 @@ library(raster)
 library(SDMTools)
 library(plyr)
 
+
+# ===============================
+# = Guess appropriate directory =
+# ===============================
+if(Sys.info()["sysname"]=="Linux"){
+	setwd("~/Documents/School&Work/pinskyPost")
+}else{
+	setwd("~/Documents/School&Work/pinskyPost")
+}
+
+
 # =============================
 # = Load statistics functions =
 # =============================
-stat.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/StatFunctions"
+stat.location <- "./trawl/Scripts/StatFunctions"
 invisible(sapply(paste(stat.location, list.files(stat.location), sep="/"), source, .GlobalEnv))
 
 
 # =============
 # = Load Data =
 # =============
-load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/HadISST.RData")
+load("./trawl/Data/HadISST.RData")
 sst.mu0 <- raster.nan2na(sst.mu)
 sst.ann0 <- raster.nan2na(sst.ann)
 rm(list=c("sst.mu","sst.ann"))
@@ -59,7 +70,7 @@ timeTrend <- stackApply(sst.ann, indices=rep(1,nlayers(sst.ann)), fun=timeSlope)
 # =========================
 # = Get the spatial slope =
 # =========================
-# Get the spatial gradient from the original course sst, then disaggregate; this is the simplest form
+# Get the spatial gradient from the original coarse sst, then disaggregate; this is the simplest form
 spatSlope0 <- disaggregate(slope(sst.mu0, latlon=TRUE), n.per.ll) # spatial gradient, then disaggregate
 spatSlope0[is.nan(spatSlope0)] <- NA # turn NaN's to NA's
 
@@ -293,6 +304,8 @@ for(i in step.index){
 	# =============================
 	# = Bad proposed destinations =
 	# =============================
+	# TODO This is where I need to introduce the continental shelf as a boundary for climate trajectories
+	# TODO I will need to put the relief data on the same scale as these rasters
 	badProp <- !is.finite(prop.temp) & is.finite(start.temp) # Bad Proposal = the proposed temp missing, but not starting temp
 	badProp.cell <- values(prop.cell)[values(badProp)] # destination cell#'s for bad proposals
 	badProp.start.cell <- values(start.cell)[values(badProp)] # starting cell#'s for bad proposed trajectory
