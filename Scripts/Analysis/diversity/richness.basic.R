@@ -122,25 +122,35 @@ t.dat <- lapply(msom.dat[[1]], prep.basic)
 # ==============================
 # Need to combine lists of model output so that they are grouped by parameter/type, not by model run
 # e.g., if regions 1-3 each have paremters A-D, would want output to be [[1]]A1,A2,A3 [[2]]B1,B2,B3 etc ... Not [[1]]A1,B1,C1,D1 [[2]]A2,B2,C2,D2 etc ...
-comb <- function(...){
-	lapply(do.call(Map, c(list, list(...))), simplify2array)
-}
+# comb <- function(...){
+# 	lapply(do.call(Map, c(list, list(...))), simplify2array)
+# }
 
 
 # =========================
 # = Run Bayesian Richness =
 # =========================
 # Run first Bayesian richness (done separately b/c combine function in foreach needs starting output)
-first.out <- rich.basic(t.dat[[1]], nzeroes=n0s, nChains=nChains, nIter=nIter, nThin=nThin) # run the model for the first subset
+# first.out <- rich.basic(t.dat[[1]], nzeroes=n0s, nChains=nChains, nIter=nIter, nThin=nThin) # run the model for the first subset
 
 # Run all other Bayesian richness in parallel
-richness.basic.out <- foreach(i=(2:(length(t.dat)-1)), .combine=comb, .init=first.out, .multicombine=TRUE) %dopar%{ # run all other subsets in parallel
+richness.basic.out <- foreach(i=(1:length(t.dat))) %dopar%{ # run all other subsets in parallel
 	rich.basic(t.dat[[i]], nzeroes=n0s, nChains=nChains, nIter=nIter, nThin=nThin) # do analysis for this subset
 }
+
+
 
 
 # ===============
 # = Save Output =
 # ===============
 save(richness.basic.out, file="./trawl/Results/Richness/richness.basic.out.RData")
+
+
+# ======================================
+# = Run and save last.out from screwup =
+# ======================================
+# last.out <- rich.basic(t.dat[[length(t.dat)]], nzeroes=n0s, nChains=nChains, nIter=nIter, nThin=nThin) # run the model for the first subset
+# save(last.out, file="./trawl/Results/Richness/last.out.RData", compress="xz")
+
 
