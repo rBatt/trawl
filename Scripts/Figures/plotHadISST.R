@@ -21,8 +21,8 @@ if(Sys.info()["sysname"]=="Linux"){
 # ================
 # = Load Results =
 # ================
-load("./trawl/Results/HadISST_tempGrads.RData")
-load("./trawl/Results/HadISST_categories.RData")
+load("./trawl/Results/HadISST/HadISST_tempGrads.RData")
+load("./trawl/Results/HadISST/HadISST_categories.RData")
 # load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Results/HadISST_trajectoriesImage.RData")
 
 # =========================
