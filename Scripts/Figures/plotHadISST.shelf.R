@@ -22,23 +22,8 @@ if(Sys.info()["sysname"]=="Linux"){
 # = Load Results =
 # ================
 load("./trawl/Results/HadISST/HadISST_tempGrads.RData")
-load("./trawl/Results/HadISST/HadISST_categories.RData")
-load("./trawl/Results/HadISST/HadISST_trajectoriesImage.RData")
-
-
-# =============================
-# = Load statistics functions =
-# =============================
-stat.location <- "./trawl/Scripts/StatFunctions"
-invisible(sapply(paste(stat.location, list.files(stat.location), sep="/"), source, .GlobalEnv))
-
-
-# =========================
-# = Load Figure Functions =
-# =========================
-fig.location <- "./trawl/Scripts/PlotFunctions"
-invisible(sapply(paste(fig.location, list.files(fig.location), sep="/"), source, .GlobalEnv))
-
+load("./trawl/Results/HadISST/HadISST_categories.shelf.RData")
+load("./trawl/Results/HadISST/HadISST_trajectoriesImage.shelf.RData")
 
 # =========================
 # = Set up Figure Options =
@@ -51,42 +36,43 @@ axargs <- list(mgp=c(0.75,0.5,0))
 # ===============
 # = Make figure =
 # ===============
+# NOTE: Redundant with the plot in plotHadISST.R
 # Set up figure dimensions
 # dev.new(width=5, height=7.5)
-png("./trawl/Figures/HadISST_Figures/HadISST_tempGrads.png", res=200, width=5, height=7.5, units="in")
-par(mfrow=c(4,1), mar=c(2,2,2,0.1), ps=8, cex=1, mgp=c(0.5,0.15,0), tcl=-0.15, family="Times")
-
-# Plot average temperature
-plot(sst.mu, col=heat.cols, smallplot=smplt, bigplot=bgplt, axis.args=axargs)
-mtext(bquote(Avg~temperature~(degree*C)), side=3, line=-2.75, cex=1, xpd=FALSE)
-invisible(map(add=TRUE, fill=FALSE, col="black"))
-
-# Plot temporal gradient
-par(cex=1)
-plot(timeTrend, col=heat.cols, smallplot=smplt, bigplot=bgplt, axis.args=axargs)
-mtext(bquote(Time~gradient~(degree*C/yr)), side=3, line=-2.75, cex=1, xpd=FALSE)
-invisible(map(add=TRUE, fill=FALSE, col="black"))
-
-# Plot spatial gradient
-par(cex=1)
-plot(spatGrad.slope, col=heat.cols, smallplot=smplt, bigplot=bgplt, axis.args=axargs)
-mtext(bquote(Space~gradient~(degree*C/km)), side=3, line=-2.75, cex=1, xpd=FALSE)
-invisible(map(add=TRUE, fill=FALSE, col="black"))
-
-# Plot spatial angle
-par(cex=1)
-plot(spatGrad.aspect, col=circular.colors(256), smallplot=smplt, bigplot=bgplt, axis.args=axargs)
-mtext(bquote(Space~Angle~(360*degree==N)), side=3, line=-2.75, cex=1, xpd=FALSE)
-invisible(map(add=TRUE, fill=FALSE, col="black"))
-
-dev.off()
+# png("./trawl/Figures/HadISST_Figures/HadISST_tempGrads.shelf.png", res=200, width=5, height=7.5, units="in")
+# par(mfrow=c(4,1), mar=c(2,2,2,0.1), ps=8, cex=1, mgp=c(0.5,0.15,0), tcl=-0.15, family="Times")
+#
+# # Plot average temperature
+# plot(sst.mu, col=heat.cols, smallplot=smplt, bigplot=bgplt, axis.args=axargs)
+# mtext(bquote(Avg~temperature~(degree*C)), side=3, line=-2.75, cex=1, xpd=FALSE)
+# invisible(map(add=TRUE, fill=FALSE, col="black"))
+#
+# # Plot temporal gradient
+# par(cex=1)
+# plot(timeTrend, col=heat.cols, smallplot=smplt, bigplot=bgplt, axis.args=axargs)
+# mtext(bquote(Time~gradient~(degree*C/yr)), side=3, line=-2.75, cex=1, xpd=FALSE)
+# invisible(map(add=TRUE, fill=FALSE, col="black"))
+#
+# # Plot spatial gradient
+# par(cex=1)
+# plot(spatGrad.slope, col=heat.cols, smallplot=smplt, bigplot=bgplt, axis.args=axargs)
+# mtext(bquote(Space~gradient~(degree*C/km)), side=3, line=-2.75, cex=1, xpd=FALSE)
+# invisible(map(add=TRUE, fill=FALSE, col="black"))
+#
+# # Plot spatial angle
+# par(cex=1)
+# plot(spatGrad.aspect, col=circular.colors(256), smallplot=smplt, bigplot=bgplt, axis.args=axargs)
+# mtext(bquote(Space~Angle~(360*degree==N)), side=3, line=-2.75, cex=1, xpd=FALSE)
+# invisible(map(add=TRUE, fill=FALSE, col="black"))
+#
+# dev.off()
 
 
 # ==============================
 # = Plot Trajectory Categories =
 # ==============================
 # dev.new(width=5, height=7.5)
-png("./trawl/Figures/HadISST_Figures/HadISST_categories.png", res=200, width=5, height=8.5, units="in")
+png("./trawl/Figures/HadISST_Figures/HadISST_categories.shelf.png", res=200, width=5, height=8.5, units="in")
 par(mfrow=c(5,1), mar=c(2,2,0.5,0.1), ps=8, cex=1, mgp=c(0.5,0.15,0), tcl=-0.15, family="Times")
 
 # Source
@@ -131,17 +117,20 @@ col5 <- c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99", "#e31a1c")
 
 
 # dev.new(width=9.5, height=3)
-png("./trawl/Figures/HadISST_Figures/HadISST_combinedCategories.png", res=200, width=9.5, height=3, units="in")
+png("./trawl/Figures/HadISST_Figures/HadISST_combinedCategories.shelf.png", res=200, width=9.5, height=3, units="in")
 par(mfrow=c(1,1), mar=c(2,2,0.5,0.1), ps=8, cex=1, mgp=c(0.5,0.15,0), tcl=-0.15, family="Times")
 plot(cCat, smallplot=smplt, bigplot=bgplt, axis.args=axargs2, col=col5)
 invisible(map(add=TRUE, fill=FALSE, col="black", lwd=0.5))
 dev.off()
 
 
+
+
+
 # =============================
 # = Plot Climate Trajectories =
 # =============================
-png("./trawl/Figures/HadISST_Figures/HadISST_trajectories.png", res=200, width=9.5, height=3, units="in")
+png("./trawl/Figures/HadISST_Figures/HadISST_trajectories.shelf.png", res=200, width=9.5, height=3, units="in")
 par(mfrow=c(1,1), mar=c(2,2,0.5,0.1), ps=8, mgp=c(0.5,0.15,0), tcl=-0.15, family="Times")
 plot.traj(trajLon, trajLat, col="slategray", thin.rate=2, nearB=0.01, thinDots=F, adjArr=0.5, cex=0.1)
 dev.off()
@@ -151,7 +140,7 @@ dev.off()
 # = Plot Trajectories over Categories =
 # =====================================
 # dev.new(width=9.5*2, height=3*2)
-png("./trawl/Figures/HadISST_Figures/HadISST_cats.trajs.png", res=200, width=9.5, height=3, units="in")
+png("./trawl/Figures/HadISST_Figures/HadISST_cats.trajs.shelf.png", res=200, width=9.5, height=3, units="in")
 par(mfrow=c(1,1), mar=c(2,2,0.5,0.1), ps=8, cex=1, mgp=c(0.5,0.15,0), tcl=-0.15, family="Times")
 plot(cCat, smallplot=smplt, bigplot=bgplt, axis.args=axargs2, col=col5, interpolate=TRUE)
 plot.traj(trajLon, trajLat, add=TRUE, col="white", thin.rate=4, nearB=0.01, thinDots=TRUE)
