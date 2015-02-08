@@ -102,4 +102,9 @@ invisible(map(add=TRUE, fill=FALSE, col="black", lwd=0.5))
 dev.off()
 
 
- 
+
+# ========
+# = Save =
+# ========
+save(cover.type, file="./trawl/Results/HadISST/cover.type.RData")
+

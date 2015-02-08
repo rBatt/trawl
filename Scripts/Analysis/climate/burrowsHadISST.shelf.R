@@ -473,13 +473,13 @@ cConvergence <- n.end<n.start & !cCorridor & !cSource
 # = Save Trajectory Results =
 # ===========================
 # Save a few objects used specifically for a couple figures I made (in plotHadISST.R)
-save(sst.mu, ang, spatSlope, timeTrend, file="./trawl/Results/HadISST/HadISST_tempGrads.RData")
+# save(sst.mu, ang, spatSlope, timeTrend, file="./trawl/Results/HadISST/HadISST_tempGrads.RData")
 
 # Save the trajectory locations
-save(trajLon, trajLat, file="./trawl/Results/HadISST/HadISST_trajectories.RData")
+save(trajLon, trajLat, file="./trawl/Results/HadISST/HadISST_trajectories.shelf.RData")
 
 # Save categories
-save(cSource, cSink, cDivergence, cConvergence, file="./trawl/Results/HadISST/HadISST_categories.RData")
+save(cSource, cSink, cDivergence, cConvergence, file="./trawl/Results/HadISST/HadISST_categories.shelf.RData")
 
 # Save the full image
-save.image("./trawl/Results/HadISST/HadISST_trajectoriesImage.RData", compress="xz")
+save.image("./trawl/Results/HadISST/HadISST_trajectoriesImage.shelf.RData", compress="xz")
