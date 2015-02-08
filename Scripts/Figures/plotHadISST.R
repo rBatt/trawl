@@ -23,7 +23,7 @@ if(Sys.info()["sysname"]=="Linux"){
 # ================
 load("./trawl/Results/HadISST/HadISST_tempGrads.RData")
 load("./trawl/Results/HadISST/HadISST_categories.RData")
-# load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Results/HadISST_trajectoriesImage.RData")
+# load("./trawl/Results/HadISST/HadISST_trajectoriesImage.RData")
 
 # =========================
 # = Set up Figure Options =
