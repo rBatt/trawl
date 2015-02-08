@@ -1,40 +1,75 @@
 #!/bin/bash
 
+# =========================
+# = Push All Schoool&Work =
+# =========================
 cd "/Users/Battrd/Documents"
 
 echo "Pushing to amphiprion"
-rsync -azP "./School&Work" ryanb@amphiprion.deenr.rutgers.edu:~/Documents/
-# rsync -aznP "./School&Work" ryanb@amphiprion.deenr.rutgers.edu:~/Documents/
+rsync -aznP "./School&Work" ryanb@amphiprion.deenr.rutgers.edu:~/Documents/
 
+
+# ========================
+# = Pull All School&Work =
+# ========================
 # cd ..
 # echo "Pulling from amphiprion"
-# rsync -azP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work' "./Documents/" # bad idea, doesn't work well, too much being downloaded
 # rsync -aznP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work' "./Documents/"
 
 
+# ==============================================
+# = Delete All Remote School&Work if not Local =
+# ==============================================
 cd ./Documents
 echo "Deleting files on amphiprion if they don't exist locally"
-rsync -aP --delete "./School&Work" ryanb@amphiprion.deenr.rutgers.edu:~/Documents/
+rsync -anuP --delete "./School&Work" ryanb@amphiprion.deenr.rutgers.edu:~/Documents/
 # rsync -anP --delete "./School&Work" ryanb@amphiprion.deenr.rutgers.edu:~/Documents/
 
 
+# ==================
+# = Data Downloads =
+# ==================
 # Download the msom.dat.RData file from amphiprion
 cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
-rsync -azuP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Data/msom.dat.RData' "./Data/"
+rsync -azunP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Data/msom.dat.RData' "./Data/"
 
 # Download the trawl.RData file
 cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
-rsync -azuP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Data/trawl.RData' "./Data/"
+rsync -aznuP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Data/trawl.RData' "./Data/"
 
 
-
-# Download the trawl.RData file
+# =====================
+# = Results Downloads =
+# =====================
+# Download the richness.basic.out file
 cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
-rsync -azunP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Results/Richness/richness.basic.out.RData' "./Data/"
+rsync -azunP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Results/Richness/richness.basic.out.RData' "./Results/Richness/"
+
+
+# Download the last.out file
+cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
+rsync -azunP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Results/Richness/last.out.RData' "./Results/Richness/"
+
+
+# Download the rbo.RData file
+cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
+rsync -azunP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Results/Richness/rbo.RData' "./Results/Richness/"
 
 
 
-# Download a figure
+# ====================
+# = Figure Downloads =
+# ====================
+# Download a quick test figure
 cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
 rsync -azunP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Figures/first.out_test_basicRich_sppProb_avgOverStrata.pdf' "./Figures/"
+
+# Download coverType figure
+cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
+
+rsync -azunP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Figures/coverType.pdf' "./Figures/"
+
+
+
+
 
