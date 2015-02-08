@@ -4,17 +4,14 @@
 # = Push All Schoool&Work =
 # =========================
 cd "/Users/Battrd/Documents"
-
-echo "Pushing to amphiprion"
-rsync -aznP "./School&Work" ryanb@amphiprion.deenr.rutgers.edu:~/Documents/
+rsync -aznuP "./School&Work" ryanb@amphiprion.deenr.rutgers.edu:~/Documents/
 
 
 # ========================
 # = Pull All School&Work =
 # ========================
-# cd ..
-# echo "Pulling from amphiprion"
-# rsync -aznP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work' "./Documents/"
+cd ~
+# rsync -aznuP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work' "./Documents/"
 
 
 # ==============================================
@@ -29,6 +26,11 @@ rsync -anuP --delete "./School&Work" ryanb@amphiprion.deenr.rutgers.edu:~/Docume
 # ==================
 # = Data Downloads =
 # ==================
+# Download All Data
+cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
+rsync -azunP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Data/' "./Data/"
+
+
 # Download the msom.dat.RData file from amphiprion
 cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
 rsync -azunP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Data/msom.dat.RData' "./Data/"
@@ -41,6 +43,11 @@ rsync -aznuP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinsky
 # =====================
 # = Results Downloads =
 # =====================
+# Download All Results
+cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
+rsync -azunP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Results/' "./Results/"
+
+
 # Download the richness.basic.out file
 cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
 rsync -azunP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Results/Richness/richness.basic.out.RData' "./Results/Richness/"
@@ -60,6 +67,10 @@ rsync -azunP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinsky
 # ====================
 # = Figure Downloads =
 # ====================
+# Download All Figures
+cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
+rsync -azunP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Figures/' "./Figures/"
+
 # Download a quick test figure
 cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
 rsync -azunP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Figures/first.out_test_basicRich_sppProb_avgOverStrata.pdf' "./Figures/"

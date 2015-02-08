@@ -15,3 +15,6 @@
 
 *.xlsx
 *.docx
+
+rbo.RData
+richness.basic.out.RData
