@@ -32,6 +32,8 @@ sst.mu0 <- raster.nan2na(sst.mu)
 sst.ann0 <- raster.nan2na(sst.ann)
 rm(list=c("sst.mu","sst.ann"))
 
+load("./trawl/Results/HadISST/cover.type.RData")
+
 
 # ================================
 # = Define Trajectory Resolution =
@@ -52,6 +54,14 @@ tYrs <- rep(1:n.yrs, each=n.per.yr) # reference to the year # that lines up with
 sst.ann.s0 <- disaggregate(sst.ann0, n.per.ll, method="bilinear") # "small" grid size for annual sea surface temperature
 sst.ann.s3 <- reclassify(disaggregate(sst.ann0, n.per.ll), cbind(-Inf, Inf, 1))
 sst.ann <- sst.ann.s0*sst.ann.s3 # redefining sst.ann, now want to use this for everything
+
+cover.type.s <- disaggregate(cover.type, n.per.ll, method="") # depth data!
+# 1 = land
+# 2 = low land
+# 3 = high water
+# 4 = shelf
+# 5 = deep
+
 
 sst.mu.s0 <- stackApply(sst.ann.s0, indices=rep(1, nlayers(sst.ann.s0)), fun=mean)
 sst.mu2 <- stackApply(sst.ann, indices=rep(1, nlayers(sst.ann)), fun=mean)
@@ -206,6 +216,11 @@ lls <- xyFromCell(ang, 1:ncell(ang))
 lons <- setValues(ang, lls[,1])
 lats <- setValues(ang, lls[,2])
 
+miLa <- min(values(lats)) - 0.25
+maLa <- max(values(lats)) + 0.25
+miLo <- min(values(lons)) - 0.25
+maLo <- max(values(lons)) + 0.25
+
 #
 # # ===================================
 # # = Get the rook velocities, angles =
@@ -249,7 +264,7 @@ dest.LL <- cbind(values(lons), values(lats)) # same as starting LL, but will be 
 
 
 # Create empty bricks to hold trajectory lon/ lat at each time step
-emptyBrick <- brick(array(NA, dim=dim(sst.ann0)*c(n.per.ll,n.per.ll,n.per.yr)), xmn=-190, xmx=-40, ymn=20, ymx=65)
+emptyBrick <- brick(array(NA, dim=dim(sst.ann0)*c(n.per.ll,n.per.ll,n.per.yr)), xmn=miLo, xmx=maLo, ymn=miLa, ymx=maLa)
 trajLon <- emptyBrick # empty lon brick
 trajLon <- setValues(trajLon, values(lons), layer=1) # update first year (layer) of brick to give starting lon
 
@@ -280,13 +295,14 @@ for(i in step.index){
 	# = Starting values for trajectory (this time step) =
 	# ===================================================
 	start.temp <- setValues(t.temp, extract(t.temp, dest.LL))
+	start.cover <- setValues(cover.type.s, extract(cover.type.s, dest.LL)) # CHANGED added depth ...!
 	# Extract the longitude and latitude of starting location
 	start.lon <- subset(trajLon, i-1) # longitude of the trajectory at the start of this time step (end of last time step)
 	start.lat <- subset(trajLat, i-1) # latitude of the trajectory at the start of this time step (end of last time step)
 	start.LL <- cbind(values(start.lon), values(start.lat)) # format starting LL
+	
 	start.cell <- setValues(start.temp, cellFromXY(start.temp, start.LL)) # change LL to cell#
 	start.conv.factor.lon <- 111.325*cos(lats/180*pi) # used in limitV()
-	
 	
 	# =================================
 	# = Proposed trajectory locations =
@@ -300,16 +316,21 @@ for(i in step.index){
 	prop.LL[is.na(values(dest.dX)),] <- cbind(values(start.lon), values(start.lat))[is.na(values(dest.dX)),] # if the velocity is NA, it's not going anywhere; but still need to keep track of the location of the cell.	
 	prop.cell <- setValues(start.temp, cellFromXY(start.temp, prop.LL)) # change LL to cell#; could do prop.temps, but haven't subset yet
 	prop.temp <- setValues(t.temp, extract(t.temp, prop.LL)) # the temperature in the proposed location (used to determine if destination is on land)
+	prop.cover <- setValues(cover.type.s, extract(cover.type.s, dest.LL)) # CHANGED added depth ... !
 	
 	# =============================
 	# = Bad proposed destinations =
 	# =============================
 	# TODO This is where I need to introduce the continental shelf as a boundary for climate trajectories
 	# TODO I will need to put the relief data on the same scale as these rasters
-	badProp <- !is.finite(prop.temp) & is.finite(start.temp) # Bad Proposal = the proposed temp missing, but not starting temp
+	# badProp <- !is.finite(prop.temp) & is.finite(start.temp) # Bad Proposal = the proposed temp missing, but not starting temp
+	# propRange <- apply(prop.LL, 2, range)
+	out.of.range <- (!is.na(prop.lon) & (prop.lon<=(miLo) | prop.lon>=(-maLo))) | (!is.na(prop.lat) & (prop.lat<=(miLa) | prop.lat>=(maLa)))
+	badProp <- (!is.finite(prop.cover) | (prop.cover != start.cover)) | (!is.finite(prop.temp) & is.finite(start.temp)) | out.of.range
 	badProp.cell <- values(prop.cell)[values(badProp)] # destination cell#'s for bad proposals
 	badProp.start.cell <- values(start.cell)[values(badProp)] # starting cell#'s for bad proposed trajectory
 	
+	# sum(is.na(values(start.cell)))
 	
 	# ==========================================
 	# = Adjust trajectories with bad proposals =
@@ -340,6 +361,9 @@ for(i in step.index){
 			# if I wanted to get the velocities of neighbors, it would NOT work to reference dest.dX, e.g., because the raster neighbors in dest.dX were only spatial neighbors at the first time step, and now they may or may not be next to each b/c the trajectories evolve
 		fromTemp <- extract(t.temp, neighs0[,"from"]) # temperature of the starting cells that had bad proposed destinations
 		toTemp <- extract(t.temp, nto) # temperature of the potential rook destinations (NOT proposed destinations)
+		fromCover <- extract(cover.type.s, neighs0[,"from"])
+		toCover <- extract(cover.type.s, nto)
+		
 		toDir <- catDir(nto-nfrom) # the rook direction
 		delTemp <- toTemp-fromTemp # the change in temperature between the rook destination and the starting cell
 		fromV <- extract(climV, neighs0[,"from"]) # the velocity in the starting cell
@@ -367,10 +391,28 @@ for(i in step.index){
 			fromLon=fromLon,
 			fromLat=fromLat,
 			adjLon=fromLon+climV.adj$dLon,
-			adjLat=fromLat+climV.adj$dLat
+			adjLat=fromLat+climV.adj$dLat,
+			fromCover=fromCover,
+			toCover=toCover
 		)
 	
-		adjTraj <- ddply(as.data.frame(neighs), c("id"), function(x)x[which.min(x[,"delTemp.adj"]),]) # the rows of neighs corresponding to the rook matches
+		findAdj <- function(x){
+			# rawChoice <- order(x[,"delTemp.adj"])
+			cvrLogic <- x[,"fromCover"]==x[,"toCover"]
+			bndLogic <- x[,"adjLon"]<=(maLo) & x[,"adjLon"]>=(miLo) & x[,"adjLat"]<=(maLa) & x[,"adjLat"]>=(miLa)
+			
+			if(x[1,"toDir"]!=5){warning("x[1,'toDir']!=5. Check findAdj function.")}
+			
+			if(sum((cvrLogic&bndLogic))==0){return(x[1,])}
+			
+			if(any(is.finite(x[cvrLogic&bndLogic,"delTemp.adj"]))){
+				return(x[cvrLogic&bndLogic,][which.min(x[cvrLogic&bndLogic,"delTemp.adj"]),])
+			}else{
+				return(x[1,]) # should just be the same as x[x[,"toDir"]==5,] == x[,1]; ugh, ok, I'll be explicit just to make sure; on the other hand, if that row somehow gets dropped ... Also, is the 5 a char? No, it's numeric. I'm being paranoid.
+			}
+		}
+	
+		adjTraj <- ddply(as.data.frame(neighs), c("id"), findAdj) # the rows of neighs corresponding to the rook matches
 	
 	}
 	
@@ -391,6 +433,9 @@ for(i in step.index){
 	# Update the destination LL in the trajectories (not rounded to correspond to cell)
 	trajLon <- setValues(trajLon, dest.lon, layer=i)
 	trajLat <- setValues(trajLat, dest.lat, layer=i)
+	
+	# range(values(trajLon), na.rm=TRUE)
+	# range(values(trajLat), na.rm=TRUE)
 	
 	
 	# =========================================
