@@ -5,7 +5,7 @@ convV <- function(speed.km, rook, lat, n.per.ll){
 	limit <- 1/n.per.ll # this is the size of a cell in degrees lat or lon; limit to rook (adjusted if bad proposal) velocity
 	cr <- as.character(rook) # convert rook integer to character for subsetting
 	
-	d46 <- speed.km/111.325*cos(lat/180*pi) # convert climate speeds in km/timeStep to climate speeds in degrees longitude/timeStep
+	d46 <- speed.km/(111.325*cos(lat/180*pi)) # convert climate speeds in km/timeStep to climate speeds in degrees longitude/timeStep
 	dLon <- rep(NA, length(rook)) # create an empty vector for storing longitudinal changes
 	dLon[cr=="5"] <- 0 # if the chosen rook cell is 5, it is the focal cell, so the longitudinal change should be 0
 	dLon[cr=="4"] <- pmax(-d46[cr=="4"], -limit) # if the chosen rook is 4, then it is to the left (negative)
