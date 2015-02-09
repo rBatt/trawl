@@ -39,7 +39,7 @@ load("./trawl/Results/HadISST/cover.type.RData")
 # = Define Trajectory Resolution =
 # ================================
 # Define spatial and temporal resolution of trajectory iteration
-n.per.yr <- 2 # number of time steps per year (burrows used 10)
+n.per.yr <- 5 # number of time steps per year (burrows used 10)
 n.per.ll <- 2 # sqrt(number of cells per 1 degree grid cell) (burrows used 10)
 
 n.yrs <- dim(sst.ann0)[3] # number of years
@@ -304,30 +304,39 @@ for(i in step.index){
 	start.cell <- setValues(start.temp, cellFromXY(start.temp, start.LL)) # change LL to cell#
 	start.conv.factor.lon <- 111.325*cos(lats/180*pi) # used in limitV()
 	
+	if(!all(values(start.cover == cover.type.s))){stop("cover type boundary has been crossed")}
+	
 	# =================================
 	# = Proposed trajectory locations =
 	# =================================
 	# Calculate the longitude and latitude of proposed destination
-	prop.dLon <- dest.dX/111.325*cos(start.lat/180*pi) # convert horizontal km/timeStep speed into dLon/timeStep
+	prop.dLon <- dest.dX/(111.325*cos(start.lat/180*pi)) # convert horizontal km/timeStep speed into dLon/timeStep # CHANGED added parentheses ... 
 	prop.dLat <- dest.dY/111.325
+	
+	# Friendly warning for large velocities
+	if(any(values(prop.dLon)>=(1/n.per.ll) & !is.na(values(prop.dLon))) | any(values(prop.dLat)>=(1/n.per.ll) & !is.na(values(prop.dLat)))){warning("Proposed velocities exceed 1 grid cell! Use smaller time steps")}
+	
 	prop.lon <- start.lon + prop.dLon # calculate the proposed longitude from speeds and starting LL
 	prop.lat <- start.lat + prop.dLat # calculate the proposed latitude from speeds and starting latitude
 	prop.LL <- cbind(values(prop.lon), values(prop.lat)) # format proposed LL	
 	prop.LL[is.na(values(dest.dX)),] <- cbind(values(start.lon), values(start.lat))[is.na(values(dest.dX)),] # if the velocity is NA, it's not going anywhere; but still need to keep track of the location of the cell.	
-	prop.cell <- setValues(start.temp, cellFromXY(start.temp, prop.LL)) # change LL to cell#; could do prop.temps, but haven't subset yet
+	prop.cell <- setValues(start.temp, cellFromXY(start.temp, prop.LL)) # change LL to cell#; could do prop.temps, but haven't subset yet; is a location on the map
 	prop.temp <- setValues(t.temp, extract(t.temp, prop.LL)) # the temperature in the proposed location (used to determine if destination is on land)
 	prop.cover <- setValues(cover.type.s, extract(cover.type.s, dest.LL)) # CHANGED added depth ... !
+	
 	
 	# =============================
 	# = Bad proposed destinations =
 	# =============================
-	# TODO This is where I need to introduce the continental shelf as a boundary for climate trajectories
-	# TODO I will need to put the relief data on the same scale as these rasters
 	# badProp <- !is.finite(prop.temp) & is.finite(start.temp) # Bad Proposal = the proposed temp missing, but not starting temp
 	# propRange <- apply(prop.LL, 2, range)
 	out.of.range <- (!is.na(prop.lon) & (prop.lon<=(miLo) | prop.lon>=(-maLo))) | (!is.na(prop.lat) & (prop.lat<=(miLa) | prop.lat>=(maLa)))
-	badProp <- (!is.finite(prop.cover) | (prop.cover != start.cover)) | (!is.finite(prop.temp) & is.finite(start.temp)) | out.of.range
-	badProp.cell <- values(prop.cell)[values(badProp)] # destination cell#'s for bad proposals
+	cross.cover <- prop.cover != start.cover # change in cover type
+	land.range.temp <- !is.finite(prop.temp) & is.finite(start.temp) # could be b/c crossing to land, or b/c going off edge of map, or if temp is missing for some other reaso
+	badProp <- land.range.temp | out.of.range | cross.cover# this is an index corresponding to cell ID's
+	# old logic:  (!is.finite(prop.cover) | (prop.cover != start.cover)) | (!is.finite(prop.temp) & is.finite(start.temp)) | out.of.range 
+	badProp.cellID <- which(values(badProp))
+	badProp.cell <- values(prop.cell)[values(badProp)] # destination cell#'s for bad proposals; is the location on the map
 	badProp.start.cell <- values(start.cell)[values(badProp)] # starting cell#'s for bad proposed trajectory
 	
 	# sum(is.na(values(start.cell)))
@@ -352,35 +361,55 @@ for(i in step.index){
 			# the t.temp is not important
 			# what is important is that I am searching for neighboring cell#'s, not for neighboring temperatures of specific cells
 			# the distinction is that in the raster, a cell doesn't necessarily have a spatial relationship to its neighbors after the first time step, so I can't search for neighboring temperatures *directly*, i have to find the neighboring cells, then reference a temperature raster that has the spatial relationship of cells intact (t.temp)
-		nfrom <- neighs0[,"from"] # starting cell #
+		nfrom <- neighs0[,"from"] # starting cell # (refers to a location on the map, not to the ID of the trajectory (ID is the location in the first step))
 		nto <- neighs0[,"to"] # rook cell#'s around the starting cell
 	
 		# A bunch of values to keep track of while adjusting the trajectory using rook neighbors
 		# Note: in relation to previous statement about maintaining spatial relationships when appropriate
 			# notice that the "from" and "to" temperatures are taken from t.temp, which has the spatial relationship intact
 			# if I wanted to get the velocities of neighbors, it would NOT work to reference dest.dX, e.g., because the raster neighbors in dest.dX were only spatial neighbors at the first time step, and now they may or may not be next to each b/c the trajectories evolve
-		fromTemp <- extract(t.temp, neighs0[,"from"]) # temperature of the starting cells that had bad proposed destinations
+		fromTemp <- extract(t.temp, nfrom) # temperature of the starting cells that had bad proposed destinations
 		toTemp <- extract(t.temp, nto) # temperature of the potential rook destinations (NOT proposed destinations)
-		fromCover <- extract(cover.type.s, neighs0[,"from"])
-		toCover <- extract(cover.type.s, nto)
+		fromCover <- extract(cover.type.s, nfrom)
+		toCover <- extract(cover.type.s, nto) # TODO BUG! need to check not the rook (which just gives the direction), but the actual destionation. SO the "to" is where the adjusted trajectory is "aiming", but I need to do the checks for where it "hits"
 		
 		toDir <- catDir(nto-nfrom) # the rook direction
 		delTemp <- toTemp-fromTemp # the change in temperature between the rook destination and the starting cell
-		fromV <- extract(climV, neighs0[,"from"]) # the velocity in the starting cell
-		fromAng <- extract(ang, neighs0[,"from"]) # the angle of the velocity in the starting cell
+		fromV <- extract(climV, nfrom) # the velocity in the starting cell
+		fromAng <- extract(ang, nfrom) # the angle of the velocity in the starting cell
 		delTemp.adj <- delTemp*sign(fromV) # find cooler for +vel, warmer for -vel; flip sign of dTemp if -vel, so I can just use which.min() for all
 		toAng <- adjAng(toDir) # the angle (0 is north) corresponding to each rook direction
 		delAng <- toAng-fromAng # the change in angle between the rook direction and the original angle of the spatial velocity
-		fromLon <- extract(start.lon, neighs0[,"from"]) # starting lons
-		fromLat <- extract(start.lat, neighs0[,"from"]) # starting lats
+		fromLon <- extract(start.lon, nfrom) # starting lons
+		fromLat <- extract(start.lat, nfrom) # starting lats
 		climSpeed <- abs(fromV/cos(delAng)) # the "raw" (will have to be converted to degrees and limited) speed for adjusted traj
 	
 		climV.adj <- convV(climSpeed, toDir, lat=fromLat, n.per.ll=n.per.ll) # convert speed into lon/lat components in degrees, and limit magnitude
 		adjLon <- fromLon+climV.adj$dLon # change in longitude for each rook direction
 		adjLat <- fromLat+climV.adj$dLat # change in latitude for each rook direction
+		
+		# The chosen rook is where the adjusted trajectory "aims"
+		# Below I am grabbing information about where the adjusted trajectory will "hit"
+		to.hit <- cellFromXY(t.temp, cbind(adjLon, adjLat))
+		cover.hit1 <- extract(cover.type.s, to.hit)
+		cover.hit2 <- extract(cover.type.s, cbind(adjLon, adjLat))
+		
+		if(sum(cover.hit1 != cover.hit2)!=0){warning("Apparent rounding error in adjTraj when converting Lon Lat to cell #")}
+			
+		# sum((toCover != cover.hit1) & (toCover == fromCover)) # this is the number of instances where the "aim" cell is OK, but the "hit" cell is wrong
+		
+		# If I am using cover, I don't need to worry about using NA temp values as an indicator of land, b/c I already have more specific information in cover.type
+		# temp.hit1 <- extract(t.temp, to.hit)
+		# temp.hit2 <- extract(t.temp, cbind(adjLon, adjLat))
+		# if(any(is.na(temp.hit1) != is.na(temp.hit2))){warning("Apparent rounding error in adjTraj when converting Lon Lat to cell #")}
+		
+		
+			
+		
 	
 		neighs <- cbind(neighs0, # store all of the above variables together so they can be conveniently searched w/ ddply()
 			badPropCell=badProp.cell[neighs0[,1]], # the destination of the bad proposal
+			to.hit,
 			fromTemp=fromTemp,
 			toTemp=toTemp,
 			toDir=toDir,
@@ -393,8 +422,11 @@ for(i in step.index){
 			adjLon=fromLon+climV.adj$dLon,
 			adjLat=fromLat+climV.adj$dLat,
 			fromCover=fromCover,
-			toCover=toCover
+			toCover=toCover,
+			cover.hit1
 		)
+		
+		# badProp.cellID[neighs[,"id"]]
 	
 		findAdj <- function(x){
 			# rawChoice <- order(x[,"delTemp.adj"])
@@ -403,7 +435,7 @@ for(i in step.index){
 			
 			if(x[1,"toDir"]!=5){warning("x[1,'toDir']!=5. Check findAdj function.")}
 			
-			if(sum((cvrLogic&bndLogic))==0){return(x[1,])}
+			if(sum((cvrLogic&bndLogic))==0){return(x[1,])} # it should be basically impossible for this to happen
 			
 			if(any(is.finite(x[cvrLogic&bndLogic,"delTemp.adj"]))){
 				return(x[cvrLogic&bndLogic,][which.min(x[cvrLogic&bndLogic,"delTemp.adj"]),])
@@ -413,13 +445,22 @@ for(i in step.index){
 		}
 	
 		adjTraj <- ddply(as.data.frame(neighs), c("id"), findAdj) # the rows of neighs corresponding to the rook matches
+		
+		badProp.cellID[adjTraj[,"id"]]
+		
+		adjTraj[,"to"] == cellFromXY(t.temp, adjTraj[,c("adjLon","adjLat")])
 	
 	}
+	
+	
+	# check to make sure match between logic of badProp (as an index) and the "from" cell in adjTraj
+	sum(which(values(badProp)) != adjTraj[,"from"]) # they definitely don't match ..... because now the trajectories have combined in locations, so a given cell # could have origins in different locations
 	
 	# =====================
 	# = Final Destination =
 	# =====================
 	dest.LL <- prop.LL # in many cases, the proposed location is OK, and will be the destination
+	# values(badProp) is an index of trajectory ID, not of a current location on the map
 	if(any(values(badProp))){
 		dest.LL[values(badProp),] <- as.matrix(adjTraj[, c("adjLon","adjLat")]) # where the proposal were bad, replace them with adjusted trajectory destinations
 	}
@@ -453,7 +494,26 @@ for(i in step.index){
 		
 	startLoc[,i-1] <- cellFromXY(start.temp, start.LL)
 	stopLoc[,i-1] <- cellFromXY(start.temp, dest.LL)
+	
+	
+	# checking to make sure cover types are the same
+	# check.ct <- apply(startLoc, 1, function(x)length(unique(values(cover.type.s)[x])))
+	# sum(check.ct>1) # 1964 trajectories crossed cover types at some point .... ?! Crap. -_-
+	
+	# Double check 
+	ct.start <- setValues(dXkm, extract(cover.type.s, start.LL))
+	ct.stop <- setValues(dXkm, extract(cover.type.s, dest.LL))
+	is.delta.cover <- values(ct.start!=ct.stop) # 20 cases where the cover type changes
+	values(ct.stop)[is.delta.cover & !values(badProp)]
+	
+	ct.start[is.delta.cover]
+	ct.stop[is.delta.cover]
 
+	badAdj <- values(badProp & (ct.start!=ct.stop)) # there are 4 bad adjustments due to changing cover types
+	adjTraj[adjTraj[,"fromCover"] != adjTraj[,"toCover"],] # but they are not reflected in the adjTraj data.frame ... which means either that data.frame is filled with the wrong values, or the adjustments are implemented incorrectly. It's because at the time the data.frame contained the cover type of the rook to which the trajectory was "aiming", but that's not necessarily the cell that the trajectory "hits"
+	
+	extract(cover.type.s, adjTraj[, c("adjLon","adjLat")])
+	extract(cover.type.s, adjTraj[, c("adjLon","adjLat")])
 	
 	
 	setTxtProgressBar(sst.pb, i)
