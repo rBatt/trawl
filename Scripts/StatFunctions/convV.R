@@ -2,7 +2,7 @@
 # "If a cooler or warmer cellw as found then the trajectory was moved along in the direction of that cell (phi) at a speed given by V/cos(phi-theta)" (Burrows et al. 2014 Nature, 'Calculating trajectories' in Methods, 3rd from last sentence).
 convV <- function(speed.km, rook, lat, n.per.ll){
 	
-	limit <- 1/n.per.ll # this is the size of a cell in degrees lat or lon; limit to rook (adjusted if bad proposal) velocity
+	limit <- 1/(n.per.ll^2+0.1) # this is the size of a cell in degrees lat or lon; limit to rook (adjusted if bad proposal) velocity
 	cr <- as.character(rook) # convert rook integer to character for subsetting
 	
 	d46 <- speed.km/(111.325*cos(lat/180*pi)) # convert climate speeds in km/timeStep to climate speeds in degrees longitude/timeStep
