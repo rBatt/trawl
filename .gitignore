@@ -16,5 +16,14 @@
 *.xlsx
 *.docx
 
+# Specific large results files
 rbo.RData
 richness.basic.out.RData
+HadISST_trajectoriesImage.shelf.RData
+HadISST_trajectories.shelf.RData
+HadISST_trajectoriesImage.RData
+HadISST_trajectories.RData
+
+# Log files
+*.out
+*.Rout
