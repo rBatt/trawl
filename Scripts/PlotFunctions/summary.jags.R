@@ -1,6 +1,11 @@
 
 summary.jags <- function(x, conv.names=c(""), doPlot=TRUE, doPanels=TRUE){
-	x.sims <- x$BUGSoutput$sims.list
+	x.sims = x
+	# if(all(names(x)=="sims.list")){
+# 		x.sims <- x
+# 	}else{
+# 		x.sims <- x$BUGSoutput$sims.list
+# 	}
 	n.sim <- length(x.sims)
 	x.modes <- lapply(x.sims, function(x)get.modes(x))
 	
