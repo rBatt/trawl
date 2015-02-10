@@ -18,6 +18,19 @@ if(Sys.info()["sysname"]=="Linux"){
 }
 
 
+# ==================
+# = Load Functions =
+# ==================
+data.location <- "./trawl/Scripts/DataFunctions"
+invisible(sapply(paste(data.location, list.files(data.location), sep="/"), source, .GlobalEnv))
+
+stat.location <- "./trawl/Scripts/StatFunctions"
+invisible(sapply(paste(stat.location, list.files(stat.location), sep="/"), source, .GlobalEnv))
+
+plot.location <- "./trawl/Scripts/PlotFunctions"
+invisible(sapply(paste(plot.location, list.files(plot.location), sep="/"), source, .GlobalEnv))
+
+
 # ================
 # = Load Results =
 # ================
