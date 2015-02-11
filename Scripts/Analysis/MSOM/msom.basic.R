@@ -46,7 +46,7 @@ invisible(sapply(paste(plot.location, list.files(plot.location), sep="/"), sourc
 # ======================
 # = Load MSOM Data set =
 # ======================
-load("./trawl/Data/msom.dat.RData")
+load("./trawl/Data/basic.dat.RData")
 
 
 # =====================================
