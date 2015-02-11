@@ -10,25 +10,34 @@ library(reshape2)
 library(data.table)
 
 
-# =======================
-# = Load data functions =
-# =======================
-# data.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions"
-# invisible(sapply(paste(data.location, list.files(data.location), sep="/"), source, .GlobalEnv))
+# ===============================
+# = Guess appropriate directory =
+# ===============================
+if(Sys.info()["sysname"]=="Linux"){
+	setwd("~/Documents/School&Work/pinskyPost")
+}else{
+	setwd("~/Documents/School&Work/pinskyPost")
+}
 
 
-# =======================
-# = Load data functions =
-# =======================
+# ==================
+# = Load Functions =
+# ==================
 data.location <- "./trawl/Scripts/DataFunctions"
 invisible(sapply(paste(data.location, list.files(data.location), sep="/"), source, .GlobalEnv))
+
+stat.location <- "./trawl/Scripts/StatFunctions"
+invisible(sapply(paste(stat.location, list.files(stat.location), sep="/"), source, .GlobalEnv))
+
+plot.location <- "./trawl/Scripts/PlotFunctions"
+invisible(sapply(paste(plot.location, list.files(plot.location), sep="/"), source, .GlobalEnv))
 
 
 # =======================
 # = Load trawl2 Dataset =
 # =======================
-# load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/trawl2.RData")
 load("./trawl/Data/trawl2.RData")
+
 
 # ======================
 # = Remove unknown spp =

@@ -6,6 +6,16 @@
 library(data.table)
 
 
+# ===============================
+# = Guess appropriate directory =
+# ===============================
+if(Sys.info()["sysname"]=="Linux"){
+	setwd("~/Documents/School&Work/pinskyPost")
+}else{
+	setwd("~/Documents/School&Work/pinskyPost")
+}
+
+
 # ==================
 # = Load Functions =
 # ==================
@@ -19,14 +29,6 @@ plot.location <- "./trawl/Scripts/PlotFunctions"
 invisible(sapply(paste(plot.location, list.files(plot.location), sep="/"), source, .GlobalEnv))
 
 
-# ===============================
-# = Guess appropriate directory =
-# ===============================
-if(Sys.info()["sysname"]=="Linux"){
-	setwd("~/Documents/School&Work/pinskyPost")
-}else{
-	setwd("~/Documents/School&Work/pinskyPost")
-}
 
 
 
