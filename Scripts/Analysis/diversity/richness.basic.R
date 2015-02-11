@@ -46,7 +46,7 @@ invisible(sapply(paste(plot.location, list.files(plot.location), sep="/"), sourc
 # ======================
 # = Load MSOM Data set =
 # ======================
-load("./trawl/Data/basic.dat.RData")
+load("./trawl/Data/MSOM/basic.dat.RData")
 load("./trawl/Data/trawl2.RData") # needed so that I know where the original NA's are; not in format.trawl b/c this will need to be handled differently for the different richness models, so this is richness.basic specific
 
 

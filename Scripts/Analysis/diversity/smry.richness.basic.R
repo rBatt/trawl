@@ -36,7 +36,7 @@ invisible(sapply(paste(plot.location, list.files(plot.location), sep="/"), sourc
 # = Load Results =
 # ================
 # First, load data for referencing
-load("./trawl/Data/basic.dat.RData") # need basic.dat[[2]] for the region-year key to the rbo output list. Need dimnames(basic.dat[[1]])[2] in order to figure out which strata are in the rows of Z[,,,], and need dimnames(basic.dat[[1]])[3] to get the species (but remember the last 500 are just the augmented 0's)
+load("./trawl/Data/MSOM/basic.dat.RData") # need basic.dat[[2]] for the region-year key to the rbo output list. Need dimnames(basic.dat[[1]])[2] in order to figure out which strata are in the rows of Z[,,,], and need dimnames(basic.dat[[1]])[3] to get the species (but remember the last 500 are just the augmented 0's)
 
 if("rbo.RData"%in%list.files("./trawl/Results/Richness/")){
 	load("./trawl/Results/Richness/rbo.RData")
