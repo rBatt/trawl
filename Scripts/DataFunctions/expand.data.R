@@ -104,6 +104,7 @@ expand.data <- function(comD, arr.dim, keyValue="value", fillID=NULL, fillValue=
 	
 	
 	
+	
 	# ============================================
 	# = Aggregate keyValue over marginal keyID's =
 	# ============================================
@@ -198,40 +199,15 @@ expand.data <- function(comD, arr.dim, keyValue="value", fillID=NULL, fillValue=
 			outsize <- 1
 		}else{
 			outsize <- expD[,(.GRP),by=c(outScope)][,max(V1)] # the number of arrays
-			# data.table(expD[,eval(s2c(outScope))], key=c(outScope))
-			# f1 <- function(){expD[,(.GRP),by=c(outScope)][,max(V1)]}
-			# f2 <- function(){nrow(unique(data.table(expD[,eval(s2c(outScope))], key=c(outScope))))}
-			# microbenchmark(f1(), f2())
-			# Unit: milliseconds
-			#  expr       min        lq    median        uq       max neval
-			#  f1()  5.392243  5.827234  7.086189  7.396109  19.42331   100
-			#  f2() 20.786155 28.467275 31.921193 37.772441 101.12979   100
 		}
 		
 		array.list <- vector("list", outsize) # preallocate data array
 		array.key <- vector("list", outsize) # the list of arrays can be long and hard to navigate; this key will supply the outScope combinations present in each element of the array.list output list
 		
-		# TODO might be a problem with array formation FIXED
-		# trawl2[s.reg=="ai"&year=="1983"&stratum=="-165.5 54.5"] # so that stratum doesn't exist
-		# test <- msom.dat[[1]][[1]]
-		# apply(test, c(1), sumna) # it is here, apparently ...
-		# apply(test, c(1,3), sumna)[1,] # it is here, apparently ...
-		# msom.dat[[2]][1,]
-		# good news is that this mistake doesn't seem to be present in the data.table output format:
-		# trawl[s.reg=="ai"&year=="1983"&stratum=="-165.5 54.5", sum(!is.na(value))]
-		
+		# ======================================
+		# = Array: Format keyValue into arrays =
+		# ======================================
 		setkeyv(expD, c(outScope,rev(arr.dim)))
-		
-		# test.dt <- data.table(cbind(CJ(stratum=(1:7), K=(1:3), spp=c("cat","dog")), value=1:42), key=rev(c("stratum","K","spp")))
-		# test.dt[,value:=1:42]
-		# dim.names <- lapply(test.dt[,eval(s2c(c("stratum","K","spp")))], unique)
-		# array(test.dt[,value], dim=sapply(dim.names, length), dimnames=dim.names)
-		# cast(test.dt, stratum~K~spp)
-		
-		# expD[stratum=="-188.5 53.5" & year=="1983"]
-		# array.list[[1]]["-188.5 53.5",,"Albatrossia pectoralis"]
-		
-		# test <- expD[s.reg=="ai"&year==1983]
 		invisible(expD[, # within the j of this data.table, build each element of the output array list
 			j={
 				# dim.names <- lapply(test[,eval(s2c(arr.dim))], unique)
@@ -247,17 +223,68 @@ expand.data <- function(comD, arr.dim, keyValue="value", fillID=NULL, fillValue=
 			},
 			by=c(outScope)
 		])
-		# apply(array.list[[1]], c(1,2), sumna)
-		# expD[,sumna(value),by=c("s.reg","year","stratum","K")][,any(V1==0)]
-		# comD[,sumna(value),by=c("s.reg","year","stratum","K")][,any(V1==0)]
-		# lapply(array.list, dim)
+		
+		# ===========================================
+		# = Array: Build the red values into arrays =
+		# ===========================================
+		if(!is.null(redID)){ # if there are redID's that should be added back in ...
+			red.list <- vector("list", length(unlist(redValue, F, F))) # for final output if using array out format
+			for(i in 1:length(red.list)){red.list[[i]]<-vector("list",outsize)}
+			ctr <- 0
+				
+			for(i in 1:length(redID)){ # for each redundant id/ value ...
+				setkeyv(expD, redID[[i]])
+				setkeyv(redFill[[i]], redID[[i]])
+				# expD <- redFill[[i]][expD,][,eval(s2c(c(names(expD),redValue[[i]])))] # 1st part merges, 2nd reorders columns
+				t.red <- setcolorder(redFill[[i]][expD,], c(names(expD), redValue[[i]])) # this should be faster
+				setkeyv(t.red, c(outScope,rev(arr.dim)))
+				
+				for(r in 1:length(redValue[[i]])){
+					ctr <- ctr + 1 # have to increment counter according to unique redValues (total, not just for this redID); grouping by redID makes the merges more efficient (fewer), but then it also confuses the nesting of lists – just because 2 redValues can be unique identified by the same redID doesn't mean that they should be nested in the array output. Instead, the array output will be a list of 3 elements: a list of n=outsize arrays containing keyValue, a data.table with n=outsize rows detailing what each element of the aforementioned list is obtained from what combinations of outScope, and a list of n=length(unlist(redValue)) lists that each contain n=outsize arrays. So if we want both btemp and depth, they can be uniquely identified by the same ID's, but they each get their own array in the red list.
+					t.rv <- redValue[[i]][[r]]
+					invisible(t.red[, # within the j of this data.table, build each element of the output array list
+						j={
+							dim.names <- lapply(.SD[,eval(s2c(arr.dim))], unique)
+							t.values <- unlist(.SD[,eval(s2c(t.rv))],use.names=FALSE)
+							red.list[[ctr]][[.GRP]] <<- array(t.values, dim=sapply(dim.names, length), dimnames=dim.names)
+							if(is.null(NULL)){}
+						},
+						by=c(outScope)
+					])
+					
+					# testing
+					# invisible(test.sd[, # within the j of this data.table, build each element of the output array list
+# 						j={
+# 							dim.names <- lapply(.SD[,eval(s2c(arr.dim))], unique)
+# 							red.list[[r]][[1]] <<- array(.SD[,eval(s2c(t.rv))], dim=sapply(dim.names, length), dimnames=dim.names)
+# 							dim.names <- lapply(test.sd[,eval(s2c(arr.dim))], unique)
+# 							array(unlist(test.sd[,eval(s2c(t.rv))],use.names=F), dim=sapply(dim.names, length), dimnames=dim.names)
+# 							if(is.null(NULL)){}
+# 						}
+# 					])
+					# end testing
+						
+				} # end looping through the r red values in redID i	
+				
+			} # end loop through redID
+		
+			
+		
+		} # end redID if
+
+
 		
 		if(!is.null(outScope)){
 			array.key <- data.table(matrix(unlist(array.key), ncol=length(outScope)+1, byrow=TRUE)) # build the key to the output array
 			setnames(array.key, names(array.key), c(outScope, "num")) # key the key
 		}
 		
-		return(list(array.list=array.list, array.key=array.key)) # return the output array and its key (stops function)
+		if(!is.null(redID)){
+			return(list(array.list=array.list, array.key=array.key, red.list=red.list))
+		}else{
+			return(list(array.list=array.list, array.key=array.key)) # return the output array and its key (stops function)
+		}
+		
 		
 	}else{ # end first half of if(arrayOut), begin alternative
 		# ==================================================================
