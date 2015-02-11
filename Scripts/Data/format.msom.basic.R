@@ -69,6 +69,6 @@ basic.dat <- expand.data(
 # ========
 # = Save =
 # ========
-save(basic.dat, file="./trawl/Data/basic.dat.RData")
+save(basic.dat, file="./trawl/Data/MSOM/basic.dat.RData")
 
 
