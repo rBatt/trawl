@@ -1,4 +1,5 @@
 
+
 # =================
 # = Load Packages =
 # =================
@@ -33,7 +34,7 @@ if(Sys.info()["sysname"]=="Linux"){
 # = Load Results =
 # ================
 # First, load data for referencing
-load("./trawl/Data/msom.dat.RData") # need msom.dat[[2]] for the region-year key to the rbo output list. Need dimnames(msom.dat[[1]])[2] in order to figure out which strata are in the rows of Z[,,,], and need dimnames(msom.dat[[1]])[3] to get the species (but remember the last 500 are just the augmented 0's)
+load("./trawl/Data/basic.dat.RData") # need basic.dat[[2]] for the region-year key to the rbo output list. Need dimnames(basic.dat[[1]])[2] in order to figure out which strata are in the rows of Z[,,,], and need dimnames(basic.dat[[1]])[3] to get the species (but remember the last 500 are just the augmented 0's)
 
 if("rbo.RData"%in%list.files("./trawl/Results/Richness/")){
 	load("./trawl/Results/Richness/rbo.RData")
@@ -52,35 +53,25 @@ if("rbo.RData"%in%list.files("./trawl/Results/Richness/")){
 	
 }
 
+
 # ===============================================
 # = Need to redo prep.basic to drop same strata =
 # ===============================================
 prep.basic <- function(t.dat){	
 	keep.strat <- apply(t.dat, 1, function(x)!all(is.na(x))) # which strata were never sampled?
 	t.dat <- t.dat[keep.strat,,] # remove strata that were never sampled
-
-	# If there are NA's 
-	# orig.na.TF <- apply(t.dat, c(1,3), function(x){all(is.na(x))})# sometimes there were NA's in the original data – this implies the species was observed, but perhaps effort wasn't recorded (/ by 0), or some other reason why wtcpue couldn't be recorded.
-	# if(any(orig.na.TF)){
-		# stop("A species was NA for all reps in a stratum. Please check the following: 1) replace original NA's with 1, 2) if other species have non-NA for this s.reg-year-stratum-K, then this species should have been changed to 0 in expand.data, 3) if all species are NA for all reps in this s.reg-year-stratum, then the stratum should have been dropped at the start of this function")
-		# print("found one!")
-		# orig.na.ind <- which(orig.na.TF, arr.ind=TRUE) # not easy to use orig.na.TF as subset b/c it doesn't reference all 3 dimensions
-		# orig.na.ind.c <- c(orig.na[,1], rep(1,nrow(orig.na)), orig.na[,2]) # we'll just change the first column (K) to not-NA
-		# orig.na.2.1 <- matrix(orig.na.ind.c, ncol=3, dimnames=list(rownames(orig.na),c("dim1","dim2","dim3")))
-		# t.dat[orig.na.2.1] <- 1 # all non-zero positive values will be turned into 1 in the occurrence model
-	# }
-	
-
 	return(t.dat)
 
 }
+
 
 # =========
 # = Get N =
 # =========
 rbo.N0 <- unlist(lapply(rbo, function(x)mode(x$N)), use.names=FALSE)
-rbo.N <- msom.dat[[2]][,N:=rbo.N0]
+rbo.N <- basic.dat[[2]][,N:=rbo.N0]
 rbo.N[,n.slope:=(lm(N~as.numeric(year))$coeff[2]), by="s.reg"]
+
 
 # ==========
 # = Plot N =
@@ -106,21 +97,20 @@ get.z.mu <- function(x)rowSums(apply(x$Z, c(2,3), mean))
 rbo.Z0 <- lapply(rbo, get.z.mu)
 
 # Format into data.table w/ ID info (stratum, year, region)
-z1.msom.dat <- prep.basic(msom.dat[[1]][[1]])
-rbo.Z.1.stratNames <- dimnames(z1.msom.dat)[[1]]
-rbo.Z.1 <- data.table(msom.dat[[2]][1,], Z=rbo.Z0[[1]], stratum=rbo.Z.1.stratNames)
+z1.basic.dat <- prep.basic(basic.dat[[1]][[1]])
+rbo.Z.1.stratNames <- dimnames(z1.basic.dat)[[1]]
+rbo.Z.1 <- data.table(basic.dat[[2]][1,], Z=rbo.Z0[[1]], stratum=rbo.Z.1.stratNames)
 rbo.Z <- copy(rbo.Z.1)
 
-for(i in 2:length(msom.dat[[1]])){
-	t.z.msom.dat <- prep.basic(msom.dat[[1]][[i]])
-	t.rbo.Z.stratNames <- dimnames(t.z.msom.dat)[[1]]
-	t.rbo.Z <- data.table(msom.dat[[2]][i,], Z=rbo.Z0[[i]], stratum=t.rbo.Z.stratNames)
+for(i in 2:length(basic.dat[[1]])){
+	t.z.basic.dat <- prep.basic(basic.dat[[1]][[i]])
+	t.rbo.Z.stratNames <- dimnames(t.z.basic.dat)[[1]]
+	t.rbo.Z <- data.table(basic.dat[[2]][i,], Z=rbo.Z0[[i]], stratum=t.rbo.Z.stratNames)
 	rbo.Z <- rbind(rbo.Z, t.rbo.Z)
 }
 
-# Split stratum name into lon lat
-# mapply(c, strsplit(c("-166.5 54.5", "-167.5 53.5", "-168.5 53.5"), " "))
 
+# Split stratum name into lon lat
 invisible(rbo.Z[,
 	j={
 		LL0 <- mapply(c, strsplit(stratum, " "))
@@ -179,17 +169,9 @@ saveHTML(
 		par(mar=c(1.75,1.5,0.5,0.5), oma=rep(0.1,4), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
 		ani.options(inverval=0.5)
 		rbo.Z[,
-			j={
-			# for(i in 1:rbo.Z[,lu(year)]){
-				# t.year <- rbo.Z[,unique(year)][i]
-				# t.rbo <- rbo.Z[year==t.year]
-				# lon <- t.rbo[,lon]
-				# lat <- t.rbo[,lat]
-				# z.col <- t.rbo[,z.col]
-				
+			j={	
 				# Figure template
 				plot(lon, lat, type="n", xlab="", ylab="", ylim=lim.lat, xlim=lim.lon)
-				# plot(lon, lat, xlab="", ylab="", ylim=lim.lat, xlim=lim.lon)
 				
 				# Map
 				invisible(map(add=TRUE, fill=TRUE, col="lightgray")) # add map
@@ -230,51 +212,57 @@ saveHTML(
 smooZ0 <- copy(rbo.Z)
 smooZ0[,c("num","N","n.slope","z.col","z.slope"):=NULL]
 setkey(smooZ0, year, stratum)
-# all.ys <- as.data.table(expand.grid(smooZ0[,list(year=unique(year))],stratum=smooZ0[,unique(stratum)]))
 
+# Combine west coast trawl so there aren't duplicate strata in a year
 smooZ0[,year:=as.character(year)]
 smooZ0[s.reg%in%c("wctri","wcann"), s.reg:="wc"]
 setkey(smooZ0, year, stratum)
 
+# Average Z for duplicate year-strata (wc 2003? had a problem with this)
 smooZ02 <- smooZ0[,list(Z=mean(Z)),by=c("year","stratum","lat","lon")]
 
+# Create all year-stratum combinations
 smooZ.template <- data.table(smooZ02[,expand.grid(year=unique(as.character(year)), stratum=unique(stratum))], key=c("year","stratum"))
-# smooZ.template <- smooZ02[,list(year=year,stratum=stratum,s.reg=s.reg)]
-# setkey(smooZ.template, year, stratum)
 
+# Merge the year-stratum combinations into the data
 smooZ03.5 <- smooZ02[smooZ.template]
 setkey(smooZ03.5,stratum, year)
 
+# Create a data.table w/ region
 add.sreg <- unique(data.table(smooZ0[,list(s.reg=s.reg,stratum=stratum)],key=c("stratum")))
 smooZ03 <- add.sreg[smooZ03.5]
 
+# Create a data.table with lon, lat, and region to be added back in
 setkey(smooZ03, stratum)
 smooZ03.loc <- unique(smooZ03[!is.na(lon)])[,list(stratum=stratum,lon=lon,lat=lat,s.reg=s.reg)]
 setkey(smooZ03, stratum, year)
 
+# Add lon, lat, and region back in
 smooZ04 <- smooZ03[,c("lon","lat","s.reg"):=NULL][smooZ03.loc]
 setkey(smooZ04, year, stratum)
 
+# Function to fill missings with the mean – for strata that weren't sampled in that year (within-region differences are small due to model structure, so this makes sense; done for visual consistency)
 fill.mean <- function(x){
 	if(all(is.na(x))){
 		return(x)
 	}else{
 		x[is.na(x)] <- mean(x, na.rm=TRUE)
-		# x[is.nan(x)] <- NA_real_
 	}
 	x
 }
 
+# Average-in missing stratum richness
 smooZ04[, Z:=fill.mean(Z), by=c("s.reg","year")]
 
+# linearly interpolate between years (not spline; legacy name)
 smooZ04[, Z.spline:=approx(x=year, y=Z, xout=year)$y, by=c("stratum")]
 smooZ04[is.na(Z), Z:=Z.spline]
 
+# create final data.table, and put richness on a log scale
 smooZ <- copy(smooZ04)
-
-smooZ[sample(1:nrow(smooZ), 100)]
-
 smooZ[,Z:=log(Z)]
+
+
 # =================
 # = Plot Smooth Z =
 # =================
@@ -291,17 +279,10 @@ saveHTML(
 		ani.options(inverval=0.5)
 		smooZ[,
 			j={
-			# for(i in 1:rbo.Z[,lu(year)]){
-				# t.year <- rbo.Z[,unique(year)][i]
-				# t.rbo <- rbo.Z[year==t.year]
-				# lon <- t.rbo[,lon]
-				# lat <- t.rbo[,lat]
-				# z.col <- t.rbo[,z.col]
 				
 				# Figure template
 				plot(lon, lat, type="n", xlab="", ylab="", ylim=lim.lat, xlim=lim.lon)
-				# plot(lon, lat, xlab="", ylab="", ylim=lim.lat, xlim=lim.lon)
-				
+								
 				# Map
 				invisible(map(add=TRUE, fill=TRUE, col="lightgray")) # add map
 				
@@ -350,9 +331,5 @@ save(rbo.N, file="./trawl/Results/Richness/rbo.N.RData")
 
 
 
-
-
-
-# test <- do.call(Map, c(c, rbo)) # DON'T DO THIS – IT'LL CRASH OR TAKE FOREVER
 
 

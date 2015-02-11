@@ -46,7 +46,7 @@ invisible(sapply(paste(plot.location, list.files(plot.location), sep="/"), sourc
 # ======================
 # = Load MSOM Data set =
 # ======================
-load("./trawl/Data/msom.dat.RData")
+load("./trawl/Data/basic.dat.RData")
 load("./trawl/Data/trawl2.RData") # needed so that I know where the original NA's are; not in format.trawl b/c this will need to be handled differently for the different richness models, so this is richness.basic specific
 
 
@@ -69,20 +69,20 @@ if(Sys.info()["sysname"]=="Windows"){
 # = Change original data's NA's to 1's =
 # ======================================
 change.na.1 <- trawl2[is.na(wtcpue), list(s.reg=s.reg, year=year, stratum=stratum, K=K, spp=spp)]
-setkey(msom.dat[[2]], s.reg, year)
-md.num <- msom.dat[[2]][change.na.1[,list(s.reg,as.character(year))]][,as.numeric(num)]
+setkey(basic.dat[[2]], s.reg, year)
+md.num <- basic.dat[[2]][change.na.1[,list(s.reg,as.character(year))]][,as.numeric(num)]
 for(i in 1:length(md.num)){
 	t.c <- change.na.1[i,c(stratum=stratum,K=K,spp=spp)]
 	tryCatch(
 		{
-			if(!is.na(msom.dat[[1]][[md.num[i]]][t.c[1],t.c[2],t.c[3]])){
+			if(!is.na(basic.dat[[1]][[md.num[i]]][t.c[1],t.c[2],t.c[3]])){
 				print("already fixed!")
 			}else{
-				msom.dat[[1]][[md.num[i]]][t.c[1],t.c[2],t.c[3]] <- 1
+				basic.dat[[1]][[md.num[i]]][t.c[1],t.c[2],t.c[3]] <- 1
 			}
 		
 		}, 
-		error=function(cond){print(paste0(t.c,collapse=" "))} # sometimes the subset doesn't exist b/c that particular species from trawl2 was removed before the creation of msom.dat b/c it wasn't correctSpp, or it didn't have a common name, or is.species() was F, etc. For example, spp == "Gastropoda" or spp=="Trash species in catch" will not be included here. spp=="Ophichthus ocellatus" wasn't included because it doesn't have a common name (but see issue #26) 
+		error=function(cond){print(paste0(t.c,collapse=" "))} # sometimes the subset doesn't exist b/c that particular species from trawl2 was removed before the creation of basic.dat b/c it wasn't correctSpp, or it didn't have a common name, or is.species() was F, etc. For example, spp == "Gastropoda" or spp=="Trash species in catch" will not be included here. spp=="Ophichthus ocellatus" wasn't included because it doesn't have a common name (but see issue #26) 
 	)
 }
 
@@ -114,7 +114,7 @@ prep.basic <- function(t.dat){
 # ===================================
 # = Prep Data for Bayesian Richness =
 # ===================================
-t.dat <- lapply(msom.dat[[1]], prep.basic)
+t.dat <- lapply(basic.dat[[1]], prep.basic)
 
 
 # ==============================
