@@ -1,0 +1,50 @@
+<html>
+<head>
+	<meta charset="utf-8" />
+	<meta name="generator" content="R package animation 2.3">
+	<title>Species Richness</title>
+	<link rel="stylesheet" href="css/reset.css" />
+	<link rel="stylesheet" href="css/styles.css" />
+	<link rel="stylesheet" href="css/scianimator.css" />
+  <link rel="stylesheet" href="http://yandex.st/highlightjs/7.3/styles/github.min.css">
+
+	<script src="js/jquery-1.4.4.min.js"></script>
+	<script src="js/jquery.scianimator.min.js"></script>
+  <script type="text/javascript" src="http://yandex.st/highlightjs/7.3/highlight.min.js"></script>
+  <script type="text/javascript" src="http://yandex.st/highlightjs/7.3/languages/r.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+
+</head>
+<body>
+
+	<div class="scianimator"><div id="Rplot" style="display: inline-block;"></div></div>
+	<div class="scianimator" style="width: 1175.6067594106px; text-align: left"><pre><code class="r">## Species richness over time and space
+library(maps)
+library(data.table)
+library(animation)
+par(mar = c(1.75, 1.5, 0.5, 0.5), oma = rep(0.1, 4), mgp = c(0.85, 
+    0.05, 0), tcl = -0.15, ps = 8, family = "Times", cex = 1)
+ani.options(inverval = 0.5)
+rbo.Z[, j = {
+    plot(lon, lat, type = "n", xlab = "", ylab = "", ylim = lim.lat, 
+        xlim = lim.lon)
+    invisible(map(add = TRUE, fill = TRUE, col = "lightgray"))
+    points(lon, lat, pch = 21, bg = z.col)
+    segments(x0 = -165, x1 = -160, y0 = seq(30, 40, length.out = 256), 
+        col = heat.cols)
+    segments(x0 = -166, x1 = -165, y0 = seq(30, 40, length.out = 4), 
+        col = "black")
+    text(-167, y = seq(30, 40, length.out = 4), round(seq(lim.z[1], 
+        lim.z[2], length.out = 4), 2), adj = 1, cex = 1, 
+        col = "black")
+    text(-162.5, 41.5, bquote(Species ~ Richness))
+    ani.pause()
+}, by = c("year")]
+## R version 3.0.3 (2014-03-06)
+## Platform: x86_64-apple-darwin10.8.0 (64-bit)
+## Other packages: maps 2.3-7, data.table 1.9.4, animation 2.3</code></pre></div>
+	<script src="js/Rplot.js"></script>
+<!-- highlight R code -->
+
+</body>
+</html>

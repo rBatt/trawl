@@ -163,6 +163,179 @@ rbo.Z[,text(-162.5, 41.5, bquote(Richness~Trend~(spp~per~yr)))] # add label for 
 dev.off()
 
 
+
+# =================================
+# = Plot Time Series of Richness  =
+# =================================
+heat.cols <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(256)
+rbo.Z[,z.col:=heat.cols[cut(Z, 256)]]
+lim.z <- rbo.Z[,range(Z)]
+lim.lon <- rbo.Z[,range(lon)]
+lim.lat <- rbo.Z[,range(lat)]
+rbo.Z[,year:=as.numeric(year)]
+setorder(rbo.Z,year)
+saveHTML(
+	{
+		par(mar=c(1.75,1.5,0.5,0.5), oma=rep(0.1,4), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
+		ani.options(inverval=0.5)
+		rbo.Z[,
+			j={
+			# for(i in 1:rbo.Z[,lu(year)]){
+				# t.year <- rbo.Z[,unique(year)][i]
+				# t.rbo <- rbo.Z[year==t.year]
+				# lon <- t.rbo[,lon]
+				# lat <- t.rbo[,lat]
+				# z.col <- t.rbo[,z.col]
+				
+				# Figure template
+				plot(lon, lat, type="n", xlab="", ylab="", ylim=lim.lat, xlim=lim.lon)
+				# plot(lon, lat, xlab="", ylab="", ylim=lim.lat, xlim=lim.lon)
+				
+				# Map
+				invisible(map(add=TRUE, fill=TRUE, col="lightgray")) # add map
+				
+				# Richness
+				points(lon, lat, pch=21, bg=z.col)
+				
+				# Legend
+				segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)
+				segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")
+				text(-167, y=seq(30,40, length.out=4), round(seq(lim.z[1], lim.z[2], length.out=4),2), adj=1, cex=1, col="black")
+#
+# 				# Title
+				text(-162.5, 41.5, bquote(Species~Richness))
+				
+				# Pause between years
+				ani.pause()
+			},
+			by=c("year")
+		]
+	
+	},
+	ani.height=400,
+	ani.width=rbo.Z[,map.w(lat,lon,400)],
+	image.name="Species richness over time",
+	imgdir="zpngs", #"trawl/Figures/Diversity/animateZ/zpngs",
+	htmlfile="speciesRichness_timeSpace.html",
+	autobrowse=FALSE,
+	title="Species Richness",
+	description="Species richness over time and space"
+)
+
+
+
+# ====================================
+# = Smooth Time Zeries of Z Richness =
+# ====================================
+smooZ0 <- copy(rbo.Z)
+smooZ0[,c("num","N","n.slope","z.col","z.slope"):=NULL]
+setkey(smooZ0, year, stratum)
+# all.ys <- as.data.table(expand.grid(smooZ0[,list(year=unique(year))],stratum=smooZ0[,unique(stratum)]))
+
+smooZ0[,year:=as.character(year)]
+smooZ0[s.reg%in%c("wctri","wcann"), s.reg:="wc"]
+setkey(smooZ0, year, stratum)
+
+smooZ02 <- smooZ0[,list(Z=mean(Z)),by=c("year","stratum","lat","lon")]
+
+smooZ.template <- data.table(smooZ02[,expand.grid(year=unique(as.character(year)), stratum=unique(stratum))], key=c("year","stratum"))
+# smooZ.template <- smooZ02[,list(year=year,stratum=stratum,s.reg=s.reg)]
+# setkey(smooZ.template, year, stratum)
+
+smooZ03.5 <- smooZ02[smooZ.template]
+setkey(smooZ03.5,stratum, year)
+
+add.sreg <- unique(data.table(smooZ0[,list(s.reg=s.reg,stratum=stratum)],key=c("stratum")))
+smooZ03 <- add.sreg[smooZ03.5]
+
+setkey(smooZ03, stratum)
+smooZ03.loc <- unique(smooZ03[!is.na(lon)])[,list(stratum=stratum,lon=lon,lat=lat,s.reg=s.reg)]
+setkey(smooZ03, stratum, year)
+
+smooZ04 <- smooZ03[,c("lon","lat","s.reg"):=NULL][smooZ03.loc]
+setkey(smooZ04, year, stratum)
+
+fill.mean <- function(x){
+	if(all(is.na(x))){
+		return(x)
+	}else{
+		x[is.na(x)] <- mean(x, na.rm=TRUE)
+		# x[is.nan(x)] <- NA_real_
+	}
+	x
+}
+
+smooZ04[, Z:=fill.mean(Z), by=c("s.reg","year")]
+
+smooZ04[, Z.spline:=approx(x=year, y=Z, xout=year)$y, by=c("stratum")]
+smooZ04[is.na(Z), Z:=Z.spline]
+
+smooZ <- copy(smooZ04)
+
+smooZ[sample(1:nrow(smooZ), 100)]
+
+smooZ[,Z:=log(Z)]
+# =================
+# = Plot Smooth Z =
+# =================
+heat.cols <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(256)
+smooZ[,z.col:=heat.cols[cut(Z, 256)]]
+lim.z <- smooZ[,range(Z, na.rm=TRUE)]
+lim.lon <- smooZ[,range(lon)]
+lim.lat <- smooZ[,range(lat)]
+smooZ[,year:=as.numeric(year)]
+setorder(smooZ,year)
+saveHTML(
+	{
+		par(mar=c(1.75,1.5,0.5,0.5), oma=rep(0.1,4), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
+		ani.options(inverval=0.5)
+		smooZ[,
+			j={
+			# for(i in 1:rbo.Z[,lu(year)]){
+				# t.year <- rbo.Z[,unique(year)][i]
+				# t.rbo <- rbo.Z[year==t.year]
+				# lon <- t.rbo[,lon]
+				# lat <- t.rbo[,lat]
+				# z.col <- t.rbo[,z.col]
+				
+				# Figure template
+				plot(lon, lat, type="n", xlab="", ylab="", ylim=lim.lat, xlim=lim.lon)
+				# plot(lon, lat, xlab="", ylab="", ylim=lim.lat, xlim=lim.lon)
+				
+				# Map
+				invisible(map(add=TRUE, fill=TRUE, col="lightgray")) # add map
+				
+				# Richness
+				points(lon, lat, pch=21, bg=z.col)
+				
+				# Legend
+				segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)
+				segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")
+				text(-167, y=seq(30,40, length.out=4), round(seq(lim.z[1], lim.z[2], length.out=4),2), adj=1, cex=1, col="black")
+#
+# 				# Title
+				text(-162.5, 41.5, bquote(Species~Richness))
+				
+				# Pause between years
+				ani.pause()
+			},
+			by=c("year")
+		]
+	
+	},
+	ani.height=400,
+	ani.width=smooZ[,map.w(lat,lon,400)],
+	image.name="Species richness over time",
+	imgdir="zpngs", #"trawl/Figures/Diversity/animateZ/zpngs",
+	htmlfile="speciesRichness_timeSpace_smooth.html",
+	autobrowse=FALSE,
+	title="Species Richness",
+	description="Species richness over time and space"
+)
+
+
+
+
 # ========================
 # = Save rbo.Z and rbo.N =
 # ========================
