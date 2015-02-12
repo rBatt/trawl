@@ -31,9 +31,22 @@ cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
 rsync -azunP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Data/' "./Data/"
 
 
-# Download the msom.dat.RData file from amphiprion
+# Download the basic.dat.RData file from amphiprion
 cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
-rsync -azunP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Data/msom.dat.RData' "./Data/"
+rsync -azunP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Data/MSOM/basic.dat.RData' "./Data/"
+
+# Download the cov.dat.RData file from amphiprion
+cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
+rsync -azunP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Data/MSOM/cov.dat.RData' "./Data/MSOM/"
+
+# Download the cov.dat.RData file from amphiprion
+cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
+rsync -azunP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Data/MSOM/prepd.msom.cov.RData' "./Data/MSOM/"
+
+
+# Download the cov.dat.prec.RData file from amphiprion
+cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
+rsync -azunP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Data/MSOM/cov.dat.prec.RData' "./Data/MSOM/"
 
 # Download the trawl.RData file
 cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
@@ -46,7 +59,7 @@ rsync -aznuP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinsky
 # Download All Results
 cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
 rsync -azunP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Results/' "./Results/"
-
+
 
 # Download the richness.basic.out file
 cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
