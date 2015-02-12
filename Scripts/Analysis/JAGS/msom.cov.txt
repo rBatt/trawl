@@ -24,8 +24,8 @@ model{
 
 	mua1 ~ dnorm(0, 0.001)
 	mua2 ~ dnorm(0, 0.001)
-	# mua3 ~ dnorm(0, 0.001)
-	# mua4 ~ dnorm(0, 0.001)
+	mua3 ~ dnorm(0, 0.001)
+	mua4 ~ dnorm(0, 0.001)
 	# mub1 ~ dnorm(0, 0.001)
 	# mub2 ~ dnorm(0, 0.001)
 
@@ -37,8 +37,8 @@ model{
 	tau.u.a0 ~ dgamma(0.1,0.1)
 	tau.a1 ~ dgamma(0.1,0.1)
 	tau.a2 ~ dgamma(0.1,0.1)
-	# tau.a3 ~ dgamma(0.1,0.1)
-	# tau.a4 ~ dgamma(0.1,0.1)
+	tau.a3 ~ dgamma(0.1,0.1)
+	tau.a4 ~ dgamma(0.1,0.1)
 	# tau.b1 ~ dgamma(0.1,0.1)
 	# tau.b2 ~ dgamma(0.1,0.1)
 
@@ -54,8 +54,8 @@ model{
 		v.a0[i] ~ dnorm(mu.v.a0, tau.v.a0) 
 		a1[i] ~ dnorm(mua1, tau.a1)
 		a2[i] ~ dnorm(mua2, tau.a2)
-		# a3[i] ~ dnorm(mua3, tau.a3)
-		# a4[i] ~ dnorm(mua4, tau.a4)
+		a3[i] ~ dnorm(mua3, tau.a3)
+		a4[i] ~ dnorm(mua4, tau.a4)
 		# b1[i] ~ dnorm(mub1, tau.b1)
 		# b2[i] ~ dnorm(mub2, tau.b2)
 
@@ -63,8 +63,12 @@ model{
 		#Create a loop to estimate the Z matrix (true occurrence for species i 
 		#at point j.      
 		for (j in 1:J) {
+			# temp[j,i] ~ dnorm(temp.mu[j,i], temp.prec[j,i])
+			# depth[j,i] ~ dnorm(depth.mu[j,i], depth.prec[j,i])
+			
+			
 			# logit(psi[j,i]) <- u.cato[i]*(1-Ind[j]) + u.fcw[i]*Ind[j] + a1[i]*ufc1[j] + a2[i]*ufc2[j] + a3[i]*ba1[j] + a4[i]*ba2[j]
-			logit(psi[j,i]) <- u.a0[i] + a1[i]*temp[j,i] + a2[i]*temp[j,i]^2
+			logit(psi[j,i]) <- u.a0[i] + a1[i]*temp[j] + a2[i]*temp[j]^2 + a3[i]*depth[j] + a4[i]*depth[j]^2
 
 			mu.psi[j,i] <- psi[j,i]*w[i]
 			Z[j,i] ~ dbern(mu.psi[j,i])
