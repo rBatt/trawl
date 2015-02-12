@@ -1,7 +1,7 @@
 
 
 
-rich.cov <- function(data, nzeroes=100, nChains=3, nIter=2E3, nThin=NULL, doP=FALSE){
+rich.cov <- function(data, covs, cov.precs, nzeroes=100, nChains=3, nIter=2E3, nThin=NULL){
 	if(is.null(nThin)){
 		nThin <- max(1, floor((nIter - floor(nIter/2)) / 1000))
 	}
@@ -57,14 +57,11 @@ rich.cov <- function(data, nzeroes=100, nChains=3, nIter=2E3, nThin=NULL, doP=FA
 	}
 
 	# Generate inital values
-	if(!doP){
-		sp.inits <- list()
-		for(i in 1:nChains){
-			sp.inits[[i]] <- make.inits()
-		}
-	}else{
-		sp.inits[[i]] <- list(make.inits())
+	sp.inits <- list()
+	for(i in 1:nChains){
+		sp.inits[[i]] <- make.inits()
 	}
+
 
 	
 
@@ -73,30 +70,38 @@ rich.cov <- function(data, nzeroes=100, nChains=3, nIter=2E3, nThin=NULL, doP=FA
 	# ====================================
 	# = Define data to be loaded to jags =
 	# ====================================
-	sp.data <- list(n=nSpp, nzeroes=nzeroes, J=nStrat, K=nK, X=Xaug1) # TODO needs to include the covariates
+	sp.data <- list(
+		n=nSpp, 
+		nzeroes=nzeroes, 
+		J=nStrat, 
+		K=nK, 
+		X=Xaug1, 
+		temp.mu=covs[[1]], 
+		temp.prec=cov.precs[[1]], 
+		depth.mu=covs[[2]], 
+		depth.prec=cov.precs[[2]]
+	) # TODO needs to include the covariates
 
 
 	# =======================================
 	# = Define parameters for jags to track =
 	# =======================================
-	sp.params <- c("Z","u", "v", "mu.u", "mu.v", "tau.u", "tau.v", "omega", "N") # TODO needs to include the other parameters
+	sp.params <- c("Z","u", "v", "mu.u", "mu.v", "tau.u", "tau.v", "omega", "N", "Nsite") # TODO needs to include the other parameters
 
 
 	# =============
 	# = Run model =
 	# =============
-	if(!doP){
-		fit.cov <- jags(
-			data=sp.data,
-			inits=sp.inits,
-			parameters.to.save=sp.params,
-			model.file="msom.cov.txt",
-			n.chains=nChains,
-			n.iter=nIter,
-			n.thin=nThin,
-			working.directory=paste0(getwd(),"/","trawl/Scripts/Analysis/JAGS")
-		)
-	}
+	fit.cov <- jags(
+		data=sp.data,
+		inits=sp.inits,
+		parameters.to.save=sp.params,
+		model.file="msom.cov.txt",
+		n.chains=nChains,
+		n.iter=nIter,
+		n.thin=nThin,
+		working.directory=paste0(getwd(),"/","trawl/Scripts/Analysis/JAGS")
+	)
 
 	# return(list(summary.jags(fit.cov, doPlot=FALSE, doPanels=FALSE), fit.cov))
 	return(fit.cov)
