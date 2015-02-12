@@ -6,6 +6,7 @@ rich.cov <- function(data, covs, cov.precs, nzeroes=100, nChains=3, nIter=2E3, n
 		nThin <- max(1, floor((nIter - floor(nIter/2)) / 1000))
 	}
 
+
 	# =================
 	# = Load packages =
 	# =================
@@ -49,8 +50,8 @@ rich.cov <- function(data, covs, cov.precs, nzeroes=100, nChains=3, nIter=2E3, n
 		list(
 			omega=omegaGuess,
 			w=c(rep(1, nSpp), rbinom(nzeroes, size=1, prob=omegaGuess)),
-	        u=rnorm(nSpp+nzeroes), 
-			v=rnorm(nSpp+nzeroes),
+	        u.a0=rnorm(nSpp+nzeroes), 
+			v.a0=rnorm(nSpp+nzeroes),
 			# the change below necessary to avoid invalid initials; see: http://mbjoseph.github.io/blog/2013/02/24/com_occ/
 			Z = apply(Xaug1, c(1,3), max, na.rm=TRUE) #matrix(rbinom((n+nzeroes)*J, size=1, prob=psi.meanGuess), nrow=J, ncol=(n+nzeroes))
 		)	
@@ -65,29 +66,50 @@ rich.cov <- function(data, covs, cov.precs, nzeroes=100, nChains=3, nIter=2E3, n
 
 	
 
+	
 
-
-	# ====================================
-	# = Define data to be loaded to jags =
-	# ====================================
-	sp.data <- list(
-		n=nSpp, 
-		nzeroes=nzeroes, 
-		J=nStrat, 
-		K=nK, 
-		X=Xaug1, 
-		temp.mu=covs[[1]], 
-		temp.prec=cov.precs[[1]], 
-		depth.mu=covs[[2]], 
-		depth.prec=cov.precs[[2]]
-	)
-
-
-	# =======================================
-	# = Define parameters for jags to track =
-	# =======================================
-	sp.params <- c("Z","u", "v", "mu.u", "mu.v", "tau.u", "tau.v", "omega", "N", "Nsite", "a0", "a1", "a2", "a3", "a4") # TODO needs to include the other parameters, need to drop paramters a1 and a2 when no temperature data are available
-
+	# ===================================================
+	# = Load data, define parameters, choose model file =
+	# ===================================================
+	# These things need to change based on whether or not temperature data are available
+	if(!all(is.na(covs[[1]]))){
+		# Model File
+		modelFile <- "msom.cov.txt"
+		
+		# Parameters to Trace
+		sp.params <- c("N", "omega", "Nsite", "Z", "u.a0", "v.a0", "a1", "a2", "a3", "a4") # TODO needs to include the other parameters, need to drop paramters a1 and a2 when no temperature data are available
+		
+		# Data
+		sp.data <- list(
+			n=nSpp, 
+			nzeroes=nzeroes, 
+			J=nStrat, 
+			K=nK, 
+			X=Xaug1, 
+			temp.mu=covs[[1]], 
+			temp.prec=cov.precs[[1]], 
+			depth.mu=covs[[2]], 
+			depth.prec=cov.precs[[2]]
+		)
+	}else{
+		# Model File
+		modelFile <- "msom.cov.noTemp.txt"
+		
+		# Parameters to Trace
+		sp.params <- c("N", "omega", "Nsite", "Z", "u.a0", "v.a0", "a3", "a4")
+		
+		#Data
+		sp.data <- list(
+			n=nSpp, 
+			nzeroes=nzeroes, 
+			J=nStrat, 
+			K=nK, 
+			X=Xaug1,
+			depth.mu=covs[[2]], 
+			depth.prec=cov.precs[[2]]
+		)
+	}
+	
 
 	# =============
 	# = Run model =
@@ -96,7 +118,7 @@ rich.cov <- function(data, covs, cov.precs, nzeroes=100, nChains=3, nIter=2E3, n
 		data=sp.data,
 		inits=sp.inits,
 		parameters.to.save=sp.params,
-		model.file="msom.cov.txt", # TODO need to create logic to use alternative model when no temperature data are available
+		model.file=modelFile,
 		n.chains=nChains,
 		n.iter=nIter,
 		n.thin=nThin,
