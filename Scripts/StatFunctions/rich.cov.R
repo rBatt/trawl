@@ -1,11 +1,10 @@
 
 
 
-rich.cov <- function(data, covs, cov.precs, nzeroes=100, nChains=3, nIter=2E3, nThin=NULL){
+rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIter=2E3, nThin=NULL){
 	if(is.null(nThin)){
 		nThin <- max(1, floor((nIter - floor(nIter/2)) / 1000))
 	}
-
 
 	# =================
 	# = Load packages =
@@ -52,8 +51,8 @@ rich.cov <- function(data, covs, cov.precs, nzeroes=100, nChains=3, nIter=2E3, n
 			w=c(rep(1, nSpp), rbinom(nzeroes, size=1, prob=omegaGuess)),
 	        u.a0=rnorm(nSpp+nzeroes), 
 			v.a0=rnorm(nSpp+nzeroes),
-			# the change below necessary to avoid invalid initials; see: http://mbjoseph.github.io/blog/2013/02/24/com_occ/
-			Z = apply(Xaug1, c(1,3), max, na.rm=TRUE) #matrix(rbinom((n+nzeroes)*J, size=1, prob=psi.meanGuess), nrow=J, ncol=(n+nzeroes))
+			# specify initial for bernoulli outcome; see: http://mbjoseph.github.io/blog/2013/02/24/com_occ/
+			Z = apply(Xaug1, c(1,3), max, na.rm=TRUE)
 		)	
 	}
 
@@ -77,7 +76,7 @@ rich.cov <- function(data, covs, cov.precs, nzeroes=100, nChains=3, nIter=2E3, n
 		modelFile <- "msom.cov.txt"
 		
 		# Parameters to Trace
-		sp.params <- c("N", "omega", "Nsite", "Z", "u.a0", "v.a0", "a1", "a2", "a3", "a4") # TODO needs to include the other parameters, need to drop paramters a1 and a2 when no temperature data are available
+		sp.params <- c("N", "omega", "Nsite", "Z", "u.a0", "v.a0", "a1", "a2", "a3", "a4")
 		
 		# Data
 		sp.data <- list(
@@ -124,8 +123,31 @@ rich.cov <- function(data, covs, cov.precs, nzeroes=100, nChains=3, nIter=2E3, n
 		n.thin=nThin,
 		working.directory=paste0(getwd(),"/","trawl/Scripts/Analysis/JAGS")
 	)
-
+	
+	# mus <- fit.cov$BUGSoutput$mean
+	# t.range <- range(covs[[1]], na.rm=TRUE)
+	# t.grad <- seq(1, 10, by=0.25)
+	# for(i in 1:length(mus$a1)){
+	# 	resp <- mus$u.a0[i] + mus$a1[i]*t.grad + mus$a1[i]*t.grad
+	# 	plot(t.grad, resp)
+	# }
+	
+	out <- list(mean=fit.cov$BUGSoutput$mean, median=fit.cov$BUGSoutput$median, sd=fit.cov$BUGSoutput$sd)
+	
+	
+	# ========================
+	# = Save Objects to Disk =
+	# ========================
+	save(out, file=paste0(getwd(),"/","trawl/Results/Richness/msomCov.smry/",nameID,"_smry",".RData"))
+	save(fit.cov, file=paste0(getwd(),"/","trawl/Results/Richness/msomCov.smry/",nameID,"_full",".RData"))
+	
+	
+	# ======================================
+	# = Return the Summary for Convenience =
+	# ======================================
+	return(out)
+	
 	# return(list(summary.jags(fit.cov, doPlot=FALSE, doPanels=FALSE), fit.cov))
-	return(fit.cov)
+	# return(fit.cov)
 
 }
