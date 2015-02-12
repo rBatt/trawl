@@ -7,6 +7,7 @@ nIter <- 4E3
 n0s <- 5E2
 nThin <- 50 # max(1, floor((nIter - floor(nIter/2)) / 1000))
 
+
 # =================
 # = Load packages =
 # =================
@@ -67,21 +68,10 @@ if(Sys.info()["sysname"]=="Windows"){
 }
 
 
-# ==============================
-# = Function to combine output =
-# ==============================
-# Need to combine lists of model output so that they are grouped by parameter/type, not by model run
-# e.g., if regions 1-3 each have paremters A-D, would want output to be [[1]]A1,A2,A3 [[2]]B1,B2,B3 etc ... Not [[1]]A1,B1,C1,D1 [[2]]A2,B2,C2,D2 etc ...
-# comb <- function(...){
-# 	lapply(do.call(Map, c(list, list(...))), simplify2array)
-# }
-
-
 # =========================
 # = Run Bayesian Richness =
 # =========================
-# Run first Bayesian richness (done separately b/c combine function in foreach needs starting output)
-# first.out <- rich.cov(t.dat[[1]], nzeroes=n0s, nChains=nChains, nIter=nIter, nThin=nThin) # run the model for the first subset
+
 
 # Run all other Bayesian richness in parallel
 richness.cov.out <- foreach(i=(1:length(prepd.dat))) %dopar%{ # run all other subsets in parallel
@@ -89,6 +79,7 @@ richness.cov.out <- foreach(i=(1:length(prepd.dat))) %dopar%{ # run all other su
 		data=prepd.cov.dat[[i]], 
 		covs=list(prepd.cov1[[i]],prepd.cov2[[i]]), 
 		cov.precs=list(prepd.cov1.prec[[i]], prepd.cov2.prec[[i]]), 
+		nameID=paste(prepd.cov.names[i], collapse="_"),
 		nzeroes=n0s, 
 		nChains=nChains, 
 		nIter=nIter, 
@@ -97,18 +88,9 @@ richness.cov.out <- foreach(i=(1:length(prepd.dat))) %dopar%{ # run all other su
 }
 
 
-
-
 # ===============
 # = Save Output =
 # ===============
 save(richness.cov.out, file="./trawl/Results/Richness/richness.cov.out.RData")
-
-
-# ======================================
-# = Run and save last.out from screwup =
-# ======================================
-# last.out <- rich.cov(t.dat[[length(t.dat)]], nzeroes=n0s, nChains=nChains, nIter=nIter, nThin=nThin) # run the model for the first subset
-# save(last.out, file="./trawl/Results/Richness/last.out.RData", compress="xz")
 
 
