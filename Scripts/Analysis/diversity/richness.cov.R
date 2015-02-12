@@ -5,7 +5,7 @@
 nChains <- 3
 nIter <- 4E3
 n0s <- 5E2
-nThin <- 60 # max(1, floor((nIter - floor(nIter/2)) / 1000))
+nThin <- 50 # max(1, floor((nIter - floor(nIter/2)) / 1000))
 
 # =================
 # = Load packages =
@@ -47,7 +47,8 @@ invisible(sapply(paste(plot.location, list.files(plot.location), sep="/"), sourc
 # = Load MSOM Data set =
 # ======================
 load("./trawl/Data/MSOM/cov.dat.RData")
-load("./trawl/Data/trawl2.RData") # needed so that I know where the original NA's are; not in format.trawl b/c this will need to be handled differently for the different richness models, so this is richness.cov specific
+load("./trawl/Data/MSOM/cov.dat.prec.RData")
+load("./trawl/Data/trawl2.RData") # needed so that I know where the original NA's are
 
 
 # =====================================
@@ -58,8 +59,8 @@ if(Sys.info()["sysname"]=="Windows"){
 	registerDoParallel(cores=nC)
 }else if(Sys.info()["sysname"]=="Linux"){
 	# registerDoParallel(cores=min(c(25,floor(detectCores()*0.75))))
-	# registerDoParallel(floor(detectCores()*0.75))
-	registerDoParallel(floor(detectCores()*0.90))
+	registerDoParallel(floor(detectCores()*0.60))
+	# registerDoParallel(floor(detectCores()*0.90))
 }else{
 	registerDoParallel()
 }
@@ -97,21 +98,31 @@ prep.cov <- function(pc.dat, pc.cov1, pc.cov2, pc.cov1.prec, pc.cov2.prec){
 	keep.strat.cov1 <- apply(pc.cov1, 1, function(x)!all(is.na(x))) # which strata don't have covariate 1?
 	keep.strat.cov2 <- apply(pc.cov2, 1, function(x)!all(is.na(x))) # which strata don't have covariate 2?
 	
-	sum(keep.strat)
-	sum(keep.strat.cov1)
-	sum(keep.strat.cov2)
+	# sum(keep.strat)
+	# sum(keep.strat.cov1)
+	# sum(keep.strat.cov2)
 	
 	if(!all(keep.strat == keep.strat.cov1)){
+		toFill <- is.na(pc.cov1) & !is.na(pc.dat)
+		pc.cov1[toFill] <- mean(pc.cov1[pc.cov1.prec>=1E4], na.rm=TRUE) # the mean of the covariate values (subset to the values that weren't previously filled in!)
+		pc.cov1.prec[toFill] <- pmax(1/1E4, 1/var(pc.cov1[!toFill & pc.cov1.prec>=1E4], na.rm=TRUE)) # precision as 1/variance, or if variance undefined, 1/1E4
+		# any(is.na(pc.cov1.prec) & !is.na(pc.cov1))
+		# any(is.na(pc.cov1.prec) & !is.na(pc.dat))
+		# any(is.na(pc.cov1) & !is.na(pc.dat))
 		
-	}else{
-		pc.cov1.2 <- apply(pc.cov1[keep.strat.cov1,,], c(1,3), mean, na.rm=TRUE) # remove strata that were never sampled
 	}
+	pc.cov1.2 <- apply(pc.cov1[keep.strat.cov1,,], c(1,3), mean, na.rm=TRUE) # remove strata that were never sampled
+	pc.cov1.prec.2 <- apply(pc.cov1.prec[keep.strat.cov1,,], c(1,3), mean, na.rm=TRUE) # remove strata that were never sampled
+	
 	
 	if(!all(keep.strat == keep.strat.cov2)){
-		
-	}else{
-		pc.cov2.2 <- apply(pc.cov2[keep.strat.cov2,,], c(1,3), mean, na.rm=TRUE) # remove strata that were never sampled
+		toFill <- is.na(pc.cov2) & !is.na(pc.dat)
+		pc.cov2[toFill] <- mean(pc.cov1[pc.cov2.prec>=1E4], na.rm=TRUE) # the mean of the covariate values (subset to the values that weren't previously filled in!)
+		pc.cov2.prec[toFill] <- pmax(1/1E4, 1/var(pc.cov2[!toFill & pc.cov1.prec>=1E4], na.rm=TRUE)) # precision as 1/variance, or if variance undefined, 1/1E4
 	}
+	pc.cov2.2 <- apply(pc.cov2[keep.strat.cov2,,], c(1,3), mean, na.rm=TRUE) # remove strata that were never sampled
+	pc.cov2.prec.2 <- apply(pc.cov2.prec[keep.strat.cov2,,], c(1,3), mean, na.rm=TRUE) # remove strata that were never sampled
+	
 	
 		
 
@@ -122,7 +133,7 @@ prep.cov <- function(pc.dat, pc.cov1, pc.cov2, pc.cov1.prec, pc.cov2.prec){
 	}
 	
 
-	return(list(pc.dat2, pc.cov1.2, pc.cov2.2)
+	return(list(pc.dat2, pc.cov1.2, pc.cov2.2, pc.cov1.prec.2, pc.cov2.prec.2))
 
 }
 
@@ -131,20 +142,31 @@ prep.cov <- function(pc.dat, pc.cov1, pc.cov2, pc.cov1.prec, pc.cov2.prec){
 # = Prep Data for Bayesian Richness =
 # ===================================
 # t.dat, t.cov1, and t.cov2 should all be the same length
-prepd.dat <- vector("list", length(cov.dat[[1]]))
+prepd.cov.dat <- vector("list", length(cov.dat[[1]]))
 prepd.cov1 <- vector("list", length(cov.dat[[3]][[1]]))
 prepd.cov2 <- vector("list", length(cov.dat[[3]][[2]]))
+prepd.cov1.prec <- vector("list", length(cov.dat.prec[[1]]))
+prepd.cov2.prec <- vector("list", length(cov.dat.prec[[2]]))
+
 
 for(i in 1:length(cov.dat[[1]])){
-	prep.cov(
-		pc.dat=cov.dat[[1]][[i]], 
+	t.prep <- prep.cov(
+		pc.dat=cov.dat[[1]][[i]],
 		pc.cov1=cov.dat[[3]][[1]][[i]], 
 		pc.cov2=cov.dat[[3]][[2]][[i]],
 		pc.cov1.prec=cov.dat.prec[[1]][[i]],
 		pc.cov2.prec=cov.dat.prec[[2]][[i]]
 	)
 	
+	prepd.cov.dat[[i]] <- t.prep[[1]]
+	prepd.cov1[[i]] <- t.prep[[2]]
+	prepd.cov2[[i]] <- t.prep[[3]]
+	prepd.cov1.prec[[i]] <- t.prep[[4]]
+	prepd.cov2.prec[[i]] <- t.prep[[5]]
+	
 }
+
+save(prepd.cov.dat, prepd.cov1, prepd.cov2, prepd.cov1.prec, prepd.cov2.prec, file="./trawl/Data/MSOM/prepd.msom.cov.RData")
 
 
 # ==============================
@@ -165,7 +187,15 @@ for(i in 1:length(cov.dat[[1]])){
 
 # Run all other Bayesian richness in parallel
 richness.cov.out <- foreach(i=(1:length(prepd.dat))) %dopar%{ # run all other subsets in parallel
-	rich.cov(prepd.dat[[i]], nzeroes=n0s, nChains=nChains, nIter=nIter, nThin=nThin) # do analysis for this subset
+	rich.cov(
+		data=prepd.cov.dat[[i]], 
+		covs=list(prepd.cov1[[i]],prepd.cov2[[i]]), 
+		cov.precs=list(prepd.cov1.prec[[i]], prepd.cov2.prec[[i]]), 
+		nzeroes=n0s, 
+		nChains=nChains, 
+		nIter=nIter, 
+		nThin=nThin
+	) # do analysis for this subset
 }
 
 
