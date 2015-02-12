@@ -80,13 +80,13 @@ rich.cov <- function(data, covs, cov.precs, nzeroes=100, nChains=3, nIter=2E3, n
 		temp.prec=cov.precs[[1]], 
 		depth.mu=covs[[2]], 
 		depth.prec=cov.precs[[2]]
-	) # TODO needs to include the covariates
+	)
 
 
 	# =======================================
 	# = Define parameters for jags to track =
 	# =======================================
-	sp.params <- c("Z","u", "v", "mu.u", "mu.v", "tau.u", "tau.v", "omega", "N", "Nsite") # TODO needs to include the other parameters
+	sp.params <- c("Z","u", "v", "mu.u", "mu.v", "tau.u", "tau.v", "omega", "N", "Nsite", "a0", "a1", "a2", "a3", "a4") # TODO needs to include the other parameters, need to drop paramters a1 and a2 when no temperature data are available
 
 
 	# =============
@@ -96,7 +96,7 @@ rich.cov <- function(data, covs, cov.precs, nzeroes=100, nChains=3, nIter=2E3, n
 		data=sp.data,
 		inits=sp.inits,
 		parameters.to.save=sp.params,
-		model.file="msom.cov.txt",
+		model.file="msom.cov.txt", # TODO need to create logic to use alternative model when no temperature data are available
 		n.chains=nChains,
 		n.iter=nIter,
 		n.thin=nThin,
