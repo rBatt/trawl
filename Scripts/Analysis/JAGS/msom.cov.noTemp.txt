@@ -22,8 +22,8 @@ model{
 	# fcw2.mean ~ dunif(0,1)
 	# mu.vfcw <- log(fcw2.mean) - log(1-fcw2.mean)
 
-	mua1 ~ dnorm(0, 0.001)
-	mua2 ~ dnorm(0, 0.001)
+	# mua1 ~ dnorm(0, 0.001)
+	# mua2 ~ dnorm(0, 0.001)
 	mua3 ~ dnorm(0, 0.001)
 	mua4 ~ dnorm(0, 0.001)
 	# mub1 ~ dnorm(0, 0.001)
@@ -41,6 +41,12 @@ model{
 	tau.a4 ~ dgamma(0.1,0.1)
 	# tau.b1 ~ dgamma(0.1,0.1)
 	# tau.b2 ~ dgamma(0.1,0.1)
+	
+	# Set up covariates as stochastic nodes (handles missings)
+	for (j in 1:J) {
+		# temp[j] ~ dnorm(temp.mu[j], temp.prec[j])
+		depth[j] ~ dnorm(depth.mu[j], depth.prec[j])
+	}
 
 	for (i in 1:(n+nzeroes)) {
 
@@ -63,8 +69,8 @@ model{
 		#Create a loop to estimate the Z matrix (true occurrence for species i 
 		#at point j.      
 		for (j in 1:J) {
-			# temp[j,i] ~ dnorm(temp.mu[j,i], temp.prec[j,i])
-			depth[j] ~ dnorm(depth.mu[j], depth.prec[j])
+			# temp[j] ~ dnorm(temp.mu[j], temp.prec[j])
+			# depth[j] ~ dnorm(depth.mu[j], depth.prec[j])
 			
 			
 			# logit(psi[j,i]) <- u.cato[i]*(1-Ind[j]) + u.fcw[i]*Ind[j] + a1[i]*ufc1[j] + a2[i]*ufc2[j] + a3[i]*ba1[j] + a4[i]*ba2[j]
