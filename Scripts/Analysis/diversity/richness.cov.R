@@ -46,9 +46,10 @@ invisible(sapply(paste(plot.location, list.files(plot.location), sep="/"), sourc
 # ======================
 # = Load MSOM Data set =
 # ======================
-load("./trawl/Data/MSOM/cov.dat.RData")
+load("./trawl/Data/MSOM/prepd.msom.cov.RData")
+# load("./trawl/Data/MSOM/cov.dat.RData")
 # load("./trawl/Data/MSOM/cov.dat.prec.RData")
-load("./trawl/Data/trawl2.RData") # needed so that I know where the original NA's are
+# load("./trawl/Data/trawl2.RData") # needed so that I know where the original NA's are
 
 
 # =====================================
