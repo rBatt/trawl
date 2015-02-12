@@ -321,13 +321,13 @@ for(i in 1:length(cov.dat[[1]])){
 
 
 
-
-
+# save the covariate names (don't want to have to bother loading cov.dat just to get cov.dat[[2]] in richness.cov)
+prepd.cov.names <- cov.dat[[2]]
 
 # ========
 # = Save =
 # ========
-save(prepd.cov.dat, prepd.cov1, prepd.cov2, prepd.cov1.prec, prepd.cov2.prec, file="./trawl/Data/MSOM/prepd.msom.cov.RData", compress="xz")
+save(prepd.cov.dat, prepd.cov1, prepd.cov2, prepd.cov1.prec, prepd.cov2.prec, prepd.cov.names, file="./trawl/Data/MSOM/prepd.msom.cov.RData", compress="xz")
 save(cov.dat, file="./trawl/Data/MSOM/cov.dat.RData", compress="xz")
 # save(cov.dat.prec, file="./trawl/Data/MSOM/cov.dat.prec.RData", compress="xz")
 
