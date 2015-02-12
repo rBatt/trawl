@@ -137,7 +137,7 @@ fill.cov <- function(x, FUN){ # fill covariate means
 
 
 prec <- function(x, ...){
-	if(sum(!is.na(x))==1){
+	if(sum(is.finite(x))==1 & max(x,...)!=0){
 		return(1/(max(x,...)^2))
 	}else{
 		return( min(1E4, 1/var(x, ...)) )
@@ -149,6 +149,7 @@ fill.cov.prec <- function(x){ # fill covariate means
 	# because there are multiple hauls (potentially) per substratum, and not all species are caught, this value can vary
 	# however, we can assume that the variability among hauls is small relative to the variability among strata or years
 	# If a species isn't caught at in a year/substratum, the temperature associated with that absence is the average of the temperatures recorded for the other species caught in that same time/ place.
+	x[is.finite(x)] <- 1E4
 	bother <- apply(x, c(1,2), function(x)any(is.na(x))&any(!is.na(x)))
 	fill.but.no.sd <- apply(x, c(1,2), function(x)any(is.na(x))&(sum(!is.na(x))==1))
 	# if(any(fill.but.no.sd)){warning("only 1 non-NA; values would be filled with mean, but not stdev")}
@@ -160,7 +161,7 @@ fill.cov.prec <- function(x){ # fill covariate means
 			t.bother <- bother2[i,]
 			x.na <- is.na(x[t.bother[1], t.bother[2], ])
 			x[t.bother[1], t.bother[2], x.na] <- fm[t.bother[1],t.bother[2]]
-			x[t.bother[1], t.bother[2], !x.na] <- 1E4
+			# x[t.bother[1], t.bother[2], !x.na] <- 1E4
 		}
 	}
 	return(x)
