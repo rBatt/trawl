@@ -63,8 +63,8 @@ model{
 		#Create a loop to estimate the Z matrix (true occurrence for species i 
 		#at point j.      
 		for (j in 1:J) {
-			temp[j,i] ~ dnorm(temp.mu[j], temp.prec[j])
-			depth[j,i] ~ dnorm(depth.mu[j], depth.prec[j])
+			temp[j] ~ dnorm(temp.mu[j], temp.prec[j])
+			depth[j] ~ dnorm(depth.mu[j], depth.prec[j])
 			
 			
 			# logit(psi[j,i]) <- u.cato[i]*(1-Ind[j]) + u.fcw[i]*Ind[j] + a1[i]*ufc1[j] + a2[i]*ufc2[j] + a3[i]*ba1[j] + a4[i]*ba2[j]
