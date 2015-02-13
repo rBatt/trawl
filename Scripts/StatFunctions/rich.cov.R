@@ -123,6 +123,9 @@ rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIte
 		n.thin=nThin,
 		working.directory=paste0(getwd(),"/","trawl/Scripts/Analysis/JAGS")
 	)
+
+	# print(nameID)
+	print(getwd())
 	
 	# mus <- fit.cov$BUGSoutput$mean
 	# t.range <- range(covs[[1]], na.rm=TRUE)
@@ -134,12 +137,18 @@ rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIte
 	
 	out <- list(mean=fit.cov$BUGSoutput$mean, median=fit.cov$BUGSoutput$median, sd=fit.cov$BUGSoutput$sd)
 	
+	# out <- list(blah=rnorm(5))
+	#
+	# fit.cov <- list(blah=rnorm(10))
+	
 	
 	# ========================
 	# = Save Objects to Disk =
 	# ========================
-	save(out, file=paste0(getwd(),"/","trawl/Results/Richness/msomCov.smry/",nameID,"_smry",".RData"))
-	save(fit.cov, file=paste0(getwd(),"/","trawl/Results/Richness/msomCov.smry/",nameID,"_full",".RData"))
+	save(out, file=paste0(getwd(),"/","trawl/Results/Richness/msomCov/msomCov.smry/",nameID,"_smry",".RData"))
+	save(fit.cov, file=paste0(getwd(),"/","trawl/Results/Richness/msomCov/msomCov.full/",nameID,"_smry",".RData"))
+	# save(out, file=paste0("./trawl/Results/Richness/msomCov/msomCov.smry/",nameID,"_smry",".RData"))
+	# save(fit.cov, file=paste0("./trawl/Results/Richness/msomCov/msomCov.full/",nameID,"_full",".RData"))
 	
 	
 	# ======================================

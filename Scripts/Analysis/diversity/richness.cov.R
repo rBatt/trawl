@@ -5,7 +5,7 @@
 nChains <- 3
 nIter <- 4E3
 n0s <- 5E2
-nThin <- 50 # max(1, floor((nIter - floor(nIter/2)) / 1000))
+nThin <- 60 # max(1, floor((nIter - floor(nIter/2)) / 1000))
 
 
 # =================
@@ -74,7 +74,7 @@ if(Sys.info()["sysname"]=="Windows"){
 
 
 # Run all other Bayesian richness in parallel
-richness.cov.out <- foreach(i=(1:length(prepd.dat))) %dopar%{ # run all other subsets in parallel
+richness.cov.out <- foreach(i=(1:length(prepd.cov.dat))) %dopar%{ # run all other subsets in parallel
 	rich.cov(
 		data=prepd.cov.dat[[i]], 
 		covs=list(prepd.cov1[[i]],prepd.cov2[[i]]), 
@@ -86,7 +86,7 @@ richness.cov.out <- foreach(i=(1:length(prepd.dat))) %dopar%{ # run all other su
 		nThin=nThin
 	) # do analysis for this subset
 }
-
+# print(getwd())
 
 # ===============
 # = Save Output =
@@ -94,3 +94,59 @@ richness.cov.out <- foreach(i=(1:length(prepd.dat))) %dopar%{ # run all other su
 save(richness.cov.out, file="./trawl/Results/Richness/richness.cov.out.RData")
 
 
+
+
+
+# ============================
+# = Testing – taking forever =
+# ============================
+# i=1
+# rich.cov(
+# 	data=prepd.cov.dat[[i]],
+# 	covs=list(prepd.cov1[[i]],prepd.cov2[[i]]),
+# 	cov.precs=list(prepd.cov1.prec[[i]], prepd.cov2.prec[[i]]),
+# 	nameID="test1_i1_chains3_iter4k_thin50", #paste(prepd.cov.names[i], collapse="_"),
+# 	nzeroes=n0s,
+# 	nChains=nChains,
+# 	nIter=nIter,
+# 	nThin=nThin
+# ) # do analysis for this subset
+
+
+
+# i=2
+# nChains <- 3
+# nIter <- 1E3
+# n0s <- 5E2
+# nThin <- 5
+# system.time({
+# 	test2 <- rich.cov(
+# 		data=prepd.cov.dat[[i]],
+# 		covs=list(prepd.cov1[[i]],prepd.cov2[[i]]),
+# 		cov.precs=list(prepd.cov1.prec[[i]], prepd.cov2.prec[[i]]),
+# 		nameID="test2_i2_chains3_iter1k_thin5", #paste(prepd.cov.names[i], collapse="_"),
+# 		nzeroes=n0s,
+# 		nChains=nChains,
+# 		nIter=nIter,
+# 		nThin=nThin
+# 	)
+# })
+
+
+# i=2
+# nChains <- 3
+# nIter <- 1E3
+# n0s <- 5E2
+# nThin <- 5
+# system.time({
+# 	test3 <- rich.cov(
+# 		data=prepd.cov.dat[[i]],
+# 		covs=list(scale(prepd.cov1[[i]])[,1],scale(prepd.cov2[[i]])[,1]),
+# 		cov.precs=list(prepd.cov1.prec[[i]]*var(prepd.cov1[[i]],na.rm=TRUE), prepd.cov2.prec[[i]]*var(prepd.cov2[[i]],na.rm=TRUE)),
+# 		nameID="test3_i2_chains3_iter1k_thin5_scaled", #paste(prepd.cov.names[i], collapse="_"),
+# 		nzeroes=n0s,
+# 		nChains=nChains,
+# 		nIter=nIter,
+# 		nThin=nThin
+# 	)
+# })
