@@ -29,7 +29,7 @@ burrow.cat <- function(n.start, n.end, n.ft){
 	categ[corridor.logic] <- "Corridor"
 	categ[divergence.logic] <- "Divergence"
 	categ[convergence.logic] <- "Convergence"
-	categ[balance.logic] <- "Balanced"
+	categ[balance.logic] <- "None"
 	
 	categ
 }
