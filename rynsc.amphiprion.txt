@@ -11,7 +11,7 @@ rsync -aznuP "./School&Work" ryanb@amphiprion.deenr.rutgers.edu:~/Documents/
 # = Pull All School&Work =
 # ========================
 cd ~
-# rsync -aznuP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work' "./Documents/"
+rsync -aznuP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work' "./Documents/"
 
 
 # ==============================================
@@ -21,6 +21,14 @@ cd ./Documents
 echo "Deleting files on amphiprion if they don't exist locally"
 rsync -anuP --delete "./School&Work" ryanb@amphiprion.deenr.rutgers.edu:~/Documents/
 # rsync -anP --delete "./School&Work" ryanb@amphiprion.deenr.rutgers.edu:~/Documents/
+
+# ==================
+# = Script Downloads =
+# ==================
+# Download All Data
+cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
+rsync -azunP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Scripts/Analysis/diversity/richness.cov.Rout' "./Scripts/Analysis/diversity"
+
 
 
 # ==================
@@ -59,7 +67,12 @@ rsync -aznuP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinsky
 # Download All Results
 cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
 rsync -azunP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Results/' "./Results/"
-
+
+
+# Download intermediate summary statistics from richness.cov.R/ rich.cov.R
+cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
+rsync -azunP ryanb@amphiprion.deenr.rutgers.edu:'~/Documents/School\&Work/pinskyPost/trawl/Results/Richness/msomCov/msomCov.smry/' "./Results/Richness/msomCov/msomCov.smry/"
+
 
 # Download the richness.basic.out file
 cd "/Users/Battrd/Documents/School&Work/pinskyPost/trawl/"
