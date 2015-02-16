@@ -147,7 +147,8 @@ dev.off()
 # =============================
 # = Plot Climate Trajectories =
 # =============================
-png("./trawl/Figures/HadISST_Figures/HadISST_trajectories.shelf.png", res=200, width=8.5, height=3, units="in")
+width <- map.w(c(ymin(trajLon),ymax(trajLon)), c(xmin(trajLon),xmax(trajLon)), 3)
+png("./trawl/Figures/HadISST_Figures/HadISST_trajectories.shelf.png", res=200, width=width, height=3, units="in")
 par(mfrow=c(1,1), mar=c(2,2,0.5,0.1), ps=8, mgp=c(0.5,0.15,0), tcl=-0.15, family="Times")
 plot.traj(trajLon, trajLat, col="slategray", thin.rate=2, nearB=0.01, thinDots=F, adjArr=0.5, cex=0.1, xlab="", ylab="")
 dev.off()
@@ -157,8 +158,45 @@ dev.off()
 # = Plot Trajectories over Categories =
 # =====================================
 # dev.new(width=9.5*2, height=3*2)
-png("./trawl/Figures/HadISST_Figures/HadISST_cats.trajs.shelf.png", res=200, width=9.75, height=3, units="in")
+png("./trawl/Figures/HadISST_Figures/HadISST_cats.trajs.shelf.png", res=200, width=9, height=3.72, units="in")
+# dev.new(width=9, height=3.72)
 par(mfrow=c(1,1), mar=c(2,2,0.5,0.1), ps=8, cex=1, mgp=c(0.5,0.15,0), tcl=-0.15, family="Times")
 plot(cCat, smallplot=smplt, bigplot=bgplt, axis.args=axargs2, col=col5, interpolate=TRUE, xlab="", ylab="")
-plot.traj(trajLon, trajLat, add=TRUE, col="white", thin.rate=4, nearB=0.01, thinDots=TRUE, xlab="", ylab="")
+plot.traj(trajLon, trajLat, add=TRUE, col="white", thin.rate=4, nearB=0.01, adjArr=0.5, thinDots=TRUE, xlab="", ylab="")
 dev.off()
+
+
+
+# =========================
+# = Plot Climate Velocity =
+# =========================
+smplt <- c(0.94,0.96, 0.15,0.8)
+bgplt <- c(0.03,0.93,0.1,0.95)
+axargs <- list(mgp=c(0.75,0.5,0))
+png("./trawl/Figures/HadISST_Figures/climateVeloicty.png", res=200, width=6.9, height=3, units="in")
+par(mfrow=c(1,1), mar=c(2,2,0.5,0.1), ps=8, mgp=c(0.5,0.15,0), tcl=-0.15, family="Times", cex=1)
+plot(climV, col=heat.cols, smallplot=smplt, bigplot=bgplt, axis.args=axargs)
+mtext(bquote(Climate~Velocity~(km~year^-1)), side=3, line=-2.75, cex=1, xpd=FALSE)
+invisible(map(add=TRUE, fill=FALSE, col="black"))
+dev.off()
+
+
+
+
+
+wd.old <- getwd()
+setwd("./trawl/Figures/HadISST_Figures/")
+saveGIF(
+	{
+		ani.options(inverval=0.01)
+
+	    for(i in seq(1, nlayers(trajLon), by=10)){
+	    	plot(subset(trajLon, i), subset(trajLat, i), ylab="", xlab="", xaxt="n", yaxt="n", col="lightblue", bty="n", cex=0.25, pch=20)
+	    }
+	
+	},
+	ani.height=400,
+	ani.width=map.w(c(ymin(trajLon),ymax(trajLon)),c(xmin(trajLon),xmax(trajLon)),400),
+	movie.name="climateTrajectory_dots.gif",
+)
+setwd(wd.old)
