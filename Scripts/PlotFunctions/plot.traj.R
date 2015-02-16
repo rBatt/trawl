@@ -1,6 +1,6 @@
 
 
-plot.traj <- function(x, y, step.seq, thin.rate=4, nearB=1E-4, col="black", thinDots=TRUE, adjArr=1, ...){	
+plot.traj <- function(x, y, thin.rate=4, nearB=1E-4, col="black", thinDots=TRUE, adjArr=1, ...){	
 	step.seq <- seq(1, nlayers(x), by=10) #c(1, 30, 60, 90)
 	step.seq[length(step.seq)] <- nlayers(x)
 	
@@ -34,10 +34,10 @@ plot.traj <- function(x, y, step.seq, thin.rate=4, nearB=1E-4, col="black", thin
 	# ============
 	for(l in 2:nlayers(x)){
 		
-		x0 <- values(subset(trajLon,(l-1)))[to.ss.seg]
-		y0 <- values(subset(trajLat,(l-1)))[to.ss.seg]
-		x1 <- values(subset(trajLon,l))[to.ss.seg]
-		y1 <- values(subset(trajLat,l))[to.ss.seg]
+		x0 <- values(subset(x,(l-1)))[to.ss.seg]
+		y0 <- values(subset(y,(l-1)))[to.ss.seg]
+		x1 <- values(subset(x,l))[to.ss.seg]
+		y1 <- values(subset(y,l))[to.ss.seg]
 		
 		mvs <- x0!=x1 | y0!=y1
 		
@@ -52,14 +52,14 @@ plot.traj <- function(x, y, step.seq, thin.rate=4, nearB=1E-4, col="black", thin
 	# ==========
 	# Plot arrows
 	# for(i in 2:length(step.seq)){
-	for(i in c(3)){
+	for(i in c(75)){
 		ss.t <- step.seq[i]
-		ss.t1 <- ss.t-2
+		ss.t1 <- ss.t-74
 		
-		x0 <- rN(values(subset(trajLon,ss.t1))[to.ss.arr], nearB)
-		y0 <- rN(values(subset(trajLat,ss.t1))[to.ss.arr], nearB)
-		x1 <- rN(values(subset(trajLon,ss.t))[to.ss.arr], nearB)
-		y1 <- rN(values(subset(trajLat,ss.t))[to.ss.arr], nearB)
+		x0 <- rN(values(subset(x,ss.t1))[to.ss.arr], nearB)
+		y0 <- rN(values(subset(y,ss.t1))[to.ss.arr], nearB)
+		x1 <- rN(values(subset(x,ss.t))[to.ss.arr], nearB)
+		y1 <- rN(values(subset(y,ss.t))[to.ss.arr], nearB)
 		
 		mvs <- x0!=x1 | y0!=y1
 		
