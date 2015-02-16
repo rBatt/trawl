@@ -521,11 +521,11 @@ hypoDat <- data.frame(
 	"categ"=factor(rep(catNames, each=100), levels=catNames),
 	"rich"=c(
 			rnorm(100, mean=0),
-			rnorm(100, mean=-2),
+			rnorm(100, mean=-5),
 			rnorm(100, mean=0, sd=2),
-			rlnorm(100),
+			rlnorm(100,meanlog=1),
 			rnorm(100, mean=0, sd=2),
-			rnorm(100, mean=-1, sd=1.5)
+			rnorm(100, mean=-2, sd=1.5)
 		)
 )
 
@@ -569,6 +569,29 @@ dev.off()
 
 
 
+
+
+# ==========================================
+# = Richness vs. Surface Temperature Trend =
+# ==========================================
+
+setkey(cT.rcoS, s.reg, lon, lat)
+usreg <- cT.rcoS[,unique(s.reg)]
+col.reg <- rainbow(length(usreg))
+names(col.reg) <- usreg
+
+# dev.new(width=5.5, height=5)
+png("./trawl/Figures/BioClimate/richTrend_vs_surfTrend_roc_noColor_noTrend.png", width=5.5, height=5.5, res=200, units="in")
+par(mar=c(2.5,2.75,0.2,1), mgp=c(1,0.25,0), tcl=-0.15, cex=1, ps=10)
+
+cT.rcoS[,plot((timeTrend), (slope.Nsite), pch=19, xlab="", ylab="")]
+mtext(bquote(Surface~Temperature~Trend~~(phantom()*degree*C~~year^-1)), side=1, line=1.5)
+mtext(bquote(Local~Species~Richness~Trend~~(species~~year^-1)), side=2, line=1.5)
+dev.off()
+
+
+
+
 # ==========================================
 # = Richness vs. Surface Temperature Trend =
 # ==========================================
@@ -606,7 +629,7 @@ cT.rcoS[,summary(lmer(slope.Nsite~timeTrend+(1|s.reg)))]
 # ======================================================================
 # = Richness vs. Surface Temperature Trend: Correct WC by Dropping Ann =
 # ======================================================================
-
+qSlope <- function(x, y){if(length(x)<2){return(NA_real_)}else{lm(y~x)$coef[2]}}
 
 rco.s.wc <- copy(rco.sy)
 rco.s.wc[,nameID:=NULL]
@@ -661,6 +684,92 @@ segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=2, col="white", lty
 
 
 dev.off()
+
+
+# ================================================================
+# = Richness Trend vs. Surface Temp Trend, Colors are Categories =
+# ================================================================
+
+rco.s.noAnn <- copy(rco.sy)
+rco.s.noAnn[,nameID:=NULL]
+rco.s.noAnn <- rco.s.noAnn[s.reg!="wc" | (s.reg=="wc"&year<=2003),
+	list(
+		mu.btemp=mean(btemp, na.rm=TRUE),
+		slope.btemp=qSlope(year,btemp),
+		mu.depth=mean(depth, na.rm=TRUE),
+		slope.depth=qSlope(year, depth),
+		mu.N=mean(N, na.rm=TRUE),
+		slope.N=qSlope(year, N),
+		mu.Nsite=mean(Nsite, na.rm=TRUE),
+		slope.Nsite=qSlope(year, Nsite)
+	),
+	by=c("s.reg","stratum","lon","lat")
+]
+
+setkey(rco.s.noAnn, lon, lat)
+setkey(climTraj, lon, lat)
+cT.rcoS.noAnn <- merge(rco.s.noAnn, climTraj)
+
+
+
+setkey(cT.rcoS.noAnn, s.reg, lon, lat)
+cT.rcoS.noAnn[,categ:=factor(categ, levels=c("None","Source","Divergence","Corridor","Convergence","Sink"))]
+ucateg <- cT.rcoS.noAnn[,unique(categ)]
+col5 <- c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99", "#e31a1c")
+col.cat <- col5
+names(col.cat) <- ucateg
+catNames <- c("None","Source","Divergence","Corridor","Convergence","Sink")
+
+# dev.new(width=5.5, height=5)
+png("./trawl/Figures/BioClimate/richTrend_vs_surfTrend_roc_noWCann_colorCateg.png", width=5.5, height=5.5, res=200, units="in")
+par(mar=c(2.5,2.75,0.2,1), mgp=c(1,0.25,0), tcl=-0.15, cex=1, ps=10)
+
+cT.rcoS.noAnn[,plot((timeTrend), (slope.Nsite), col=col.cat[ucateg], pch=19, xlab="", ylab="")]
+mtext(bquote(Surface~Temperature~Trend~~(phantom()*degree*C~~year^-1)), side=1, line=1.5)
+mtext(bquote(Local~Species~Richness~Trend~~(species~~year^-1)), side=2, line=1.5)
+legend("topright", legend=ucateg, pch=19, col=col.cat[ucateg])
+
+for(i in 1:length(usreg)){
+	# cT.rcoS.noAnn[,points((timeTrend), (slope.Nsite), col=col.cat[ucateg[i]], cex=1.5, pch=19, xlab="", ylab="")]
+	# cT.rcoS.noAnn[,points((timeTrend), (slope.Nsite), col="white", cex=0.75, pch=19, xlab="", ylab="")]
+	t.lm <- cT.rcoS.noAnn[categ==ucateg[i], lm(slope.Nsite~timeTrend)]
+	t.x <- cT.rcoS.noAnn[categ==ucateg[i],range(timeTrend, na.rm=TRUE)]
+	t.y <- cT.rcoS.noAnn[categ==ucateg[i],range(slope.Nsite, na.rm=TRUE)]
+	t.new <- predict(t.lm, newdata=data.frame(timeTrend=t.x))
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=4, col="black")
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=2, col=col.cat[ucateg[i]])
+}
+
+
+# =====================================
+# = Barplot of # Category Per Region =
+# =====================================
+regKey2 <- structure(c("Aleutian\nIslands", "E. Bering\nStrait", "Gulf of\nMexico", "Gulf of\nAlaska", "Northeast US","Newfoundland", "US South\nAtlantic", "S. Gulf of\nSt. Lawrence", "Scotian\nShelf", "West\nCoast"), .Names =c("ai", "ebs", "gmex", "goa", "neus", "newf", "sa", "sgulf", "shelf", "wc"))
+rowProp <- function(x)apply(x, 1, function(x)x/sum(x))
+propCategReg <- rowProp(table(cT.rcoS.noAnn[,s.reg], cT.rcoS.noAnn[,categ]))
+colnames(propCategReg) <- regKey[colnames(propCategReg)]
+# propCategReg <- melt(propCategReg, measure.vars=colnames(propCategReg))
+
+richSlopes <- t(cT.rcoS.noAnn[,mean(slope.Nsite), by="s.reg"][,V1])
+propCategReg <- rbind(propCategReg, richSlopes/max(richSlopes))
+rownames(propCategReg) <- c(rownames(propCategReg)[1:6], "Richness Slope")
+
+png(width=8.5, height=3, file="./trawl/Figures/BioClimate/region_category_slopeRich_barplot.png", res=200, units="in")
+par(mfrow=c(1,1), mar=c(2.5,2.5,0.5,0.5), ps=8, cex=1, mgp=c(3, 0.75, 0), tcl=-0.5, family="Times", lwd=1, xpd=F)
+
+barplot(
+	propCategReg, 
+	beside=TRUE, 
+	names.arg=regKey2, 
+	col=c(col5, "black"), 
+	legend.text=c(levels(ucateg),"Richness Slope"), 
+	args.legend=list(x="topright", bty="n", inset=c(0.075,-0.075), ncol=2), 
+	ylim=c(-0.2, 1)
+)
+
+dev.off()
+
+cT.rcoS.noAnn[,Anova(lmer(slope.Nsite~categ+(1|s.reg)))]
 
 
 
