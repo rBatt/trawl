@@ -130,7 +130,11 @@ col5 <- c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99", "#e31a1c")
 
 
 # dev.new(width=9.5, height=3)
-png("./trawl/Figures/HadISST_Figures/HadISST_combinedCategories.shelf.png", res=200, width=9.5, height=3, units="in")
+smplt <- c(0.9,0.92, 0.15,0.8)
+bgplt <- c(0.03,0.89,0.1,0.95)
+axargs <- list(mgp=c(0.75,0.5,0))
+
+png("./trawl/Figures/HadISST_Figures/HadISST_combinedCategories.shelf.png", res=200, width=9.75, height=3, units="in")
 par(mfrow=c(1,1), mar=c(2,2,0.5,0.1), ps=8, cex=1, mgp=c(0.5,0.15,0), tcl=-0.15, family="Times")
 plot(cCat, smallplot=smplt, bigplot=bgplt, axis.args=axargs2, col=col5)
 invisible(map(add=TRUE, fill=FALSE, col="black", lwd=0.5))
@@ -143,9 +147,9 @@ dev.off()
 # =============================
 # = Plot Climate Trajectories =
 # =============================
-png("./trawl/Figures/HadISST_Figures/HadISST_trajectories.shelf.png", res=200, width=9.5, height=3, units="in")
+png("./trawl/Figures/HadISST_Figures/HadISST_trajectories.shelf.png", res=200, width=8.5, height=3, units="in")
 par(mfrow=c(1,1), mar=c(2,2,0.5,0.1), ps=8, mgp=c(0.5,0.15,0), tcl=-0.15, family="Times")
-plot.traj(trajLon, trajLat, col="slategray", thin.rate=2, nearB=0.01, thinDots=F, adjArr=0.5, cex=0.1)
+plot.traj(trajLon, trajLat, col="slategray", thin.rate=2, nearB=0.01, thinDots=F, adjArr=0.5, cex=0.1, xlab="", ylab="")
 dev.off()
 
 
@@ -153,8 +157,8 @@ dev.off()
 # = Plot Trajectories over Categories =
 # =====================================
 # dev.new(width=9.5*2, height=3*2)
-png("./trawl/Figures/HadISST_Figures/HadISST_cats.trajs.shelf.png", res=200, width=9.5, height=3, units="in")
+png("./trawl/Figures/HadISST_Figures/HadISST_cats.trajs.shelf.png", res=200, width=9.75, height=3, units="in")
 par(mfrow=c(1,1), mar=c(2,2,0.5,0.1), ps=8, cex=1, mgp=c(0.5,0.15,0), tcl=-0.15, family="Times")
-plot(cCat, smallplot=smplt, bigplot=bgplt, axis.args=axargs2, col=col5, interpolate=TRUE)
-plot.traj(trajLon, trajLat, add=TRUE, col="white", thin.rate=4, nearB=0.01, thinDots=TRUE)
+plot(cCat, smallplot=smplt, bigplot=bgplt, axis.args=axargs2, col=col5, interpolate=TRUE, xlab="", ylab="")
+plot.traj(trajLon, trajLat, add=TRUE, col="white", thin.rate=4, nearB=0.01, thinDots=TRUE, xlab="", ylab="")
 dev.off()
