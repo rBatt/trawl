@@ -34,12 +34,15 @@ invisible(sapply(paste(plot.location, list.files(plot.location), sep="/"), sourc
 # ==========================
 # = Load Processed Results =
 # ==========================
-load("./trawl/Results/Richness/rco.RData")
-load("./trawl/Results/Richness/ao.rco.RData")
+load("./trawl/Results/Richness/rco.RData") # richness cov model output; very large data.table – variables per year, stratum, and spp. Many values are repeated.
+load("./trawl/Results/Richness/rco.s.RData") # richness cov model output, average to stratum values (avgd over spp and year)
+load("./trawl/Results/Richness/rco.sy.RData") # richness cov model output, aggregated to values per stratum/ year (avgd over spp)
+load("./trawl/Results/Richness/ao.rco.RData") # the list of the richness covariate model output (all out . richness cov out)
+load("./trawl/Results/Richness/cT.rcoS.RData") # combines final climate trajectory states w/ per-site trends and averages of richness, btemp, depth
 
 
 # rco[,spp.depth:=weighted.mean(depth, w=Z, na.rm=TRUE), by=c("s.reg","spp")]
-regKey <- c("ai"="Aleutian Islands", "ebs"="Eastern Bering Strait", "gmex"="Gulf of Mexico", "goa"="Gulf of Alaska", "neus"="Northeast US", "newf"="Newfoundland", "sa"="US South Atlantic", "sgulf"="Southern Gulf of St. Lawrence", "shelf"="Scotian Shelf", "wcann"="West Coast (ann)", "wctri"= "West Coast (tri)")
+regKey <- c("ai"="Aleutian Islands", "ebs"="Eastern Bering Strait", "gmex"="Gulf of Mexico", "goa"="Gulf of Alaska", "neus"="Northeast US", "newf"="Newfoundland", "sa"="US South Atlantic", "sgulf"="S. Gulf of St. Lawrence", "shelf"="Scotian Shelf", "wcann"="West Coast (ann)", "wctri"= "West Coast (tri)")
 
 
 
@@ -57,7 +60,7 @@ tempResponse <- function(u.a0, a1, a2, a3, a4, tg){ # calculate the probability 
 MyGray <- rgb(t(col2rgb("black")), alpha=25, maxColorValue=255)
 
 # NOTE:  RUNNING THIS COMMAND FOR MORE THAN 1 REGION PER R SESSION HAS BEEN RESULTING IN AN ERROR FOR ME! SEGFAULT MEMORY ERROR. DO 1 AT A TIME
-chooseReg <- "ebs"
+chooseReg <- "goa"
 auto.dim <- rco[s.reg==chooseReg,auto.mfrow(lu(year))]
 png(paste0("./trawl/Figures/Diversity/msomCov/",chooseReg,"_tempResponse.png"), width=(auto.dim[2]/auto.dim[1])*7, height=7, res=200, units="in")
 # dev.new(width=(auto.dim[2]/auto.dim[1])*7, height=7)
@@ -245,7 +248,42 @@ plot(t.ao$ID$lon, t.ao$ID$lat, pch=21, bg=t.cols)
 map(add=TRUE,fill=FALSE)
 
 
-drape.color(matrix(1:10, ncol=3))
+
+
+
+
+# ===================================
+# = Plot Stratum Richness Over Time =
+# ===================================
+setkey(rco.sy, s.reg, year, stratum)
+auto.dim <- rco.sy[,auto.mfrow(lu(s.reg), tall=TRUE)]
+dev.new(width=4, height=(auto.dim[1]/auto.dim[2])*4)
+par(mfrow=auto.dim, mar=c(1,1,1.0,0.1), oma=c(0.5,0.5,1,0), cex=1, tcl=-0.1, mgp=c(1,0.1,0), ps=8)
+
+
+for(i in 1:length(rco.sy[,unique(s.reg)])){
+	
+	t.sreg <- rco.sy[,unique(s.reg)[i]]
+	t.r <- rco.sy[s.reg==t.sreg]
+	
+	maxR <- t.r[,max(Nsite)]
+	minR <- t.r[,min(Nsite)]
+	maxY <- t.r[,max(year)]
+	minY <- t.r[,min(year)]
+	
+	u.strat <- t.r[,unique(stratum)]
+	t.r[
+		stratum==u.strat[1],
+		plot(year, Nsite, ylim=c(minR, maxR), xlim=c(minY,maxY), main=as.character(unique(s.reg)), type="l")
+	]
+	for(j in 2:length(u.strat)){
+		t.r[stratum==u.strat[j],lines(year,Nsite)]
+	}
+	t.r[,mean(Nsite), by="year"][,lines(year,V1, col="red",lwd=2)]
+	
+	
+	
+}
 
 
 
@@ -253,5 +291,192 @@ drape.color(matrix(1:10, ncol=3))
 # ==============================================
 # = Latitudinal Gradient in Richness Over Time =
 # ==============================================
+
+
+
+# ============================
+# = Richness vs. Temperature =
+# ============================
+cT.rcoS[,plot(timeTrend, slope.Nsite, col=rainbow(lu(s.reg))[as.factor(s.reg)])]
+
+cT.rcoS[,plot(timeTrend, slope.Nsite/lat, col=rainbow(lu(s.reg))[as.factor(s.reg)])]
+
+
+cT.rcoS[,plot(slope.btemp, slope.Nsite, col=rainbow(lu(s.reg))[as.factor(s.reg)])]
+
+cT.rcoS[,plot(slope.btemp*timeTrend, slope.Nsite, col=rainbow(lu(s.reg))[as.factor(s.reg)])]
+
+
+cT.rcoS[,plot(abs(timeTrend), slope.Nsite, col=rainbow(lu(s.reg))[as.factor(s.reg)])]
+
+
+cT.rcoS[,plot(abs(timeTrend), abs(slope.Nsite), col=rainbow(lu(s.reg))[as.factor(s.reg)])]
+
+
+
+
+
+# =========================
+# = Richness vs. Velocity =
+# =========================
+cT.rcoS[,plot(climV, slope.Nsite, col=rainbow(lu(s.reg))[as.factor(s.reg)])]
+
+cT.rcoS[,plot(abs(climV), abs(slope.Nsite), col=rainbow(lu(s.reg))[as.factor(s.reg)])]
+
+
+
+
+
+
+# ===================================
+# = Plot Map of Site Richness Trend =
+# ===================================
+heat.cols <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(256)
+cT.rcoS[,z.col:=heat.cols[cut(slope.Nsite, 256)]]
+
+# New device
+# dev.new(height=4, width=cT.rcoS[,map.w(lat,lon,4)])
+png(height=4, width=cT.rcoS[,map.w(lat,lon,4)], file="./trawl/Figures/Diversity/richness_slope_stratum_Nsite_cov.png", res=200, units="in")
+par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
+
+# Plot
+cT.rcoS[,plot(lon, lat, col=z.col, pch=21, cex=1, type="n")] # set plot region
+invisible(cT.rcoS[,map(add=TRUE, fill=TRUE, col="lightgray")]) # add map
+cT.rcoS[,points(lon, lat, bg=z.col, pch=21, cex=1)] # add points
+
+# Key
+cT.rcoS[,segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)] # add colors for key
+cT.rcoS[,segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")] # add tick marks for key
+cT.rcoS[,text(-167, y=seq(30,40, length.out=4), round(seq(min(slope.Nsite, na.rm=TRUE), max(slope.Nsite, na.rm=TRUE), length.out=4),2), adj=1, cex=1, col="black")] # add labels for key
+cT.rcoS[,text(-162.5, 41.5, bquote(Richness~Trend~(spp~per~yr)))] # add label for key
+
+dev.off()
+
+
+
+# ===========================================
+# = Plot Map of Richness Trend per Richness =
+# ===========================================
+heat.cols <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(256)
+cT.rcoS[,z.col:=heat.cols[cut(slope.Nsite/mu.Nsite, 256)]]
+
+# New device
+dev.new(height=4, width=cT.rcoS[,map.w(lat,lon,4)])
+# pdf(height=4, width=cT.rcoS[,map.w(lat,lon,4)], file="./trawl/Figures/Diversity/richness_slope_stratum_Nsite_perN_cov.pdf")
+par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
+
+# Plot
+cT.rcoS[,plot(lon, lat, col=z.col, pch=21, cex=1, type="n")] # set plot region
+invisible(cT.rcoS[,map(add=TRUE, fill=TRUE, col="lightgray")]) # add map
+cT.rcoS[,points(lon, lat, bg=z.col, pch=21, cex=1)] # add points
+
+# Key
+cT.rcoS[,segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)] # add colors for key
+cT.rcoS[,segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")] # add tick marks for key
+cT.rcoS[,text(-167, y=seq(30,40, length.out=4), round(seq(min(slope.Nsite/mu.Nsite, na.rm=TRUE), max(slope.Nsite/mu.Nsite, na.rm=TRUE), length.out=4),2), adj=1, cex=1, col="black")] # add labels for key
+cT.rcoS[,text(-162.5, 41.5, bquote('%'~Richness~Trend~(spp~~yr^-1~spp^-1)))] # add label for key
+
+dev.off()
+
+
+
+# ===========================================
+# = Boxplots of Burrows Categs and Richness =
+# ===========================================
+boxplot(cT.rcoS[,slope.Nsite]~cT.rcoS[,categ])
+
+
+boxplot(cT.rcoS[,slope.Nsite/mu.Nsite]~cT.rcoS[,categ])
+
+
+# =================================================
+# = Ternary Plot of Categ Components and Richness =
+# =================================================
+heat.cols <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(256)
+tern.cols <- cT.rcoS[,heat.cols[cut(slope.Nsite, 256)]]
+
+tern.vals <- as.matrix(cT.rcoS[,list(nStart, nFT, nFinal)])
+
+ternaryplot(tern.vals, pch=20, cex=0.5, col=tern.cols, labels="outside")
+
+
+
+# P(b + c/2, c * sqrt(3)/2)
+
+
+
+# ===================================
+# = Richness vs. Bottom Temperature =
+# ===================================
+rco.sy[,plot(btemp, Nsite, col=rainbow(lu(s.reg))[as.factor(s.reg)], pch=20)]
+
+
+
+
+# ==========================================
+# = Richness vs. Surface Temperature Trend =
+# ==========================================
+setkey(cT.rcoS, s.reg, lon, lat)
+usreg <- cT.rcoS[,unique(s.reg)]
+col.reg <- rainbow(length(usreg))
+names(col.reg) <- usreg
+
+# dev.new(width=5.5, height=5)
+png("./trawl/Figures/BioClimate/richTrend_vs_surfTrend_roc.png", width=5.5, height=5, res=200, units="in")
+par(mar=c(2.5,2.75,0.2,1), mgp=c(1,0.25,0), tcl=-0.15, cex=1, ps=10)
+
+cT.rcoS[,plot((timeTrend), (slope.Nsite), col=col.reg[s.reg], pch=19, xlab="", ylab="")]
+mtext(bquote(Surface~Temperature~Trend~~(phantom()*degree*C~~year^-1)), side=1, line=1.5)
+mtext(bquote(Local~Species~Richness~Trend~~(species~~year^-1)), side=2, line=1.5)
+legend("topright", legend=regKey[usreg], pch=19, col=col.reg[usreg])
+
+for(i in 1:length(usreg)){
+	t.lm <- cT.rcoS[s.reg==usreg[i], lm(slope.Nsite~timeTrend)]
+	t.x <- cT.rcoS[s.reg==usreg[i],range(timeTrend, na.rm=TRUE)]
+	t.y <- cT.rcoS[s.reg==usreg[i],range(slope.Nsite, na.rm=TRUE)]
+	t.new <- predict(t.lm, newdata=data.frame(timeTrend=t.x))
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=4, col="black")
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=2, col=col.reg[usreg[i]])
+}
+dev.off()
+
+cT.rcoS[,Anova(lmer(slope.Nsite~timeTrend+(1|s.reg)))]
+cT.rcoS[,summary(lmer(slope.Nsite~timeTrend+(1|s.reg)))]
+
+
+
+
+# =================================
+# = Richness vs. Climate Velocity =
+# =================================
+setkey(cT.rcoS, s.reg, lon, lat)
+usreg <- cT.rcoS[,unique(s.reg)]
+col.reg <- rainbow(length(usreg))
+names(col.reg) <- usreg
+
+# dev.new(width=5.5, height=5)
+# png("./trawl/Figures/BioClimate/richTrend_vs_climateV_roc.png", width=5.5, height=5, res=200, units="in")
+par(mar=c(2.5,2.75,0.2,1), mgp=c(1,0.25,0), tcl=-0.15, cex=1, ps=10)
+
+cT.rcoS[,plot((climV), (slope.Nsite), col=col.reg[s.reg], pch=19, xlab="", ylab="")]
+mtext(bquote(Climate~Velocity~~(km~~year^-1)), side=1, line=1.5)
+mtext(bquote(Local~Species~Richness~Trend~~(species~~year^-1)), side=2, line=1.5)
+legend("topright", legend=regKey[usreg], pch=19, col=col.reg[usreg])
+
+for(i in 1:length(usreg)){
+	t.lm <- cT.rcoS[s.reg==usreg[i], lm(slope.Nsite~climV)]
+	t.x <- cT.rcoS[s.reg==usreg[i],range(climV, na.rm=TRUE)]
+	t.y <- cT.rcoS[s.reg==usreg[i],range(slope.Nsite, na.rm=TRUE)]
+	t.new <- predict(t.lm, newdata=data.frame(climV=t.x))
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=4, col="black")
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=2, col=col.reg[usreg[i]])
+}
+# dev.off()
+
+# Yuck
+
+cT.rcoS[,Anova(lmer(slope.Nsite~climV+(1|s.reg)))]
+cT.rcoS[,summary(lm(slope.Nsite~climV))]
+
 
 
