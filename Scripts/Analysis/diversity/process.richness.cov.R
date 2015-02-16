@@ -150,6 +150,7 @@ rco[,year:=as.numeric(as.character(year))]
 rco <- rco[s.reg!="wcann" | (s.reg=="wcann" & year > 2003)]
 rco[s.reg=="wcann" | s.reg=="wctri", s.reg:="wc"]
 
+setkey(rco, s.reg, year, stratum, spp)
 
 
 # ============================
@@ -181,6 +182,7 @@ rco.s <- rco.s[,
 	),
 	by=c("s.reg","stratum","lon","lat")
 ]
+
 
 
 
