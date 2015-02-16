@@ -105,4 +105,4 @@ cT.rcoS[,plot(data.frame(slope.N, slope.Nsite, mu.N, mu.Nsite, slope.btemp, time
 
 
 
-save(cT.rcoS, file="./trawl/Results/Richness/cT.rcoS.RData")
+save(climTraj, cT.rcoS, file="./trawl/Results/Richness/cT.rcoS.RData")
