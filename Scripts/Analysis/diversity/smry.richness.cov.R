@@ -525,8 +525,8 @@ beanCol <- list(c(bFill[1]),
 usreg <- cT.rcoS[,unique(s.reg)]
 
 
-# png(width=3.5, height=3.5, file="./trawl/Figures/BioClimate/richTrend_category_bean.png", res=200, units="in")
-par(mfrow=c(5,2), mar=c(2.5,2.5,0.5,0.5), ps=10, cex=1, mgp=c(2, 0.4, 0), tcl=-0.1, family="Times", lwd=1, xpd=F)
+png(width=4, height=8, file="./trawl/Figures/BioClimate/richTrend_category_bean_byRegion_rcoModel.png", res=200, units="in")
+par(mfrow=c(5,2), mar=c(2.5,1.5,1,0.5), oma=c(0,1,0,0), ps=8, cex=1, mgp=c(2, 0.4, 0), tcl=-0.1, family="Times", lwd=1, xpd=F)
 for(i in 1:length(usreg)){
 	t.sreg <- usreg[i]
 	sub.sreg <- cT.rcoS[,s.reg==t.sreg]
@@ -534,13 +534,51 @@ for(i in 1:length(usreg)){
 	axis(side=2)
 	axis(side=1, labels=FALSE)
 	# axis(side=1, at=1:6, labels=unique(cT.rcoS[,categ]))
-	mtext(bquote(Richness~Trend~~(spp~~year^-1)), side=2, line=1.5)
-	text(x=(1:6), y=par("usr")[3]*()*1.075, labels=c("None","Source","Diverge","Corridor","Converge","Sink"), srt=45, offset=0, pos=2, xpd=TRUE)
+	ytext<-par("usr")[3] - 0.1*diff(range(cT.rcoS[sub.sreg,slope.Nsite]))
+	text(x=(1:6), y=ytext, labels=c("None","Source","Diverge","Corridor","Converge","Sink"), srt=45, offset=0, pos=2, xpd=TRUE)
+	mtext(regKey[t.sreg], side=3, line=0, adj=0, font=2)
 }
+mtext(bquote(Model~Richness~Trend~~(spp~~year^-1)), side=2, outer=TRUE, line=-1)
+dev.off()
 
 
 
-# dev.off()
+# =======================================================
+# = Beanplots of OBSERVED richness and categories in each region =
+# =======================================================
+col5 <- c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99", "#e31a1c")
+bLine <- col5
+bFill <- rgb(t(col2rgb(col5, alpha=TRUE)), alpha=125, maxColorValue=255)
+beanCol <- list(c(bFill[1]),
+				c(bFill[2]),
+				c(bFill[3]),
+				c(bFill[4]),
+				c(bFill[5]),
+				c(bFill[6])
+				)
+				
+
+usreg <- cT.obsR[,unique(s.reg)]
+
+
+
+png(width=4, height=8, file="./trawl/Figures/BioClimate/richTrend_category_bean_byRegion_Observed.png", res=200, units="in")
+par(mfrow=c(5,2), mar=c(2.5,1.5,1,0.5), oma=c(0,1,0,0), ps=8, cex=1, mgp=c(2, 0.4, 0), tcl=-0.1, family="Times", lwd=1, xpd=F)
+for(i in 1:length(usreg)){
+	t.sreg <- usreg[i]
+	sub.sreg <- cT.obsR[,s.reg==t.sreg]
+	beanplot(cT.obsR[sub.sreg,slope.dr]~cT.obsR[sub.sreg,categ], ylab="", yaxt="n", xaxt="n", border=bLine, col=beanCol, ll=0.01, beanlinewd=1.5)
+	axis(side=2)
+	axis(side=1, labels=FALSE)
+	# axis(side=1, at=1:6, labels=unique(cT.obsR[,categ]))
+	ytext<-par("usr")[3] - 0.1*diff(range(cT.obsR[sub.sreg,slope.dr]))
+	text(x=(1:6), y=ytext, labels=c("None","Source","Diverge","Corridor","Converge","Sink"), srt=45, offset=0, pos=2, xpd=TRUE)
+	mtext(regKey[t.sreg], side=3, line=0, adj=0, font=2)
+}
+mtext(bquote(Observed~Richness~Trend~~(spp~~year^-1)), side=2, outer=TRUE, line=-1)
+
+dev.off()
+
 
 
 
@@ -757,29 +795,6 @@ dev.off()
 # ================================================================
 # = Richness Trend vs. Surface Temp Trend, Colors are Categories =
 # ================================================================
-
-rco.s.noAnn <- copy(rco.sy)
-rco.s.noAnn[,nameID:=NULL]
-rco.s.noAnn <- rco.s.noAnn[s.reg!="wc" | (s.reg=="wc"&year<=2003),
-	list(
-		mu.btemp=mean(btemp, na.rm=TRUE),
-		slope.btemp=qSlope(year,btemp),
-		mu.depth=mean(depth, na.rm=TRUE),
-		slope.depth=qSlope(year, depth),
-		mu.N=mean(N, na.rm=TRUE),
-		slope.N=qSlope(year, N),
-		mu.Nsite=mean(Nsite, na.rm=TRUE),
-		slope.Nsite=qSlope(year, Nsite)
-	),
-	by=c("s.reg","stratum","lon","lat")
-]
-
-setkey(rco.s.noAnn, lon, lat)
-setkey(climTraj, lon, lat)
-cT.rcoS.noAnn <- merge(rco.s.noAnn, climTraj)
-
-
-
 setkey(cT.rcoS.noAnn, s.reg, lon, lat)
 cT.rcoS.noAnn[,categ:=factor(categ, levels=c("None","Source","Divergence","Corridor","Convergence","Sink"))]
 ucateg <- cT.rcoS.noAnn[,unique(categ)]
@@ -974,21 +989,6 @@ dev.off()
 # ==========================
 # = Dummy Rich vs. Lon/Lat =
 # ==========================
-qSlope <- function(x, y){if(length(x)<2){return(NA_real_)}else{lm(y~x)$coef[2]}}
-
-dummy.rich <- trawl2.veri[,list(dummy.rich=lu(spp)), by=c("s.reg","stratum","year")]
-
-ll <- t(dummy.rich[,(strsplit(stratum, split=" "))])
-names(ll) <- NULL
-dummy.rich[,c("lon","lat"):=list(as.numeric(ll[,1]), as.numeric(ll[,2]))]
-
-dummy.rich <- dummy.rich[s.reg!="wc" | (s.reg=="wc" & year<=2003)]
-
-dr <- dummy.rich[,list(mu.dr=mean(dummy.rich), slope.dr=qSlope(year, dummy.rich)), by=c("s.reg","stratum","lon","lat")]
-
-
-
-
 png(width=9, height=4, file="./trawl/Figures/BioClimate/richnessMean_vs_LonLat_observed.png", res=200, units="in")
 par(mfrow=c(1,2), mar=c(2.5,2.5,0.5,0.5), ps=8, cex=1, mgp=c(3, 0.2, 0), tcl=-0.25, family="Times", lwd=1, xpd=F)
 
