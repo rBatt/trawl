@@ -49,6 +49,8 @@ load("./trawl/Results/Richness/rco.sy.RData") # richness cov model output, aggre
 load("./trawl/Results/Richness/ao.rco.RData") # the list of the richness covariate model output (all out . richness cov out)
 load("./trawl/Results/Richness/cT.rcoS.RData") # combines final climate trajectory states w/ per-site trends and averages of richness, btemp, depth
 
+cT.rcoS[,categ:=factor(categ, levels=c("None","Source","Divergence","Corridor","Convergence","Sink"))]
+
 
 # rco[,spp.depth:=weighted.mean(depth, w=Z, na.rm=TRUE), by=c("s.reg","spp")]
 # regKey <- c("ai"="Aleutian Islands", "ebs"="Eastern Bering Sea", "gmex"="Gulf of Mexico", "goa"="Gulf of Alaska", "neus"="Northeast US", "newf"="Newfoundland", "sa"="US South Atlantic", "sgulf"="S. Gulf of St. Lawrence", "shelf"="Scotian Shelf", "wcann"="West Coast (ann)", "wctri"= "West Coast (tri)")
@@ -352,47 +354,6 @@ mtext(bquote(underline(Observed~~Richness)), side=3, line=0.25, outer=TRUE, cex=
 dev.off()
 
 
-
-# ==============================================
-# = Latitudinal Gradient in Richness Over Time =
-# ==============================================
-
-
-
-# ============================
-# = Richness vs. Temperature =
-# ============================
-# cT.rcoS[,plot(timeTrend, slope.Nsite, col=rainbow(lu(s.reg))[as.factor(s.reg)])]
-#
-# cT.rcoS[,plot(timeTrend, slope.Nsite/lat, col=rainbow(lu(s.reg))[as.factor(s.reg)])]
-#
-#
-# cT.rcoS[,plot(slope.btemp, slope.Nsite, col=rainbow(lu(s.reg))[as.factor(s.reg)])]
-#
-# cT.rcoS[,plot(slope.btemp*timeTrend, slope.Nsite, col=rainbow(lu(s.reg))[as.factor(s.reg)])]
-#
-#
-# cT.rcoS[,plot(abs(timeTrend), slope.Nsite, col=rainbow(lu(s.reg))[as.factor(s.reg)])]
-#
-#
-# cT.rcoS[,plot(abs(timeTrend), abs(slope.Nsite), col=rainbow(lu(s.reg))[as.factor(s.reg)])]
-
-
-
-
-
-# =========================
-# = Richness vs. Velocity =
-# =========================
-# cT.rcoS[,plot(climV, slope.Nsite, col=rainbow(lu(s.reg))[as.factor(s.reg)])]
-#
-# cT.rcoS[,plot(abs(climV), abs(slope.Nsite), col=rainbow(lu(s.reg))[as.factor(s.reg)])]
-
-
-
-
-
-
 # ===================================
 # = Plot Map of Site Richness Trend =
 # ===================================
@@ -471,6 +432,37 @@ cT.rcoS[,text(-162.5, 41.5, bquote(Avg.~Richness))] # add label for key
 dev.off()
 
 
+# ===========================================
+# = Category – Richness Hypothesis Beanplot =
+# ===========================================
+set.seed(1)
+catNames <- c("None","Source","Divergence","Corridor","Convergence","Sink")
+hypoDat <- data.frame(
+	"categ"=factor(rep(catNames, each=100), levels=catNames),
+	"rich"=c(
+			rnorm(100, mean=0),
+			rnorm(100, mean=-5),
+			rnorm(100, mean=0, sd=2),
+			rlnorm(100,meanlog=1),
+			rnorm(100, mean=0, sd=2),
+			rnorm(100, mean=-2, sd=1.5)
+		)
+)
+
+png(width=3.5, height=3.5, file="./trawl/Figures/BioClimate/richTrend_category_bean_Hypothesis.png", res=200, units="in")
+par(mfrow=c(1,1), mar=c(2.5,2.5,0.5,0.5), ps=10, cex=1, mgp=c(2, 0.4, 0), tcl=-0.1, family="Times", lwd=1, xpd=F)   
+beanplot(rich~categ, data=hypoDat, ylab="", yaxt="n", xaxt="n", border=bLine, col=beanCol, ll=0.01, beanlinewd=1.5)
+axis(side=2)
+axis(side=1, labels=FALSE)
+# axis(side=1, at=1:6, labels=unique(cT.rcoS[,categ]))
+mtext(bquote(Richness~Trend~~(spp~~year^-1)), side=2, line=1.5)
+text(x=(1:6), y=par("usr")[3]*1.075, labels=c("None","Source","Diverge","Corridor","Converge","Sink"), srt=45, offset=0, pos=2, xpd=TRUE)
+legend("topleft", legend="Hypothesis", bty="n", cex=1.5, inset=c(-0.12,-0.05))
+dev.off()
+
+
+
+
 
 # ===========================================
 # = Boxplots of Burrows Categs and Richness =
@@ -499,7 +491,6 @@ beanCol <- list(c(bFill[1]),
 				
 		
 
-cT.rcoS[,categ:=factor(categ, levels=c("None","Source","Divergence","Corridor","Convergence","Sink"))]
 
 png(width=3.5, height=3.5, file="./trawl/Figures/BioClimate/richTrend_category_bean.png", res=200, units="in")
 par(mfrow=c(1,1), mar=c(2.5,2.5,0.5,0.5), ps=10, cex=1, mgp=c(2, 0.4, 0), tcl=-0.1, family="Times", lwd=1, xpd=F)   
@@ -512,33 +503,47 @@ text(x=(1:6), y=par("usr")[3]*1.075, labels=c("None","Source","Diverge","Corrido
 dev.off()
 
 
-# ===========================================
-# = Category – Richness Hypothesis Beanplot =
-# ===========================================
-set.seed(1)
-catNames <- c("None","Source","Divergence","Corridor","Convergence","Sink")
-hypoDat <- data.frame(
-	"categ"=factor(rep(catNames, each=100), levels=catNames),
-	"rich"=c(
-			rnorm(100, mean=0),
-			rnorm(100, mean=-5),
-			rnorm(100, mean=0, sd=2),
-			rlnorm(100,meanlog=1),
-			rnorm(100, mean=0, sd=2),
-			rnorm(100, mean=-2, sd=1.5)
-		)
-)
 
-png(width=3.5, height=3.5, file="./trawl/Figures/BioClimate/richTrend_category_bean_Hypothesis.png", res=200, units="in")
-par(mfrow=c(1,1), mar=c(2.5,2.5,0.5,0.5), ps=10, cex=1, mgp=c(2, 0.4, 0), tcl=-0.1, family="Times", lwd=1, xpd=F)   
-beanplot(rich~categ, data=hypoDat, ylab="", yaxt="n", xaxt="n", border=bLine, col=beanCol, ll=0.01, beanlinewd=1.5)
-axis(side=2)
-axis(side=1, labels=FALSE)
-# axis(side=1, at=1:6, labels=unique(cT.rcoS[,categ]))
-mtext(bquote(Richness~Trend~~(spp~~year^-1)), side=2, line=1.5)
-text(x=(1:6), y=par("usr")[3]*1.075, labels=c("None","Source","Diverge","Corridor","Converge","Sink"), srt=45, offset=0, pos=2, xpd=TRUE)
-legend("topleft", legend="Hypothesis", bty="n", cex=1.5, inset=c(-0.12,-0.05))
-dev.off()
+
+
+
+# =======================================================
+# = Beanplots of richness and categories in each region =
+# =======================================================
+col5 <- c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99", "#e31a1c")
+bLine <- col5
+bFill <- rgb(t(col2rgb(col5, alpha=TRUE)), alpha=125, maxColorValue=255)
+beanCol <- list(c(bFill[1]),
+				c(bFill[2]),
+				c(bFill[3]),
+				c(bFill[4]),
+				c(bFill[5]),
+				c(bFill[6])
+				)
+				
+
+usreg <- cT.rcoS[,unique(s.reg)]
+
+
+# png(width=3.5, height=3.5, file="./trawl/Figures/BioClimate/richTrend_category_bean.png", res=200, units="in")
+par(mfrow=c(5,2), mar=c(2.5,2.5,0.5,0.5), ps=10, cex=1, mgp=c(2, 0.4, 0), tcl=-0.1, family="Times", lwd=1, xpd=F)
+for(i in 1:length(usreg)){
+	t.sreg <- usreg[i]
+	sub.sreg <- cT.rcoS[,s.reg==t.sreg]
+	beanplot(cT.rcoS[sub.sreg,slope.Nsite]~cT.rcoS[sub.sreg,categ], ylab="", yaxt="n", xaxt="n", border=bLine, col=beanCol, ll=0.01, beanlinewd=1.5)
+	axis(side=2)
+	axis(side=1, labels=FALSE)
+	# axis(side=1, at=1:6, labels=unique(cT.rcoS[,categ]))
+	mtext(bquote(Richness~Trend~~(spp~~year^-1)), side=2, line=1.5)
+	text(x=(1:6), y=par("usr")[3]*()*1.075, labels=c("None","Source","Diverge","Corridor","Converge","Sink"), srt=45, offset=0, pos=2, xpd=TRUE)
+}
+
+
+
+# dev.off()
+
+
+
 
 
 
@@ -684,6 +689,69 @@ segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=2, col="white", lty
 
 
 dev.off()
+
+
+# ======================================================================
+# = Richness vs. BOTTOM Temperature Trend: Correct WC by Dropping Ann =
+# ======================================================================
+qSlope <- function(x, y){if(length(x)<2){return(NA_real_)}else{lm(y~x)$coef[2]}}
+
+rco.s.wc <- copy(rco.sy)
+rco.s.wc[,nameID:=NULL]
+rco.s.wc <- rco.s.wc[s.reg=="wc"&year<=2003,
+	list(
+		mu.btemp=mean(btemp, na.rm=TRUE),
+		slope.btemp=qSlope(year,btemp),
+		mu.depth=mean(depth, na.rm=TRUE),
+		slope.depth=qSlope(year, depth),
+		mu.N=mean(N, na.rm=TRUE),
+		slope.N=qSlope(year, N),
+		mu.Nsite=mean(Nsite, na.rm=TRUE),
+		slope.Nsite=qSlope(year, Nsite)
+	),
+	by=c("s.reg","stratum","lon","lat")
+]
+
+setkey(rco.s.wc, lon, lat)
+setkey(climTraj, lon, lat)
+cT.rcoS.wc <- merge(rco.s.wc, climTraj)
+
+
+# dev.new(width=5.5, height=5)
+png("./trawl/Figures/BioClimate/richTrend_vs_bottomTrend_roc_drop_WC_Ann.png", width=5.5, height=5.5, res=200, units="in")
+par(mar=c(2.5,2.75,0.2,1), mgp=c(1,0.25,0), tcl=-0.15, cex=1, ps=10)
+
+cT.rcoS[,plot((slope.btemp), (slope.Nsite), col=col.reg[s.reg], pch=19, xlab="", ylab="")]
+mtext(bquote(Bottom~Temperature~Trend~~(phantom()*degree*C~~year^-1)), side=1, line=1.5)
+mtext(bquote(Local~Species~Richness~Trend~~(species~~year^-1)), side=2, line=1.5)
+legend("topright", legend=regKey[usreg], pch=19, col=col.reg[usreg], bg="transparent")
+
+for(i in 1:length(usreg)){
+	t.lm <- cT.rcoS[s.reg==usreg[i], lm(slope.Nsite~slope.btemp)]
+	t.x <- cT.rcoS[s.reg==usreg[i],range(slope.btemp, na.rm=TRUE)]
+	t.y <- cT.rcoS[s.reg==usreg[i],range(slope.Nsite, na.rm=TRUE)]
+	t.new <- predict(t.lm, newdata=data.frame(slope.btemp=t.x))
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=4, col="black")
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=2, col=col.reg[usreg[i]])
+}
+
+
+# Add in first part of WC sampling only (to exclude potential method bias)
+cT.rcoS.wc[,points((slope.btemp), (slope.Nsite), col=col.reg["wc"], cex=1.5, pch=19, xlab="", ylab="")]
+cT.rcoS.wc[,points((slope.btemp), (slope.Nsite), col="white", cex=0.75, pch=19, xlab="", ylab="")]
+t.lm <- cT.rcoS.wc[s.reg==usreg[i], lm(slope.Nsite~slope.btemp)]
+t.x <- cT.rcoS.wc[s.reg==usreg[i],range(slope.btemp, na.rm=TRUE)]
+t.y <- cT.rcoS.wc[s.reg==usreg[i],range(slope.Nsite, na.rm=TRUE)]
+t.new <- predict(t.lm, newdata=data.frame(slope.btemp=t.x))
+segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=6, col="black")
+segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=5, col=col.reg["wc"])
+segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=2, col="white", lty="dashed")
+
+
+dev.off()
+
+
+
 
 
 # ================================================================
@@ -895,9 +963,106 @@ dev.off()
 
 
 
-ac.x <- seq(3, 10, by=0.01)
-ac.y <- 1/ (1 + exp(-1.5*ac.x))
-png("~/Desktop/curve.png", bg="transparent")
-par(mar=rep(0,4), oma=rep(0,4), lwd=4, col="white")
-plot(ac.x, ac.y, xlab="", ylab="", xaxt="n", yaxt="n", type="l", bty="l")
+# ac.x <- seq(3, 10, by=0.01)
+# ac.y <- 1/ (1 + exp(-1.5*ac.x))
+# png("~/Desktop/curve.png", bg="transparent")
+# par(mar=rep(0,4), oma=rep(0,4), lwd=4, col="white")
+# plot(ac.x, ac.y, xlab="", ylab="", xaxt="n", yaxt="n", type="l", bty="l")
+# dev.off()
+
+
+# ==========================
+# = Dummy Rich vs. Lon/Lat =
+# ==========================
+qSlope <- function(x, y){if(length(x)<2){return(NA_real_)}else{lm(y~x)$coef[2]}}
+
+dummy.rich <- trawl2.veri[,list(dummy.rich=lu(spp)), by=c("s.reg","stratum","year")]
+
+ll <- t(dummy.rich[,(strsplit(stratum, split=" "))])
+names(ll) <- NULL
+dummy.rich[,c("lon","lat"):=list(as.numeric(ll[,1]), as.numeric(ll[,2]))]
+
+dummy.rich <- dummy.rich[s.reg!="wc" | (s.reg=="wc" & year<=2003)]
+
+dr <- dummy.rich[,list(mu.dr=mean(dummy.rich), slope.dr=qSlope(year, dummy.rich)), by=c("s.reg","stratum","lon","lat")]
+
+
+
+
+png(width=9, height=4, file="./trawl/Figures/BioClimate/richnessMean_vs_LonLat_observed.png", res=200, units="in")
+par(mfrow=c(1,2), mar=c(2.5,2.5,0.5,0.5), ps=8, cex=1, mgp=c(3, 0.2, 0), tcl=-0.25, family="Times", lwd=1, xpd=F)
+
+
+dr[,plot((lon), (mu.dr), col=col.reg[s.reg], pch=19, xlab="", ylab="")]
+mtext(bquote(Longitude), side=1, line=1.25)
+mtext(bquote(Mean~Observed~Richness), side=2, line=1.25)
+legend("topleft", legend=regKey[usreg], pch=19, col=col.reg[usreg], cex=0.75, ncol=2, bg=NA)
+
+for(i in 1:length(usreg)){
+	t.lm <- dr[s.reg==usreg[i], lm(mu.dr~lon)]
+	t.x <- dr[s.reg==usreg[i],range(lon, na.rm=TRUE)]
+	t.y <- dr[s.reg==usreg[i],range(mu.dr, na.rm=TRUE)]
+	t.new <- predict(t.lm, newdata=data.frame(lon=t.x))
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=4, col="black")
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=2, col=col.reg[usreg[i]])
+}
+abline(lm(dr[,mu.dr]~dr[,lon]), lwd=3, lty="dashed")
+
+
+
+
+dr[,plot((lat), (mu.dr), col=col.reg[s.reg], pch=19, xlab="", ylab="")]
+mtext(bquote(Latitude), side=1, line=1.25)
+
+for(i in 1:length(usreg)){
+	t.lm <- dr[s.reg==usreg[i], lm(mu.dr~lat)]
+	t.x <- dr[s.reg==usreg[i],range(lat, na.rm=TRUE)]
+	t.y <- dr[s.reg==usreg[i],range(mu.dr, na.rm=TRUE)]
+	t.new <- predict(t.lm, newdata=data.frame(lat=t.x))
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=4, col="black")
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=2, col=col.reg[usreg[i]])
+}
+abline(lm(dr[,mu.dr]~dr[,lat]), lwd=3, lty="dashed")
+
 dev.off()
+
+
+
+
+png(width=9, height=4, file="./trawl/Figures/BioClimate/richnessTrend_vs_LonLat_observed.png", res=200, units="in")
+par(mfrow=c(1,2), mar=c(2.5,2.5,0.5,0.5), ps=8, cex=1, mgp=c(3, 0.2, 0), tcl=-0.25, family="Times", lwd=1, xpd=F)
+
+
+dr[,plot((lon), (slope.dr), col=col.reg[s.reg], pch=19, xlab="", ylab="")]
+mtext(bquote(Longitude), side=1, line=1.25)
+mtext(bquote(Observed~Richness~Trend~~(species~~year^-1)), side=2, line=1.25)
+legend("bottomleft", legend=regKey[usreg], pch=19, col=col.reg[usreg], cex=0.75, ncol=2, bg=NA)
+
+for(i in 1:length(usreg)){
+	t.lm <- dr[s.reg==usreg[i], lm(slope.dr~lon)]
+	t.x <- dr[s.reg==usreg[i],range(lon, na.rm=TRUE)]
+	t.y <- dr[s.reg==usreg[i],range(slope.dr, na.rm=TRUE)]
+	t.new <- predict(t.lm, newdata=data.frame(lon=t.x))
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=4, col="black")
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=2, col=col.reg[usreg[i]])
+}
+abline(lm(dr[,slope.dr]~dr[,lon]), lwd=3, lty="dashed")
+
+
+dr[,plot((lat), (slope.dr), col=col.reg[s.reg], pch=19, xlab="", ylab="")]
+mtext(bquote(Latitude), side=1, line=1.25)
+# mtext(bquote(Local~Species~Richness~Trend~~(species~~year^-1)), side=2, line=1.5)
+# legend("topright", legend=regKey[usreg], pch=19, col=col.reg[usreg])
+
+for(i in 1:length(usreg)){
+	t.lm <- dr[s.reg==usreg[i], lm(slope.dr~lat)]
+	t.x <- dr[s.reg==usreg[i],range(lat, na.rm=TRUE)]
+	t.y <- dr[s.reg==usreg[i],range(slope.dr, na.rm=TRUE)]
+	t.new <- predict(t.lm, newdata=data.frame(lat=t.x))
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=4, col="black")
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=2, col=col.reg[usreg[i]])
+}
+abline(lm(dr[,slope.dr]~dr[,lat]), lwd=3, lty="dashed")
+
+dev.off()
+
