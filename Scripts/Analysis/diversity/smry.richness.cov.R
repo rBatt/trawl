@@ -51,9 +51,9 @@ load("./trawl/Results/Richness/cT.rcoS.RData") # combines final climate trajecto
 
 
 # rco[,spp.depth:=weighted.mean(depth, w=Z, na.rm=TRUE), by=c("s.reg","spp")]
-# regKey <- c("ai"="Aleutian Islands", "ebs"="Eastern Bering Strait", "gmex"="Gulf of Mexico", "goa"="Gulf of Alaska", "neus"="Northeast US", "newf"="Newfoundland", "sa"="US South Atlantic", "sgulf"="S. Gulf of St. Lawrence", "shelf"="Scotian Shelf", "wcann"="West Coast (ann)", "wctri"= "West Coast (tri)")
+# regKey <- c("ai"="Aleutian Islands", "ebs"="Eastern Bering Sea", "gmex"="Gulf of Mexico", "goa"="Gulf of Alaska", "neus"="Northeast US", "newf"="Newfoundland", "sa"="US South Atlantic", "sgulf"="S. Gulf of St. Lawrence", "shelf"="Scotian Shelf", "wcann"="West Coast (ann)", "wctri"= "West Coast (tri)")
 
-regKey <- c("ai"="Aleutian Islands", "ebs"="Eastern Bering Strait", "gmex"="Gulf of Mexico", "goa"="Gulf of Alaska", "neus"="Northeast US", "newf"="Newfoundland", "sa"="US South Atlantic", "sgulf"="S. Gulf of St. Lawrence", "shelf"="Scotian Shelf", "wc"="West Coast")
+regKey <- c("ai"="Aleutian Islands", "ebs"="Eastern Bering Sea", "gmex"="Gulf of Mexico", "goa"="Gulf of Alaska", "neus"="Northeast US", "newf"="Newfoundland", "sa"="US South Atlantic", "sgulf"="S. Gulf of St. Lawrence", "shelf"="Scotian Shelf", "wc"="West Coast")
 
 
 
@@ -744,7 +744,7 @@ for(i in 1:length(usreg)){
 # =====================================
 # = Barplot of # Category Per Region =
 # =====================================
-regKey2 <- structure(c("Aleutian\nIslands", "E. Bering\nStrait", "Gulf of\nMexico", "Gulf of\nAlaska", "Northeast US","Newfoundland", "US South\nAtlantic", "S. Gulf of\nSt. Lawrence", "Scotian\nShelf", "West\nCoast"), .Names =c("ai", "ebs", "gmex", "goa", "neus", "newf", "sa", "sgulf", "shelf", "wc"))
+regKey2 <- structure(c("Aleutian\nIslands", "E. Bering\nSea", "Gulf of\nMexico", "Gulf of\nAlaska", "Northeast US","Newfoundland", "US South\nAtlantic", "S. Gulf of\nSt. Lawrence", "Scotian\nShelf", "West\nCoast"), .Names =c("ai", "ebs", "gmex", "goa", "neus", "newf", "sa", "sgulf", "shelf", "wc"))
 rowProp <- function(x)apply(x, 1, function(x)x/sum(x))
 propCategReg <- rowProp(table(cT.rcoS.noAnn[,s.reg], cT.rcoS.noAnn[,categ]))
 colnames(propCategReg) <- regKey[colnames(propCategReg)]
@@ -807,3 +807,97 @@ cT.rcoS[,summary(lm(slope.Nsite~climV))]
 
 
 
+# ================================
+# = Richness Trend vs. Lon & Lat =
+# ================================
+png(width=9, height=4, file="./trawl/Figures/BioClimate/richnessTrend_vs_LonLat.png", res=200, units="in")
+par(mfrow=c(1,2), mar=c(2.5,2.5,0.5,0.5), ps=8, cex=1, mgp=c(3, 0.2, 0), tcl=-0.25, family="Times", lwd=1, xpd=F)
+
+
+cT.rcoS.noAnn[,plot((lon), (slope.Nsite), col=col.reg[s.reg], pch=19, xlab="", ylab="")]
+mtext(bquote(Longitude), side=1, line=1.25)
+mtext(bquote(Richness~Trend~~(species~~year^-1)), side=2, line=1.25)
+legend("topright", legend=regKey[usreg], pch=19, col=col.reg[usreg], cex=0.75, ncol=1, bg=NA)
+
+for(i in 1:length(usreg)){
+	t.lm <- cT.rcoS.noAnn[s.reg==usreg[i], lm(slope.Nsite~lon)]
+	t.x <- cT.rcoS.noAnn[s.reg==usreg[i],range(lon, na.rm=TRUE)]
+	t.y <- cT.rcoS.noAnn[s.reg==usreg[i],range(slope.Nsite, na.rm=TRUE)]
+	t.new <- predict(t.lm, newdata=data.frame(lon=t.x))
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=4, col="black")
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=2, col=col.reg[usreg[i]])
+}
+abline(lm(cT.rcoS.noAnn[,slope.Nsite]~cT.rcoS.noAnn[,lon]), lwd=3, lty="dashed")
+
+
+cT.rcoS.noAnn[,plot((lat), (slope.Nsite), col=col.reg[s.reg], pch=19, xlab="", ylab="")]
+mtext(bquote(Latitude), side=1, line=1.25)
+# mtext(bquote(Local~Species~Richness~Trend~~(species~~year^-1)), side=2, line=1.5)
+# legend("topright", legend=regKey[usreg], pch=19, col=col.reg[usreg])
+
+for(i in 1:length(usreg)){
+	t.lm <- cT.rcoS.noAnn[s.reg==usreg[i], lm(slope.Nsite~lat)]
+	t.x <- cT.rcoS.noAnn[s.reg==usreg[i],range(lat, na.rm=TRUE)]
+	t.y <- cT.rcoS.noAnn[s.reg==usreg[i],range(slope.Nsite, na.rm=TRUE)]
+	t.new <- predict(t.lm, newdata=data.frame(lat=t.x))
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=4, col="black")
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=2, col=col.reg[usreg[i]])
+}
+abline(lm(cT.rcoS.noAnn[,slope.Nsite]~cT.rcoS.noAnn[,lat]), lwd=3, lty="dashed")
+
+dev.off()
+
+
+
+
+
+
+# ================================
+# = Richness Mean vs. Lon & Lat =
+# ================================
+png(width=9, height=4, file="./trawl/Figures/BioClimate/richnessMean_vs_LonLat.png", res=200, units="in")
+par(mfrow=c(1,2), mar=c(2.5,2.5,0.5,0.5), ps=8, cex=1, mgp=c(3, 0.2, 0), tcl=-0.25, family="Times", lwd=1, xpd=F)
+
+
+cT.rcoS.noAnn[,plot((lon), (mu.Nsite), col=col.reg[s.reg], pch=19, xlab="", ylab="")]
+mtext(bquote(Longitude), side=1, line=1.25)
+mtext(bquote(Mean~Richness), side=2, line=1.25)
+legend("bottomleft", legend=regKey[usreg], pch=19, col=col.reg[usreg], cex=0.75, ncol=2, bg=NA)
+
+for(i in 1:length(usreg)){
+	t.lm <- cT.rcoS.noAnn[s.reg==usreg[i], lm(mu.Nsite~lon)]
+	t.x <- cT.rcoS.noAnn[s.reg==usreg[i],range(lon, na.rm=TRUE)]
+	t.y <- cT.rcoS.noAnn[s.reg==usreg[i],range(mu.Nsite, na.rm=TRUE)]
+	t.new <- predict(t.lm, newdata=data.frame(lon=t.x))
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=4, col="black")
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=2, col=col.reg[usreg[i]])
+}
+abline(lm(cT.rcoS.noAnn[,mu.Nsite]~cT.rcoS.noAnn[,lon]), lwd=3, lty="dashed")
+
+
+
+
+cT.rcoS.noAnn[,plot((lat), (mu.Nsite), col=col.reg[s.reg], pch=19, xlab="", ylab="")]
+mtext(bquote(Latitude), side=1, line=1.25)
+
+for(i in 1:length(usreg)){
+	t.lm <- cT.rcoS.noAnn[s.reg==usreg[i], lm(mu.Nsite~lat)]
+	t.x <- cT.rcoS.noAnn[s.reg==usreg[i],range(lat, na.rm=TRUE)]
+	t.y <- cT.rcoS.noAnn[s.reg==usreg[i],range(mu.Nsite, na.rm=TRUE)]
+	t.new <- predict(t.lm, newdata=data.frame(lat=t.x))
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=4, col="black")
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=2, col=col.reg[usreg[i]])
+}
+abline(lm(cT.rcoS.noAnn[,mu.Nsite]~cT.rcoS.noAnn[,lat]), lwd=3, lty="dashed")
+
+dev.off()
+
+
+
+
+ac.x <- seq(3, 10, by=0.01)
+ac.y <- 1/ (1 + exp(-1.5*ac.x))
+png("~/Desktop/curve.png", bg="transparent")
+par(mar=rep(0,4), oma=rep(0,4), lwd=4, col="white")
+plot(ac.x, ac.y, xlab="", ylab="", xaxt="n", yaxt="n", type="l", bty="l")
+dev.off()
