@@ -97,6 +97,7 @@ setkey(rco.s, lon, lat)
 setkey(climTraj, lon, lat)
 
 cT.rcoS <- merge(rco.s, climTraj)
+cT.rcoS[,categ:=factor(categ, levels=c("None","Source","Divergence","Corridor","Convergence","Sink"))]
 
 
 
@@ -105,4 +106,63 @@ cT.rcoS[,plot(data.frame(slope.N, slope.Nsite, mu.N, mu.Nsite, slope.btemp, time
 
 
 
-save(climTraj, cT.rcoS, file="./trawl/Results/Richness/cT.rcoS.RData")
+
+
+# ===============
+# = Drop WC Ann =
+# ===============
+
+rco.s.noAnn <- copy(rco.sy)
+rco.s.noAnn[,nameID:=NULL]
+rco.s.noAnn <- rco.s.noAnn[s.reg!="wc" | (s.reg=="wc"&year<=2003),
+	list(
+		mu.btemp=mean(btemp, na.rm=TRUE),
+		slope.btemp=qSlope(year,btemp),
+		mu.depth=mean(depth, na.rm=TRUE),
+		slope.depth=qSlope(year, depth),
+		mu.N=mean(N, na.rm=TRUE),
+		slope.N=qSlope(year, N),
+		mu.Nsite=mean(Nsite, na.rm=TRUE),
+		slope.Nsite=qSlope(year, Nsite)
+	),
+	by=c("s.reg","stratum","lon","lat")
+]
+
+setkey(rco.s.noAnn, lon, lat)
+setkey(climTraj, lon, lat)
+cT.rcoS.noAnn <- merge(rco.s.noAnn, climTraj)
+cT.rcoS.noAnn[,categ:=factor(categ, levels=c("None","Source","Divergence","Corridor","Convergence","Sink"))]
+
+
+# =====================
+# = Observed Richness =
+# =====================
+qSlope <- function(x, y){if(length(x)<2){return(NA_real_)}else{lm(y~x)$coef[2]}}
+
+dummy.rich <- trawl2.veri[,list(dummy.rich=lu(spp)), by=c("s.reg","stratum","year")]
+
+ll <- t(dummy.rich[,(strsplit(stratum, split=" "))])
+names(ll) <- NULL
+dummy.rich[,c("lon","lat"):=list(as.numeric(ll[,1]), as.numeric(ll[,2]))]
+
+dummy.rich <- dummy.rich[s.reg!="wc" | (s.reg=="wc" & year<=2003)]
+
+dr <- dummy.rich[,list(mu.dr=mean(dummy.rich), slope.dr=qSlope(year, dummy.rich)), by=c("s.reg","stratum","lon","lat")]
+
+
+setkey(dr, lon, lat)
+cT.obsR <- merge(dr, climTraj)
+cT.obsR[,categ:=factor(categ, levels=c("None","Source","Divergence","Corridor","Convergence","Sink"))]
+
+
+
+cT.obsR[,plot(data.frame(mu.dr, slope.dr, timeTrend, lon, lat, climV, nFT,nFinal, nStart), col=as.factor(s.reg), cex=0.5)]
+
+
+# ========
+# = Save =
+# ========
+save(cT.rcoS,  file="./trawl/Results/Richness/cT.rcoS.RData")
+save(climTraj,  file="./trawl/Results/Richness/climTraj.RData")
+save(cT.rcoS.noAnn,  file="./trawl/Results/Richness/cT.rcoS.noAnn.RData")
+save(cT.obsR,  file="./trawl/Results/Richness/cT.obsR.RData")
