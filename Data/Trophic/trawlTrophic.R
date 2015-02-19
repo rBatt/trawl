@@ -37,8 +37,7 @@ fb.names <- fish_names(fish.data)
 
 findable <- fb.names %in% taxInfo[,spp]
 
-fd.sub <- list()
-for(i in 1:sum(findable)){fd.sub[[i]] <- fish.data[[i]]}
+fd.sub <- fish.data[findable]
 
 
 # ================================
