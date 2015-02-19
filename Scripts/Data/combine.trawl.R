@@ -270,6 +270,16 @@ if(taxLvl1[,sum(is.na(spp))]==0){
 }
 
 
+
+# =======================================
+# = Save Compiled Taxonomic Information =
+# =======================================
+taxInfo <- trawl0[,list(spp, common, taxLvl, species, genus, family, order, class, superclass, subphylum, phylum, kingdom, raw.spp, isSpecies, correctSpp)]
+setkeyv(taxInfo, names(taxInfo))
+taxInfo <- unique(taxInfo)
+save(taxInfo, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/taxInfo.RData")
+
+
 # ===========================
 # = Trim trawl columns down =
 # ===========================
