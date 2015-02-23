@@ -9,29 +9,35 @@ library(vegan)
 library(reshape2)
 
 
+
+# ===============================
+# = Guess appropriate directory =
+# ===============================
+if(Sys.info()["sysname"]=="Linux"){
+	setwd("~/Documents/School&Work/pinskyPost")
+}else{
+	setwd("~/Documents/School&Work/pinskyPost")
+}
+
+
 # =============
 # = Load Data =
 # =============
 # Load trawl data
-load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/divData.RData")
+load("./trawl/Data/divData.RData")
 
 
-# ===========================
-# = Load Scripts/ Functions =
-# ===========================
-# Load Data functions
-dat.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions"
-invisible(sapply(paste(dat.location, list.files(dat.location), sep="/"), source, .GlobalEnv))
+# ==================
+# = Load Functions =
+# ==================
+data.location <- "./trawl/Scripts/DataFunctions"
+invisible(sapply(paste(data.location, list.files(data.location), sep="/"), source, .GlobalEnv))
 
-# Load plotting functions
-plot.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/PlotFunctions"
-invisible(sapply(paste(plot.location, list.files(plot.location), sep="/"), source, .GlobalEnv))
-
-# Load statistics functions
-stat.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/StatFunctions"
+stat.location <- "./trawl/Scripts/StatFunctions"
 invisible(sapply(paste(stat.location, list.files(stat.location), sep="/"), source, .GlobalEnv))
 
-# divData2 <- divData[,list(stemp=meanna(stemp), btemp=meanna(btemp), depth=meanna(depth), wtcpue=meanna(wtcpue)), by=c("s.reg","stratum","spp","year","common")]
+plot.location <- "./trawl/Scripts/PlotFunctions"
+invisible(sapply(paste(plot.location, list.files(plot.location), sep="/"), source, .GlobalEnv))
 
 
 # ==========================
@@ -94,7 +100,7 @@ beta.turn.time.expr <- bquote({
 
 })
 
-save.image("~/Documents/School&Work/pinskyPost/trawl/Results/forPlotGutsTurnover.RData")
+# save.image("~/Documents/School&Work/pinskyPost/trawl/Results/forPlotGutsTurnover.RData")
 
 # pdf("~/Desktop/test.pdf", width=3.5, height=6)
 # beta.turn.time <- divData[,list(lon=mean(lon), lat=mean(lat), turn.time=eval(beta.turn.time.expr)), by=c("s.reg","stratum")]
