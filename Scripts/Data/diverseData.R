@@ -34,12 +34,12 @@ invisible(sapply(paste(plot.location, list.files(plot.location), sep="/"), sourc
 # = Load trawl2 Dataset =
 # =======================
 load("./trawl/Data/trawl2.RData")
-divData <- trawl2[(correctSpp)&!is.na(common)&is.species(spp),]
-divData <- divData[s.reg!="wcann" | (s.reg=="wcann" & year > 2003)]
-divData[s.reg=="wcann" | s.reg=="wctri", s.reg:="wc"]
+divData0 <- trawl2[(correctSpp)&!is.na(common)&is.species(spp),]
+divData0 <- divData0[s.reg!="wcann" | (s.reg=="wcann" & year > 2003)]
+divData0[s.reg=="wcann" | s.reg=="wctri", s.reg:="wc"]
 
 
-setkey(divData, s.reg, spp, year, stratum)
+setkey(divData0, s.reg, spp, year, stratum)
 
 
 # Add # years observed
@@ -91,9 +91,10 @@ setkey(divData, s.reg, spp, year, stratum)
 
 
 # divData <- trawl2
+divData <- copy(divData0)
 divData[,c("lon","lat"):=list(roundGrid(lon),roundGrid(lat))]
 
-divData <- divData[,list(lon=meanna(lon),lat=meanna(lat),depth=meanna(depth), stemp=meanna(stemp), btemp=meanna(btemp), wtcpue=meanna(wtcpue)), by=c("region","s.reg","year","stratum","spp","common","taxLvl","phylum")]
+divData <- divData[,list(lon=meanna(lon),lat=meanna(lat),depth=meanna(depth), stemp=meanna(stemp), btemp=meanna(btemp), wtcpue=meanna(wtcpue)), by=c("s.reg","year","stratum","spp")]
 
-setkey(divData, s.reg, spp, year, stratum)
+setkey(divData, s.reg, year, stratum, spp)
 save(divData, file="./trawl/Data/divData.RData")

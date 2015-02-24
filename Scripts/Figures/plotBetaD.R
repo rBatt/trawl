@@ -45,7 +45,7 @@ beta.var.time[,var.time.col:=heat.cols[cut(var.time, 256)]]
 
 # New device
 # dev.new(height=4, width=beta.var.time[,map.w(lat,lon,4)])
-pdf(height=4, width=beta.var.time[,map.w(lat,lon,4)], file="~/Documents/School&Work/pinskyPost/trawl/Figures/betaD_temporalVariance.pdf")
+png(height=4, width=beta.var.time[,map.w(lat,lon,4)], file="./trawl/Figures/betaD_temporalVariance.png", units="in", res=200)
 par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
 
 # Plot
@@ -72,11 +72,11 @@ dev.off()
 # ========================================
 heat.cols <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(256)
 
-beta.turn.time[,turn.time.col:=heat.cols[cut(turn.time, 256)]]
+beta.turn.time[,turn.time.col:=heat.cols[cut(exp(turn.time), 256)]]
 
 
 # dev.new(height=4, width=beta.turn.time[,map.w(lat,lon,4)])
-pdf(height=4, width=beta.var.time[,map.w(lat,lon,4)], file="~/Documents/School&Work/pinskyPost/trawl/Figures/betaD_temporalTurnover.pdf")
+png(height=4, width=beta.var.time[,map.w(lat,lon,4)], file="./trawl/Figures/betaD_temporalTurnover.png", units="in", res=200)
 par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
 
 beta.turn.time[,plot(lon, lat, bg=turn.time.col, pch=21, cex=1, type="n")]
@@ -101,7 +101,7 @@ dev.off()
 # = Beta diversity as variance over space =
 # =========================================
 # dev.new(width=5, height=7)
-pdf(height=7, width=5, file="~/Documents/School&Work/pinskyPost/trawl/Figures/betaD_spatialVariance.pdf")
+png(height=7, width=5, file="./trawl/Figures/betaD_spatialVariance.png", units="in", res=200)
 par(mfrow=c(5,2), mar=c(1.75,1.5,1,1), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
 beta.var.space[,
 	{
@@ -119,7 +119,7 @@ dev.off()
 # = Beta diversity as turnover through space =
 # ============================================
 # dev.new(width=5, height=7)
-pdf(height=7, width=5, file="~/Documents/School&Work/pinskyPost/trawl/Figures/betaD_spatialTurnover.pdf")
+png(height=7, width=5, file="./trawl/Figures/betaD_spatialTurnover.png", units="in", res=200)
 par(mfrow=c(5,2), mar=c(1.75,1.5,1,1), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
 beta.turn.space[,
 	{
