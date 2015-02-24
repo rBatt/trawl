@@ -308,7 +308,7 @@ setkey(beta.var.space, s.reg, year)
 # beta.var.time.scbd2 <- beta.var.time.scbd[,mean(taxon.scbd), by=c("s.reg","taxon")]
 
 
-save(beta.var.space, beta.var.time, beta.turn.space, beta.turn.time, file="~/Documents/School&Work/pinskyPost/trawl/Results/trawl.betaD.RData")
+save(beta.var.space, beta.var.time, beta.turn.space, beta.turn.time, file="./trawl/Results/trawl.betaD.RData")
 
 
 
