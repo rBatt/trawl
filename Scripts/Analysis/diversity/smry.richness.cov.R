@@ -49,6 +49,10 @@ load("./trawl/Results/Richness/rco.sy.RData") # richness cov model output, aggre
 load("./trawl/Results/Richness/ao.rco.RData") # the list of the richness covariate model output (all out . richness cov out)
 load("./trawl/Results/Richness/cT.rcoS.RData") # combines final climate trajectory states w/ per-site trends and averages of richness, btemp, depth
 
+load("./trawl/Results/Richness/cT.rcoS.noAnn.RData") # combines final climate trajectory states w/ per-site trends and averages of richness, btemp, depth
+
+load("./trawl/Results/trawl.betaD.RData") # load beta diversity
+
 cT.rcoS[,categ:=factor(categ, levels=c("None","Source","Divergence","Corridor","Convergence","Sink"))]
 
 
@@ -57,6 +61,22 @@ cT.rcoS[,categ:=factor(categ, levels=c("None","Source","Divergence","Corridor","
 
 regKey <- c("ai"="Aleutian Islands", "ebs"="Eastern Bering Sea", "gmex"="Gulf of Mexico", "goa"="Gulf of Alaska", "neus"="Northeast US", "newf"="Newfoundland", "sa"="US South Atlantic", "sgulf"="S. Gulf of St. Lawrence", "shelf"="Scotian Shelf", "wc"="West Coast")
 
+
+# ==========================
+# = Load and add in Beta D =
+# ==========================
+beta.var.time[,stratum:=NULL]
+beta.turn.time[,stratum:=NULL]
+
+setkey(beta.var.time, s.reg, lon, lat)
+setkey(beta.turn.time, s.reg, lon, lat)
+
+cT.rcoS.b0 <- merge(cT.rcoS, beta.var.time, all=TRUE)
+cT.rcoS.b <- merge(cT.rcoS.b0, beta.turn.time, all=TRUE)
+
+setkey(cT.rcoS.noAnn, s.reg, lon, lat)
+cT.rcoS.noAnn.b0 <- merge(cT.rcoS.noAnn, beta.var.time, all.x=TRUE)
+cT.rcoS.noAnn.b <- merge(cT.rcoS.noAnn.b0, beta.turn.time, all.x=TRUE)
 
 
 # ===================================
@@ -582,18 +602,51 @@ dev.off()
 
 
 
+# ============================================
+# = Beanplots of Beta D Variance vs Category =
+# ============================================
+
+col5 <- c("#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99", "#e31a1c")
+bLine <- col5
+bFill <- rgb(t(col2rgb(col5, alpha=TRUE)), alpha=125, maxColorValue=255)
+beanCol <- list(c(bFill[1]),
+				c(bFill[2]),
+				c(bFill[3]),
+				c(bFill[4]),
+				c(bFill[5]),
+				c(bFill[6])
+				)
+				
+		
+
+png(width=3.5, height=3.5, file="./trawl/Figures/BioClimate/betaVar_category_bean.png", res=200, units="in")
+par(mfrow=c(1,1), mar=c(2.5,2.5,0.5,0.5), ps=10, cex=1, mgp=c(2, 0.4, 0), tcl=-0.1, family="Times", lwd=1, xpd=F)   
+beanplot(cT.rcoS.noAnn.b[,var.time]~cT.rcoS.noAnn.b[,categ], ylab="", yaxt="n", xaxt="n", border=bLine, col=beanCol, ll=0.01, beanlinewd=1.5)
+axis(side=2)
+axis(side=1, labels=FALSE)
+# axis(side=1, at=1:6, labels=unique(cT.rcoS[,categ]))
+mtext(bquote(Community~~Variance~~(beta)), side=2, line=1.5)
+fig.range <- diff(range(par("usr")[3:4]))
+fig.min <- par("usr")[3]
+fig.txt <- fig.min-(0.1*abs(fig.min))
+text(x=(1:6), y=fig.txt, labels=c("None","Source","Diverge","Corridor","Converge","Sink"), srt=45, offset=0, pos=2, xpd=TRUE)
+dev.off()
+
+
+
+
 
 
 
 # =================================================
 # = Ternary Plot of Categ Components and Richness =
 # =================================================
-heat.cols <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(256)
-tern.cols <- cT.rcoS[,heat.cols[cut(slope.Nsite, 256)]]
-
-tern.vals <- as.matrix(cT.rcoS[,list(nStart, nFT, nFinal)])
-
-ternaryplot(tern.vals, pch=20, cex=0.5, col=tern.cols, labels="outside")
+# heat.cols <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(256)
+# tern.cols <- cT.rcoS[,heat.cols[cut(slope.Nsite, 256)]]
+#
+# tern.vals <- as.matrix(cT.rcoS[,list(nStart, nFT, nFinal)])
+#
+# ternaryplot(tern.vals, pch=20, cex=0.5, col=tern.cols, labels="outside")
 
 
 
@@ -729,64 +782,167 @@ segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=2, col="white", lty
 dev.off()
 
 
+# ========================================
+# = Richness vs. Surf Temp Trend: No Ann =
+# ========================================
+
+setkey(cT.rcoS.noAnn, s.reg, lon, lat)
+usreg <- cT.rcoS.noAnn[,unique(s.reg)]
+col.reg <- rainbow(length(usreg))
+names(col.reg) <- usreg
+
+# dev.new(width=5.5, height=5)
+png("./trawl/Figures/BioClimate/richTrend_vs_surfTrend_roc_noAnn.png", width=5.5, height=5.5, res=200, units="in")
+par(mar=c(2.5,2.75,0.2,1), mgp=c(1,0.25,0), tcl=-0.15, cex=1, ps=10)
+
+cT.rcoS.noAnn[,plot((timeTrend), (slope.Nsite), col=col.reg[s.reg], pch=19, xlab="", ylab="")]
+mtext(bquote(Surface~Temperature~Trend~~(phantom()*degree*C~~year^-1)), side=1, line=1.5)
+mtext(bquote(Local~Species~Richness~Trend~~(species~~year^-1)), side=2, line=1.5)
+legend("topright", legend=regKey[usreg], pch=19, col=col.reg[usreg])
+
+for(i in 1:length(usreg)){
+	t.lm <- cT.rcoS.noAnn[s.reg==usreg[i], lm(slope.Nsite~timeTrend)]
+	t.x <- cT.rcoS.noAnn[s.reg==usreg[i],range(timeTrend, na.rm=TRUE)]
+	t.y <- cT.rcoS.noAnn[s.reg==usreg[i],range(slope.Nsite, na.rm=TRUE)]
+	t.new <- predict(t.lm, newdata=data.frame(timeTrend=t.x))
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=4, col="black")
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=2, col=col.reg[usreg[i]])
+}
+dev.off()
+
+
+# ===============================================
+# = Richness vs. Surf Temp Trend: noAnn, noMean =
+# ===============================================
+setkey(cT.rcoS.noAnn, s.reg, lon, lat)
+usreg <- cT.rcoS.noAnn[,unique(s.reg)]
+col.reg <- rainbow(length(usreg))
+names(col.reg) <- usreg
+
+cT.rcoS.noAnn[,slope.Nsite.noMu:=slope.Nsite-meanna(slope.Nsite), by="s.reg"]
+
+# dev.new(width=5.5, height=5)
+# png("./trawl/Figures/BioClimate/richTrend_vs_surfTrend_roc_noAnn_noMean.png", width=5.5, height=5.5, res=200, units="in")
+par(mar=c(2.5,2.75,0.2,1), mgp=c(1,0.25,0), tcl=-0.15, cex=1, ps=10)
+
+cT.rcoS.noAnn[,plot((timeTrend), (slope.Nsite.noMu), col=col.reg[s.reg], pch=19, xlab="", ylab="")]
+mtext(bquote(Surface~Temperature~Trend~~(phantom()*degree*C~~year^-1)), side=1, line=1.5)
+mtext(bquote(Local~Species~Richness~Trend~~(species~~year^-1)), side=2, line=1.5)
+legend("topright", legend=regKey[usreg], pch=19, col=col.reg[usreg])
+
+for(i in 1:length(usreg)){
+	t.lm <- cT.rcoS.noAnn[s.reg==usreg[i], lm(slope.Nsite.noMu~timeTrend)]
+	t.x <- cT.rcoS.noAnn[s.reg==usreg[i],range(timeTrend, na.rm=TRUE)]
+	t.y <- cT.rcoS.noAnn[s.reg==usreg[i],range(slope.Nsite, na.rm=TRUE)]
+	t.new <- predict(t.lm, newdata=data.frame(timeTrend=t.x))
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=4, col="black")
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=2, col=col.reg[usreg[i]])
+}
+# dev.off()
+
+
+
+
 # ======================================================================
 # = Richness vs. BOTTOM Temperature Trend: Correct WC by Dropping Ann =
 # ======================================================================
-qSlope <- function(x, y){if(length(x)<2){return(NA_real_)}else{lm(y~x)$coef[2]}}
-
-rco.s.wc <- copy(rco.sy)
-rco.s.wc[,nameID:=NULL]
-rco.s.wc <- rco.s.wc[s.reg=="wc"&year<=2003,
-	list(
-		mu.btemp=mean(btemp, na.rm=TRUE),
-		slope.btemp=qSlope(year,btemp),
-		mu.depth=mean(depth, na.rm=TRUE),
-		slope.depth=qSlope(year, depth),
-		mu.N=mean(N, na.rm=TRUE),
-		slope.N=qSlope(year, N),
-		mu.Nsite=mean(Nsite, na.rm=TRUE),
-		slope.Nsite=qSlope(year, Nsite)
-	),
-	by=c("s.reg","stratum","lon","lat")
-]
-
-setkey(rco.s.wc, lon, lat)
-setkey(climTraj, lon, lat)
-cT.rcoS.wc <- merge(rco.s.wc, climTraj)
+# qSlope <- function(x, y){if(length(x)<2){return(NA_real_)}else{lm(y~x)$coef[2]}}
+#
+# rco.s.wc <- copy(rco.sy)
+# rco.s.wc[,nameID:=NULL]
+# rco.s.wc <- rco.s.wc[s.reg=="wc"&year<=2003,
+# 	list(
+# 		mu.btemp=mean(btemp, na.rm=TRUE),
+# 		slope.btemp=qSlope(year,btemp),
+# 		mu.depth=mean(depth, na.rm=TRUE),
+# 		slope.depth=qSlope(year, depth),
+# 		mu.N=mean(N, na.rm=TRUE),
+# 		slope.N=qSlope(year, N),
+# 		mu.Nsite=mean(Nsite, na.rm=TRUE),
+# 		slope.Nsite=qSlope(year, Nsite)
+# 	),
+# 	by=c("s.reg","stratum","lon","lat")
+# ]
+#
+# setkey(rco.s.wc, lon, lat)
+# setkey(climTraj, lon, lat)
+# cT.rcoS.wc <- merge(rco.s.wc, climTraj)
 
 
 # dev.new(width=5.5, height=5)
-png("./trawl/Figures/BioClimate/richTrend_vs_bottomTrend_roc_drop_WC_Ann.png", width=5.5, height=5.5, res=200, units="in")
+png("./trawl/Figures/BioClimate/richTrend_vs_bottomTrend_roc_noAnn.png", width=5.5, height=5.5, res=200, units="in")
 par(mar=c(2.5,2.75,0.2,1), mgp=c(1,0.25,0), tcl=-0.15, cex=1, ps=10)
 
-cT.rcoS[,plot((slope.btemp), (slope.Nsite), col=col.reg[s.reg], pch=19, xlab="", ylab="")]
+cT.rcoS.noAnn[,plot((slope.btemp), (slope.Nsite), col=col.reg[s.reg], pch=19, xlab="", ylab="")]
 mtext(bquote(Bottom~Temperature~Trend~~(phantom()*degree*C~~year^-1)), side=1, line=1.5)
 mtext(bquote(Local~Species~Richness~Trend~~(species~~year^-1)), side=2, line=1.5)
 legend("topright", legend=regKey[usreg], pch=19, col=col.reg[usreg], bg="transparent")
 
 for(i in 1:length(usreg)){
-	t.lm <- cT.rcoS[s.reg==usreg[i], lm(slope.Nsite~slope.btemp)]
-	t.x <- cT.rcoS[s.reg==usreg[i],range(slope.btemp, na.rm=TRUE)]
-	t.y <- cT.rcoS[s.reg==usreg[i],range(slope.Nsite, na.rm=TRUE)]
+	t.lm <- cT.rcoS.noAnn[s.reg==usreg[i], lm(slope.Nsite~slope.btemp)]
+	t.x <- cT.rcoS.noAnn[s.reg==usreg[i],range(slope.btemp, na.rm=TRUE)]
+	t.y <- cT.rcoS.noAnn[s.reg==usreg[i],range(slope.Nsite, na.rm=TRUE)]
 	t.new <- predict(t.lm, newdata=data.frame(slope.btemp=t.x))
 	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=4, col="black")
 	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=2, col=col.reg[usreg[i]])
 }
 
+dev.off()
 
-# Add in first part of WC sampling only (to exclude potential method bias)
-cT.rcoS.wc[,points((slope.btemp), (slope.Nsite), col=col.reg["wc"], cex=1.5, pch=19, xlab="", ylab="")]
-cT.rcoS.wc[,points((slope.btemp), (slope.Nsite), col="white", cex=0.75, pch=19, xlab="", ylab="")]
-t.lm <- cT.rcoS.wc[s.reg==usreg[i], lm(slope.Nsite~slope.btemp)]
-t.x <- cT.rcoS.wc[s.reg==usreg[i],range(slope.btemp, na.rm=TRUE)]
-t.y <- cT.rcoS.wc[s.reg==usreg[i],range(slope.Nsite, na.rm=TRUE)]
-t.new <- predict(t.lm, newdata=data.frame(slope.btemp=t.x))
-segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=6, col="black")
-segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=5, col=col.reg["wc"])
-segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=2, col="white", lty="dashed")
 
+
+
+# ===============================
+# = Beta D vs Bottom Temp trend =
+# ===============================
+
+# dev.new(width=5.5, height=5)
+png("./trawl/Figures/BioClimate/betaVarTrend_vs_bottomTrend_roc_noAnn.png", width=5.5, height=5.5, res=200, units="in")
+par(mar=c(2.5,2.75,0.2,1), mgp=c(1,0.25,0), tcl=-0.15, cex=1, ps=10)
+
+cT.rcoS.noAnn.b[,plot((slope.btemp), (var.time), col=col.reg[s.reg], pch=19, xlab="", ylab="")]
+mtext(bquote(Bottom~Temperature~Trend~~(phantom()*degree*C~~year^-1)), side=1, line=1.5)
+mtext(bquote(Community~~Variance), side=2, line=1.5)
+legend("topright", legend=regKey[usreg], pch=19, col=col.reg[usreg], bg="transparent")
+
+for(i in 1:length(usreg)){
+	t.lm <- cT.rcoS.noAnn.b[s.reg==usreg[i], lm(var.time~slope.btemp)]
+	t.x <- cT.rcoS.noAnn.b[s.reg==usreg[i],range(slope.btemp, na.rm=TRUE)]
+	t.y <- cT.rcoS.noAnn.b[s.reg==usreg[i],range(slope.Nsite, na.rm=TRUE)]
+	t.new <- predict(t.lm, newdata=data.frame(slope.btemp=t.x))
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=4, col="black")
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=2, col=col.reg[usreg[i]])
+}
 
 dev.off()
+
+
+
+
+# ===============================
+# = Beta D vs Bottom Temp trend =
+# ===============================
+
+# dev.new(width=5.5, height=5)
+png("./trawl/Figures/BioClimate/betaTurnTrend_vs_bottomTrend_roc_noAnn.png", width=5.5, height=5.5, res=200, units="in")
+par(mar=c(2.5,2.75,0.2,1), mgp=c(1,0.25,0), tcl=-0.15, cex=1, ps=10)
+
+cT.rcoS.noAnn.b[,plot((slope.btemp), (turn.time), col=col.reg[s.reg], pch=19, xlab="", ylab="")]
+mtext(bquote(Bottom~Temperature~Trend~~(phantom()*degree*C~~year^-1)), side=1, line=1.5)
+mtext(bquote(Community~~Turnover), side=2, line=1.5)
+legend("topright", legend=regKey[usreg], pch=19, col=col.reg[usreg], bg="transparent")
+
+for(i in 1:length(usreg)){
+	t.lm <- cT.rcoS.noAnn.b[s.reg==usreg[i], lm(turn.time~slope.btemp)]
+	t.x <- cT.rcoS.noAnn.b[s.reg==usreg[i],range(slope.btemp, na.rm=TRUE)]
+	t.y <- cT.rcoS.noAnn.b[s.reg==usreg[i],range(slope.Nsite, na.rm=TRUE)]
+	t.new <- predict(t.lm, newdata=data.frame(slope.btemp=t.x))
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=4, col="black")
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=2, col=col.reg[usreg[i]])
+}
+
+dev.off()
+
 
 
 

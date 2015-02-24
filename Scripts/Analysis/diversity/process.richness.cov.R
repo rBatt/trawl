@@ -186,6 +186,8 @@ rco.s <- rco.s[,
 
 
 
+
+
 save(rco, file="./trawl/Results/Richness/rco.RData")
 save(ao.rco, file="./trawl/Results/Richness/ao.rco.RData")
 save(rco.s, file="./trawl/Results/Richness/rco.s.RData")
