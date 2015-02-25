@@ -188,15 +188,16 @@ wd.old <- getwd()
 setwd("./trawl/Figures/HadISST_Figures/")
 saveGIF(
 	{
-		ani.options(inverval=0.01)
+		ani.options(inverval=0.05)
 
-	    for(i in seq(1, nlayers(trajLon), by=10)){
-	    	plot(subset(trajLon, i), subset(trajLat, i), ylab="", xlab="", xaxt="n", yaxt="n", col="lightblue", bty="n", cex=0.25, pch=20)
+	    for(i in seq(1, nlayers(trajLon), by=5)){
+			par(mar=rep(0.5,4), oma=rep(0,4))
+	    	plot(subset(trajLon, i), subset(trajLat, i), ylab="", xlab="", xaxt="n", yaxt="n", col="blue", bty="n", cex=0.25, pch=20)
 	    }
 	
 	},
 	ani.height=400,
 	ani.width=map.w(c(ymin(trajLon),ymax(trajLon)),c(xmin(trajLon),xmax(trajLon)),400),
-	movie.name="climateTrajectory_dots.gif",
+	movie.name="climateTrajectory_dots_easySee.gif",
 )
 setwd(wd.old)
