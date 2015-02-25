@@ -717,8 +717,11 @@ for(i in 1:length(usreg)){
 
 dev.off()
 
-cT.rcoS[,Anova(lmer(slope.Nsite~timeTrend+(1|s.reg)))]
-cT.rcoS[,summary(lmer(slope.Nsite~timeTrend+(1|s.reg)))]
+# cT.rcoS[,Anova(lmer(slope.Nsite~timeTrend+(1|s.reg)))]
+# cT.rcoS[,summary(lmer(slope.Nsite~timeTrend+(1|s.reg)))]
+
+cT.rcoS.noAnn[,Anova(lmer(slope.Nsite~timeTrend+(1|s.reg)))]
+cT.rcoS.noAnn[,summary(lmer(slope.Nsite~timeTrend+(1|s.reg)))]
 
 
 
@@ -1222,3 +1225,22 @@ abline(lm(dr[,slope.dr]~dr[,lat]), lwd=3, lty="dashed")
 
 dev.off()
 
+
+
+# ==============
+# = Region Map =
+# ==============
+png(height=4, width=cT.rcoS[,map.w(lat,lon,4)], file="./trawl/Figures/regionMap.png", res=250, units="in")
+par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=10, family="Times", cex=1)
+
+usreg <- cT.rcoS.noAnn[,unique(s.reg)]
+col.reg <- rainbow(length(usreg))
+names(col.reg) <- usreg
+
+cT.rcoS.noAnn[,plot(lon, lat, bg=col.reg[s.reg], pch=21, cex=1, type="n")] # set plot region
+invisible(cT.rcoS.noAnn[,map(add=TRUE, fill=TRUE, col="lightgray")]) # add map
+cT.rcoS.noAnn[,points(lon, lat, bg=col.reg[s.reg], pch=21, cex=1)] # set plot region
+
+legend("bottomleft", legend=regKey[usreg], pch=19, col=col.reg[usreg])
+
+dev.off()
