@@ -671,16 +671,16 @@ dev.off()
 # = Richness vs. Surface Temperature Trend =
 # ==========================================
 
-setkey(cT.rcoS, s.reg, lon, lat)
-usreg <- cT.rcoS[,unique(s.reg)]
+setkey(cT.rcoS.noAnn, s.reg, lon, lat)
+usreg <- cT.rcoS.noAnn[,unique(s.reg)]
 col.reg <- rainbow(length(usreg))
 names(col.reg) <- usreg
 
 # dev.new(width=5.5, height=5)
-png("./trawl/Figures/BioClimate/richTrend_vs_surfTrend_roc_noColor_noTrend.png", width=5.5, height=5.5, res=200, units="in")
+png("./trawl/Figures/BioClimate/richTrend_vs_surfTrend_roc_noAnn_noColor_noTrend.png", width=5.5, height=5.5, res=200, units="in")
 par(mar=c(2.5,2.75,0.2,1), mgp=c(1,0.25,0), tcl=-0.15, cex=1, ps=10)
 
-cT.rcoS[,plot((timeTrend), (slope.Nsite), pch=19, xlab="", ylab="")]
+cT.rcoS.noAnn[,plot((timeTrend), (slope.Nsite), pch=19, xlab="", ylab="")]
 mtext(bquote(Surface~Temperature~Trend~~(phantom()*degree*C~~year^-1)), side=1, line=1.5)
 mtext(bquote(Local~Species~Richness~Trend~~(species~~year^-1)), side=2, line=1.5)
 dev.off()
