@@ -51,34 +51,41 @@ axargs <- list(mgp=c(0.75,0.5,0))
 # ===============
 # NOTE: Redundant with the plot in plotHadISST.R
 # Set up figure dimensions
-# dev.new(width=5, height=7.5)
-# png("./trawl/Figures/HadISST_Figures/HadISST_tempGrads.shelf.png", res=200, width=5, height=7.5, units="in")
-# par(mfrow=c(4,1), mar=c(2,2,2,0.1), ps=8, cex=1, mgp=c(0.5,0.15,0), tcl=-0.15, family="Times")
-#
-# # Plot average temperature
-# plot(sst.mu, col=heat.cols, smallplot=smplt, bigplot=bgplt, axis.args=axargs)
-# mtext(bquote(Avg~temperature~(degree*C)), side=3, line=-2.75, cex=1, xpd=FALSE)
-# invisible(map(add=TRUE, fill=FALSE, col="black"))
-#
-# # Plot temporal gradient
-# par(cex=1)
-# plot(timeTrend, col=heat.cols, smallplot=smplt, bigplot=bgplt, axis.args=axargs)
-# mtext(bquote(Time~gradient~(degree*C/yr)), side=3, line=-2.75, cex=1, xpd=FALSE)
-# invisible(map(add=TRUE, fill=FALSE, col="black"))
-#
-# # Plot spatial gradient
-# par(cex=1)
+# dev.new(width=3.5, height=7.5)
+png("./trawl/Figures/HadISST_Figures/HadISST_tempGrads.shelf.png", res=200, width=3.5, height=7.5, units="in")
+par(mfrow=c(5,1), mar=c(2,2,2,0.1), ps=8, cex=1, mgp=c(0.5,0.15,0), tcl=-0.15, family="Times")
+
+# Plot average temperature
+plot(sst.mu, col=heat.cols, smallplot=smplt, bigplot=bgplt, axis.args=axargs)
+mtext(bquote(Avg~temperature~(degree*C)), side=3, line=-2.75, cex=1, xpd=FALSE)
+invisible(map(add=TRUE, fill=FALSE, col="black"))
+
+# Plot temporal gradient
+par(cex=1)
+plot(timeTrend, col=heat.cols, smallplot=smplt, bigplot=bgplt, axis.args=axargs)
+mtext(bquote(Time~gradient~(degree*C/yr)), side=3, line=-2.75, cex=1, xpd=FALSE)
+invisible(map(add=TRUE, fill=FALSE, col="black"))
+
+# Plot spatial gradient
+par(cex=1)
 # plot(spatGrad.slope, col=heat.cols, smallplot=smplt, bigplot=bgplt, axis.args=axargs)
-# mtext(bquote(Space~gradient~(degree*C/km)), side=3, line=-2.75, cex=1, xpd=FALSE)
-# invisible(map(add=TRUE, fill=FALSE, col="black"))
-#
-# # Plot spatial angle
-# par(cex=1)
-# plot(spatGrad.aspect, col=circular.colors(256), smallplot=smplt, bigplot=bgplt, axis.args=axargs)
-# mtext(bquote(Space~Angle~(360*degree==N)), side=3, line=-2.75, cex=1, xpd=FALSE)
-# invisible(map(add=TRUE, fill=FALSE, col="black"))
-#
-# dev.off()
+plot(spatSlope, col=heat.cols, smallplot=smplt, bigplot=bgplt, axis.args=axargs)
+mtext(bquote(Space~gradient~(degree*C/km)), side=3, line=-2.75, cex=1, xpd=FALSE)
+invisible(map(add=TRUE, fill=FALSE, col="black"))
+
+# Plot spatial angle
+par(cex=1)
+plot(spatGrad.aspect, col=circular.colors(256), smallplot=smplt, bigplot=bgplt, axis.args=axargs)
+mtext(bquote(Space~Angle~(360*degree==N)), side=3, line=-2.75, cex=1, xpd=FALSE)
+invisible(map(add=TRUE, fill=FALSE, col="black"))
+
+# Plot velocity
+par(cex=1)
+plot(climV, col=heat.cols, smallplot=smplt, bigplot=bgplt, axis.args=axargs)
+mtext(bquote(Velocity~(km/yr)), side=3, line=-2.75, cex=1, xpd=FALSE)
+invisible(map(add=TRUE, fill=FALSE, col="black"))
+
+dev.off()
 
 
 # ==============================
