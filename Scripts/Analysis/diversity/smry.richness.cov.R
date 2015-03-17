@@ -1220,14 +1220,26 @@ dev.off()
 
 
 # Two figure: mean richness vs. lat by East or West Coast, with overall trend lines
-png(width=4, height=4, file="./trawl/Figures/BioClimate/richnessMean_vs_Lat_observed.png", res=200, units="in")
-par(mfrow=c(1,1), mar=c(2.5,2.5,0.5,0.5), ps=8, cex=1, mgp=c(3, 0.2, 0), tcl=-0.25, family="Times", lwd=1, xpd=F, cex.axis=1.2)
+png(width=9, height=4, file="./trawl/Figures/BioClimate/richnessMean_vs_Lat_observed_byCoast.png", res=200, units="in")
+# quartz(width=9, height=4)
+par(mfrow=c(1,2), mar=c(2.5,2.5,2,0.5), ps=8, cex=1, mgp=c(3, 0.2, 0), tcl=-0.25, family="Times", lwd=1, xpd=F)
+wcoast = c('ai', 'ebs', 'goa', 'wc')
+ecoast = c('gmex', 'neus', 'newf', 'sa', 'sgulf', 'shelf')
 
-dr[,plot((lat), (mu.dr), col=col.reg[s.reg], pch=19, xlab="", ylab="")]
+dr[dr$s.reg %in% wcoast,plot((lat), (mu.dr), col=col.reg[s.reg], pch=19, xlab="", ylab="")]
 mtext(bquote(Latitude), side=1, line=1.25, cex=2)
 mtext(bquote(Mean~Observed~Richness), side=2, line=1.25, cex=2)
+mtext(bquote(West~Coast), side=3, line=0.5, cex=2)
 
-abline(mod<-lm(dr[,mu.dr]~dr[,lat]), lwd=3, lty="dashed")
+abline(mod<-lm(dr[dr$s.reg %in% wcoast,mu.dr]~dr[dr$s.reg %in% wcoast,lat]), lwd=2, lty="dashed")
+summary(mod)
+
+
+dr[dr$s.reg %in% ecoast,plot((lat), (mu.dr), col=col.reg[s.reg], pch=19, xlab="", ylab="")]
+mtext(bquote(Latitude), side=1, line=1.25, cex=2)
+mtext(bquote(East~Coast), side=3, line=0.5, cex=2)
+
+abline(mod<-lm(dr[dr$s.reg %in% ecoast,mu.dr]~dr[dr$s.reg %in% ecoast,lat]), lwd=2, lty="dashed")
 summary(mod)
 
 dev.off()
