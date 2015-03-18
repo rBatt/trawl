@@ -373,6 +373,37 @@ abline(v=2004, lty="dotted", lwd=2)
 mtext(bquote(underline(Observed~~Richness)), side=3, line=0.25, outer=TRUE, cex=1.5)
 dev.off()
 
+# ==================
+# = Dummy Rich Map =
+# ==================
+
+dummyLLs <- t(simplify2array(strsplit(dummy.rich[,stratum], " ")))
+dummy.lon <- as.numeric(dummyLLs[,1])
+dummy.lat <- as.numeric(dummyLLs[,2])
+dummy.rich[,c("lon","lat"):=list(dummy.lon, dummy.lat)]
+
+dummy.rich.mu <- dummy.rich[,list(stratum=unique(stratum), lon=unique(lon), lat=unique(lat), dummy.rich=mean(dummy.rich, na.rm=TRUE)), by=c("s.reg","stratum")]
+
+
+png(height=4, width=dummy.rich.mu[,map.w(lat,lon,4)], file="./trawl/Figures/Diversity/richness_slope_stratum_Nsite_cov.png", res=200, units="in")
+par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
+
+heat.cols <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(256)
+dummy.rich.mu[,z.col:=heat.cols[cut(dummy.rich, 256)]]
+dummy.rich.mu[,plot(lon, lat, col=z.col, pch=21, cex=1, type="n")]
+invisible(dummy.rich.mu[,map(add=TRUE, fill=TRUE, col="lightgray")]) # add map
+dummy.rich.mu[,points(lon, lat, bg=z.col, pch=21, cex=1)] # add points
+
+
+# Key
+dummy.rich.mu[,segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)] # add colors for key
+dummy.rich.mu[,segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")] # add tick marks for key
+dummy.rich.mu[,text(-167, y=seq(30,40, length.out=4), round(seq(min(dummy.rich, na.rm=TRUE), max(dummy.rich, na.rm=TRUE), length.out=4),2), adj=1, cex=1, col="black")] # add labels for key
+dummy.rich.mu[,text(-162.5, 41.5, bquote(Mean~Observed~Richness~(number~spp)))] # add label for key
+
+dev.off()
+
+
 
 # ===================================
 # = Plot Map of Site Richness Trend =
