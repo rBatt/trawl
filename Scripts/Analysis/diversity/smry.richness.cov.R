@@ -385,7 +385,7 @@ dummy.rich[,c("lon","lat"):=list(dummy.lon, dummy.lat)]
 dummy.rich.mu <- dummy.rich[,list(stratum=unique(stratum), lon=unique(lon), lat=unique(lat), dummy.rich=mean(dummy.rich, na.rm=TRUE)), by=c("s.reg","stratum")]
 
 
-png(height=4, width=dummy.rich.mu[,map.w(lat,lon,4)], file="./trawl/Figures/Diversity/richness_slope_stratum_Nsite_cov.png", res=200, units="in")
+png(height=4, width=dummy.rich.mu[,map.w(lat,lon,4)], file="./trawl/Figures/Diversity/avg_richness_observed.png", res=200, units="in")
 par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
 
 heat.cols <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(256)
