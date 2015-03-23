@@ -36,11 +36,11 @@ invisible(sapply(paste(plot.location, list.files(plot.location), sep="/"), sourc
 # ======================
 # Longitude Data
 cent.lat <- fread("./trawl/Science2013/Results/centbiolat_2012-10-16.csv")[,V1:=NULL] # read
-cent.lat.melt <- melt(cent.lat, id.vars=c("regspp", "region", "spp"), variable.name="year", value.name="lat") # format
+cent.lat.melt <- melt(cent.lat, id.vars=c("regspp", "region", "spp"), variable.name="year", value.name="spp.centroid.lat") # format
 setkey(cent.lat.melt, regspp, region, spp, year)
 
 cent.lon <- fread("./trawl/Science2013/Results/centbiolon_2012-10-16.csv")[,V1:=NULL] # read
-cent.lon.melt <- melt(cent.lon, id.vars=c("regspp", "region", "spp"), variable.name="year", value.name="lon") # format
+cent.lon.melt <- melt(cent.lon, id.vars=c("regspp", "region", "spp"), variable.name="year", value.name="spp.centroid.lon") # format
 setkey(cent.lon.melt, regspp, region, spp, year)
 
 
