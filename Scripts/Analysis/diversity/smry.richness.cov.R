@@ -16,7 +16,9 @@ if(Sys.info()["sysname"]=="Linux"){
 }else{
 	setwd("~/Documents/School&Work/pinskyPost")
 }
-
+if(any(grepl('mpinsky', list.files(path='~/../')))){ # if on Malin's MacBook Air
+	setwd("~/Documents/Rutgers/Batt community and climate/")
+}
 
 # ==================
 # = Load Functions =
@@ -1179,6 +1181,22 @@ dev.off()
 # ==========================
 # = Dummy Rich vs. Lon/Lat =
 # ==========================
+# prep data and colors
+qSlope <- function(x, y){if(length(x)<2){return(NA_real_)}else{lm(y~x)$coef[2]}}
+dummy.rich <- trawl2.veri[,list(dummy.rich=lu(spp)), by=c("s.reg","stratum","year")]
+ll <- t(dummy.rich[,(strsplit(stratum, split=" "))])
+names(ll) <- NULL
+dummy.rich[,c("lon","lat"):=list(as.numeric(ll[,1]), as.numeric(ll[,2]))]
+dummy.rich <- dummy.rich[s.reg!="wc" | (s.reg=="wc" & year<=2003)]
+dr <- dummy.rich[,list(mu.dr=mean(dummy.rich), slope.dr=qSlope(year, dummy.rich)), by=c("s.reg","stratum","lon","lat")]
+
+setkey(cT.rcoS.noAnn, s.reg, lon, lat)
+usreg <- cT.rcoS.noAnn[,unique(s.reg)]
+col.reg <- rainbow(length(usreg))
+names(col.reg) <- usreg
+
+
+# Two figures: lon on left, lat on right, with trend lines
 png(width=9, height=4, file="./trawl/Figures/BioClimate/richnessMean_vs_LonLat_observed.png", res=200, units="in")
 par(mfrow=c(1,2), mar=c(2.5,2.5,0.5,0.5), ps=8, cex=1, mgp=c(3, 0.2, 0), tcl=-0.25, family="Times", lwd=1, xpd=F)
 
@@ -1217,8 +1235,50 @@ abline(lm(dr[,mu.dr]~dr[,lat]), lwd=3, lty="dashed")
 dev.off()
 
 
+# One figure: mean richness vs. lat, with overall trend line
+png(width=4, height=4, file="./trawl/Figures/BioClimate/richnessMean_vs_Lat_observed.png", res=200, units="in")
+par(mfrow=c(1,1), mar=c(2.5,2.5,0.5,0.5), ps=8, cex=1, mgp=c(3, 0.2, 0), tcl=-0.25, family="Times", lwd=1, xpd=F, cex.axis=1.2)
+
+dr[,plot((lat), (mu.dr), col=col.reg[s.reg], pch=19, xlab="", ylab="")]
+mtext(bquote(Latitude), side=1, line=1.25, cex=2)
+mtext(bquote(Mean~Observed~Richness), side=2, line=1.25, cex=2)
+
+abline(mod<-lm(dr[,mu.dr]~dr[,lat]), lwd=3, lty="dashed")
+summary(mod)
+
+dev.off()
 
 
+
+# Two figure: mean richness vs. lat by East or West Coast, with overall trend lines
+png(width=9, height=4, file="./trawl/Figures/BioClimate/richnessMean_vs_Lat_observed_byCoast.png", res=200, units="in")
+# quartz(width=9, height=4)
+par(mfrow=c(1,2), mar=c(2.5,2.5,2,0.5), ps=8, cex=1, mgp=c(3, 0.2, 0), tcl=-0.25, family="Times", lwd=1, xpd=F)
+wcoast = c('ai', 'ebs', 'goa', 'wc')
+ecoast = c('gmex', 'neus', 'newf', 'sa', 'sgulf', 'shelf')
+
+dr[dr$s.reg %in% wcoast,plot((lat), (mu.dr), col=col.reg[s.reg], pch=19, xlab="", ylab="")]
+mtext(bquote(Latitude), side=1, line=1.25, cex=2)
+mtext(bquote(Mean~Observed~Richness), side=2, line=1.25, cex=2)
+mtext(bquote(West~Coast), side=3, line=0.5, cex=2)
+
+abline(mod<-lm(dr[dr$s.reg %in% wcoast,mu.dr]~dr[dr$s.reg %in% wcoast,lat]), lwd=2, lty="dashed")
+summary(mod)
+
+
+dr[dr$s.reg %in% ecoast,plot((lat), (mu.dr), col=col.reg[s.reg], pch=19, xlab="", ylab="")]
+mtext(bquote(Latitude), side=1, line=1.25, cex=2)
+mtext(bquote(East~Coast), side=3, line=0.5, cex=2)
+
+abline(mod<-lm(dr[dr$s.reg %in% ecoast,mu.dr]~dr[dr$s.reg %in% ecoast,lat]), lwd=2, lty="dashed")
+summary(mod)
+
+dev.off()
+
+
+
+
+# Richness trend vs. lon (left) or lat (right)
 png(width=9, height=4, file="./trawl/Figures/BioClimate/richnessTrend_vs_LonLat_observed.png", res=200, units="in")
 par(mfrow=c(1,2), mar=c(2.5,2.5,0.5,0.5), ps=8, cex=1, mgp=c(3, 0.2, 0), tcl=-0.25, family="Times", lwd=1, xpd=F)
 
