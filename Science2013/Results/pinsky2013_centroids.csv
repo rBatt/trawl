@@ -1,4 +1,4 @@
-"regspp","region","spp","year","lat","lon"
+"regspp","region","spp","year","spp.centroid.lat","spp.centroid.lon"
 "AFSC_Aleutians_Actiniaria","AFSC_Aleutians","Actiniaria","1963",NA,NA
 "AFSC_Aleutians_Actiniaria","AFSC_Aleutians","Actiniaria","1964",NA,NA
 "AFSC_Aleutians_Actiniaria","AFSC_Aleutians","Actiniaria","1965",NA,NA
