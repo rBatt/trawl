@@ -6,18 +6,19 @@
 library(data.table)
 library(fields)
 library(beanplot)
-
+library(RColorBrewer)
 
 # ===============================
 # = Guess appropriate directory =
 # ===============================
-if(Sys.info()["sysname"]=="Linux"){
-	setwd("~/Documents/School&Work/pinskyPost")
-}else{
-	setwd("~/Documents/School&Work/pinskyPost")
-}
 if(any(grepl('mpinsky', list.files(path='~/../')))){ # if on Malin's MacBook Air
 	setwd("~/Documents/Rutgers/Batt community and climate/")
+} else { # if not
+	if(Sys.info()["sysname"]=="Linux"){ # if on Amphiprion
+		setwd("~/Documents/School&Work/pinskyPost")
+	}else{ # if on Ryan's laptop. Need a more specific test here
+		setwd("~/Documents/School&Work/pinskyPost")
+	}
 }
 
 # ==================
@@ -687,6 +688,50 @@ dev.off()
 
 
 
+# =======================================
+# = Bottom temperature timeseries plots =
+# =======================================
+rescale <- function(x, minx=-1, maxx=1, na.rm=TRUE){
+	return((maxx-minx)*(x-min(x, na.rm=na.rm))/(max(x-min(x, na.rm=na.rm), na.rm=na.rm)) + minx)
+}
+
+temp.ts = copy(rco.sy)
+temp.ts[,c('num', 'nameID', 'N', 'Nsite', 'stratum', 'lon', 'lat', 'depth'):=NULL]
+temp.ts <- temp.ts[,list(mu.btemp=mean(btemp, na.rm=TRUE)), by=c('s.reg', 'year')]
+temp.ts <- temp.ts[,list(year, mu.btemp, mu.btemp.rs=rescale(mu.btemp)), by=s.reg] # rescaled -1 to 1
+
+cols = brewer.pal(lu(temp.ts$s.reg), 'Paired')
+regs = unique(temp.ts$s.reg)
+
+# quartz(width=7, height=4)
+png("./trawl/Figures/BioClimate/btemp_vs_year.png", width=7, height=4, units="in", res=200)
+par(mfrow=c(1,2), mai=c(0.6, 0.6, 0.5, 0.1), mgp=c(1.7,0.5,0), las=1, tcl=-0.2, cex.axis=0.9, cex.lab=1.1)
+temp.ts[,plot(year, mu.btemp, type='n', pch=16, cex=0.5, ylim=c(1,9), ylab='Bottom temperature °C', xlab='Year', main='Northern')] # for colder temps
+for(i in 1:lu(temp.ts$s.reg)){ # there's probably a more efficient way to do this in data.table
+	#temp.ts[s.reg==regs[i],lines(year, mu.btemp, col=cols[i], lwd=2)] # raw
+	temp.ts[s.reg==regs[i],lines(lowess(y=mu.btemp, x=year, f=1/5), col=cols[i], lwd=2)] # lowess smoother
+	#temp.ts[s.reg==regs[i], abline(lm(mu.btemp.rs ~ year), col=cols[i])] # linear trend
+}
+
+temp.ts[,plot(year, mu.btemp, type='n', pch=16, cex=0.5, ylim=c(19,25), ylab='', xlab='Year', main='Southern')] # for warmer temps
+for(i in 1:lu(temp.ts$s.reg)){ # there's probably a more efficient way to do this in data.table
+	#temp.ts[s.reg==regs[i],lines(year, mu.btemp, col=cols[i], lwd=2)]
+	temp.ts[s.reg==regs[i],lines(lowess(y=mu.btemp, x=year, f=1/5), col=cols[i], lwd=2)]
+}
+legend('bottomright', legend=regKey, col=cols, lty=1, cex=0.7, bty='n')
+
+dev.off()
+
+
+
+# quartz(width=4, height=4)
+png("./trawl/Figures/BioClimate/btemp_vs_year_EBS.png", width=7, height=4, units="in", res=200)
+par(mfrow=c(1,1), mai=c(0.6, 0.6, 0.5, 0.1), mgp=c(1.7,0.5,0), las=1, tcl=-0.2, cex.axis=0.9, cex.lab=1.1)
+temp.ts[s.reg=='ebs',plot(lowess(y=mu.btemp, x=year, f=1/5), type='l', col=cols[3], lwd=8, ylab='Bottom temperature °C', xlab='Year', main='EBS')] 
+
+dev.off()
+
+
 # ===================================
 # = Richness vs. Bottom Temperature =
 # ===================================
@@ -1313,6 +1358,89 @@ for(i in 1:length(usreg)){
 	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=2, col=col.reg[usreg[i]])
 }
 abline(lm(dr[,slope.dr]~dr[,lat]), lwd=3, lty="dashed")
+
+dev.off()
+
+
+
+# =============================
+# = Dummy Rich vs. Temp Trend =
+# =============================
+# prep data and colors
+qSlope <- function(x, y){if(length(x)<2){return(NA_real_)}else{lm(y~x)$coef[2]}}
+dummy.rich <- trawl2.veri[,list(dummy.rich=lu(spp)), by=c("s.reg","stratum","year")]
+ll <- t(dummy.rich[,(strsplit(stratum, split=" "))])
+names(ll) <- NULL
+dummy.rich[,c("lon","lat"):=list(as.numeric(ll[,1]), as.numeric(ll[,2]))]
+dummy.rich <- dummy.rich[s.reg!="wc" | (s.reg=="wc" & year<=2003)]
+dr <- dummy.rich[,list(mu.dr=mean(dummy.rich), slope.dr=qSlope(year, dummy.rich)), by=c("s.reg","stratum","lon","lat")]
+setkey(dr, s.reg, lon, lat)
+setkey(cT.rcoS.noAnn, s.reg, lon, lat)
+
+drtemp = merge(dr, cT.rcoS.noAnn[,c('lon', 'lat', 's.reg', 'slope.btemp'), with=FALSE])
+
+usreg <- dr[,unique(s.reg)]
+col.reg <- rainbow(length(usreg))
+names(col.reg) <- usreg
+
+
+# quartz(width=5.5, height=5.5)
+png("./trawl/Figures/BioClimate/richTrend_vs_bottomTrend_observed.png", width=5.5, height=5.5, res=200, units="in")
+par(mar=c(2.5,2.75,0.2,1), mgp=c(1,0.25,0), tcl=-0.15, cex=1, ps=10)
+
+drtemp[,plot((slope.btemp), (slope.dr), col=col.reg[s.reg], pch=19, xlab="", ylab="")]
+#drtemp[,plot((slope.btemp), (slope.dr/mu.dr), col=col.reg[s.reg], pch=19, xlab="", ylab="")]
+mtext(bquote(Bottom~Temperature~Trend~~(phantom()*degree*C~~year^-1)), side=1, line=1.5)
+mtext(bquote(Local~Species~Richness~Trend~~(species~~year^-1)), side=2, line=1.5)
+legend("bottomleft", legend=regKey[usreg], pch=19, col=col.reg[usreg], bg="transparent")
+
+for(i in 1:length(usreg)){
+	t.lm <- drtemp[s.reg==usreg[i], lm(slope.dr~slope.btemp)]
+	t.x <- drtemp[s.reg==usreg[i],range(slope.btemp, na.rm=TRUE)]
+	t.y <- drtemp[s.reg==usreg[i],range(slope.dr, na.rm=TRUE)]
+	t.new <- predict(t.lm, newdata=data.frame(slope.btemp=t.x))
+	#segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=4, col="black")
+	segments(x0=t.x[1], y0=t.new[1], x1=t.x[2], y1=t.new[2], lwd=2, col=col.reg[usreg[i]])
+}
+
+dev.off()
+
+
+# ===================================
+# = Plot Map of Observed Site Richness Trend =
+# ===================================
+# prep data and colors
+qSlope <- function(x, y){if(length(x)<2){return(NA_real_)}else{lm(y~x)$coef[2]}}
+dummy.rich <- trawl2.veri[,list(dummy.rich=lu(spp)), by=c("s.reg","stratum","year")]
+ll <- t(dummy.rich[,(strsplit(stratum, split=" "))])
+names(ll) <- NULL
+dummy.rich[,c("lon","lat"):=list(as.numeric(ll[,1]), as.numeric(ll[,2]))]
+dummy.rich <- dummy.rich[s.reg!="wc" | (s.reg=="wc" & year<=2003)]
+dr <- dummy.rich[,list(mu.dr=mean(dummy.rich), slope.dr=qSlope(year, dummy.rich)), by=c("s.reg","stratum","lon","lat")]
+setkey(dr, s.reg, lon, lat)
+
+usreg <- dr[,unique(s.reg)]
+col.reg <- rainbow(length(usreg))
+names(col.reg) <- usreg
+
+heat.cols <- colorRampPalette(c("#000099", "#00FEFF", "#45FE4F", "#FCFF00", "#FF9400", "#FF3100"))(256)
+dr[,z.col:=heat.cols[cut(slope.dr, 256)]]
+
+# New device
+# dev.new(height=4, width=dr[,map.w(lat,lon,4)])
+png(height=4, width=cT.rcoS[,map.w(lat,lon,4)], file="./trawl/Figures/Diversity/richness_slope_stratum_observed.png", res=200, units="in")
+par(mar=c(1.75,1.5,0.5,0.5), oma=c(0.1,0.1,0.1,0.1), mgp=c(0.85,0.05,0), tcl=-0.15, ps=8, family="Times", cex=1)
+
+# Plot
+dr[,plot(lon, lat, col=z.col, pch=21, cex=1, type="n")] # set plot region
+invisible(dr[,map(add=TRUE, fill=TRUE, col="lightgray")]) # add map
+dr[,points(lon, lat, bg=z.col, pch=21, cex=1)] # add points
+
+# Key
+dr[,segments(x0=-165, x1=-160, y0=seq(30,40,length.out=256), col=heat.cols)] # add colors for key
+dr[,segments(x0=-166, x1=-165, y0=seq(30,40, length.out=4), col="black")] # add tick marks for key
+dr[,text(-167, y=seq(30,40, length.out=4), round(seq(min(slope.dr, na.rm=TRUE), max(slope.dr, na.rm=TRUE), length.out=4),2), adj=1, cex=1, col="black")] # add labels for key
+dr[,text(-162.5, 41.5, bquote(Richness~Trend~(spp~~year^-1)))] # add label for key
 
 dev.off()
 
