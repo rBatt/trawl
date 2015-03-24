@@ -214,3 +214,31 @@ par(mfrow=auto.dim, mai=c(0.5,0.5,0.3,0.1), cex=1, tcl=-0.1, mgp=c(1,0.2,0), ps=
 rich.ts[,plot(mu.btemp, obs.rich.chor, main=regKey[as.character(unique(s.reg))], xlab='Bottom temperature (°C)', ylab='Richness', pch=16, col=cols[as.character(year)]), by='s.reg']
 
 dev.off()
+
+
+# =========================================================================
+# = Change in Observed Chordate Richness vs. Change in Temperature        =
+# =========================================================================
+rich.ts <- rich.obs[,mean(obs.rich.chor), by=c("year", "s.reg")] # timeseries of mean richness for each region
+setnames(rich.ts, old="V1", new="obs.rich.chor")
+
+temps = copy(trawl2.veri)
+temps[,c('K', 'spp', 'wtcpue', 'correctSpp', 'common', 'taxLvl', 'phylum'):=NULL] # remove columns we don't need
+temps <- unique(temps)
+temps.mu = temps[,list(mu.btemp = mean(btemp, na.rm=TRUE), mu.stemp = mean(stemp, na.rm=TRUE)), by=c('year','s.reg', 'region')]  # mean temp by year in each region
+
+rich.ts = merge(rich.ts, temps.mu, by=c('s.reg', 'year'))
+rich.slope = rich.ts[,list(obs.rich.chor.slope = coef(lm(obs.rich.chor~year))[2], btemp.slope = coef(lm(mu.btemp~year))[2]),by=c('s.reg')]
+
+cols = brewer.pal(rich.slope[,lu(s.reg)], 'Set3')
+
+# quartz(width=4, height=4)
+png(width=4, height=4, file="./trawl/Figures/BioClimate/richslope_vs_btempslope_observed_chordata.png", units="in", res=200)
+par(mai=c(0.6,0.6,0.3,0.1), cex=1, tcl=-0.1, mgp=c(1.8,0.2,0), ps=8, las=1)
+
+rich.slope[,plot(btemp.slope, obs.rich.chor.slope, xlab='Bottom temperature trend (°C/year)', ylab='Richness trend (spp/year)', pch=16, col=cols, cex=2, cex.lab=2, cex.axis=1.5)]
+
+legend('topright', col=cols, legend=regKey[as.character(sort(unique(rich.slope$s.reg)))], pch=16)
+
+dev.off()
+
