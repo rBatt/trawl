@@ -39,16 +39,23 @@ cent.lat <- fread("./trawl/Science2013/Results/centbiolat_2012-10-16.csv")[,V1:=
 cent.lat.melt <- melt(cent.lat, id.vars=c("regspp", "region", "spp"), variable.name="year", value.name="spp.centroid.lat") # format
 setkey(cent.lat.melt, regspp, region, spp, year)
 
+# Latitude Data
 cent.lon <- fread("./trawl/Science2013/Results/centbiolon_2012-10-16.csv")[,V1:=NULL] # read
 cent.lon.melt <- melt(cent.lon, id.vars=c("regspp", "region", "spp"), variable.name="year", value.name="spp.centroid.lon") # format
 setkey(cent.lon.melt, regspp, region, spp, year)
+
+# Centroid Depth
+cent.depth <- fread("./trawl/Science2013/Results/centbiodepth_2012-11-15.csv")[,V1:=NULL] # read; depths is in meters, I believe
+cent.depth.melt <- melt(cent.depth, id.vars=c("regspp", "region", "spp"), variable.name="year", value.name="spp.centroid.depth") # format
+setkey(cent.depth.melt, regspp, region, spp, year)
 
 
 # ===========================
 # = Merge Centroid Lon/ Lat =
 # ===========================
-centroids <- merge(cent.lat.melt, cent.lon.melt)
+centroids.ll <- merge(cent.lat.melt, cent.lon.melt)
 
+centroids <- merge(centroids.ll, cent.depth.melt)
 
 # centroids[,plot(lon, lat)]
 
