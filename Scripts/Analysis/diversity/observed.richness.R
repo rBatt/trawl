@@ -208,7 +208,7 @@ cols = colorRampPalette(brewer.pal(9, 'YlGnBu')[2:9])(rich.obs[,lu(year)]) # col
 names(cols) = rich.ts[,sort(unique(year))]
 
 # quartz(width=(auto.dim[2]/auto.dim[1])*4, height=4)
-png(width=(auto.dim[2]/auto.dim[1])*4, height=4, file="./trawl/Figures/BioClimate/strat_rich_btemp_observed_chordata.png", units="in", res=200)
+png(width=(auto.dim[2]/auto.dim[1])*4, height=4, file="./trawl/Figures/BioClimate/rich_by_year_vs_btemp_observed_chordata.png", units="in", res=200)
 par(mfrow=auto.dim, mai=c(0.5,0.5,0.3,0.1), cex=1, tcl=-0.1, mgp=c(1,0.2,0), ps=8, las=1)
 
 rich.ts[,plot(mu.btemp, obs.rich.chor, main=regKey[as.character(unique(s.reg))], xlab='Bottom temperature (°C)', ylab='Richness', pch=16, col=cols[as.character(year)]), by='s.reg']
