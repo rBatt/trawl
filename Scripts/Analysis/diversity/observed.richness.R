@@ -207,11 +207,16 @@ rich.ts = merge(rich.ts, temps.mu, by=c('s.reg', 'year'))
 cols = colorRampPalette(brewer.pal(9, 'YlGnBu')[2:9])(rich.obs[,lu(year)]) # colors, one for each year
 names(cols) = rich.ts[,sort(unique(year))]
 
-# quartz(width=(auto.dim[2]/auto.dim[1])*4, height=4)
-png(width=(auto.dim[2]/auto.dim[1])*4, height=4, file="./trawl/Figures/BioClimate/rich_by_year_vs_btemp_observed_chordata.png", units="in", res=200)
-par(mfrow=auto.dim, mai=c(0.5,0.5,0.3,0.1), cex=1, tcl=-0.1, mgp=c(1,0.2,0), ps=8, las=1)
+# quartz(width=(auto.dim[2]/auto.dim[1])*4+1, height=4)
+png(width=(auto.dim[2]/auto.dim[1])*4+1, height=4, file="./trawl/Figures/BioClimate/rich_by_year_vs_btemp_observed_chordata.png", units="in", res=200)
+par(mfrow=auto.dim, mai=c(0.5,0.5,0.3,0.1), omi=c(0,0,0,1), cex=1, tcl=-0.1, mgp=c(1,0.2,0), ps=8, las=1)
 
 rich.ts[,plot(mu.btemp, obs.rich.chor, main=regKey[as.character(unique(s.reg))], xlab='Bottom temperature (°C)', ylab='Richness', pch=16, col=cols[as.character(year)]), by='s.reg']
+
+par(fig = c(0, 1, 0, 1), oma = c(0, 0, 0, 0), mar = c(0, 0, 0, 0), new = TRUE) # overlay entire plot with a new figure, so that we can plot the legend outside any previous plot
+plot(0, 0, type = "n", bty = "n", xaxt = "n", yaxt = "n")
+subs = seq(1,rich.ts[,lu(year)], length.out=12)
+legend('topright', inset=c(0.0,0.0), legend=rich.ts[,sort(unique(year))][subs], col=cols[subs], pch=16, bty='n')
 
 dev.off()
 

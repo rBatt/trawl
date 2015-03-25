@@ -695,8 +695,18 @@ dev.off()
 
 # quartz(width=4, height=4)
 png("./trawl/Figures/BioClimate/btemp_vs_year_EBS.png", width=7, height=4, units="in", res=200)
-par(mfrow=c(1,1), mai=c(0.6, 0.6, 0.5, 0.1), mgp=c(1.7,0.5,0), las=1, tcl=-0.2, cex.axis=0.9, cex.lab=1.1)
-temp.ts[s.reg=='ebs',plot(lowess(y=mu.btemp, x=year, f=1/5), type='l', col=cols[3], lwd=8, ylab='Bottom temperature °C', xlab='Year', main='EBS')] 
+par(mfrow=c(1,1), mai=c(0.6, 0.6, 0.5, 0.1), mgp=c(1.7,0.5,0), las=1, tcl=-0.2, cex.axis=0.9, cex.lab=1.1, bg='grey')
+temp.ts[s.reg=='ebs',plot(lowess(y=mu.btemp, x=year, f=1/5), type='l', col='white', lwd=16, ylab='Bottom temperature °C', xlab='Year', main='EBS')] 
+temp.ts[s.reg=='ebs',lines(lowess(y=mu.btemp, x=year, f=1/5), type='l', col=cols[2], lwd=8)] 
+
+dev.off()
+
+
+# quartz(width=4, height=4)
+png("./trawl/Figures/BioClimate/btemp_vs_year_NEUS.png", width=7, height=4, units="in", res=200)
+par(mfrow=c(1,1), mai=c(0.6, 0.6, 0.5, 0.1), mgp=c(1.7,0.5,0), las=1, tcl=-0.2, cex.axis=0.9, cex.lab=1.1, bg='grey')
+temp.ts[s.reg=='neus',plot(lowess(y=mu.btemp, x=year, f=1/5), type='l', col='white', lwd=16, ylab='Bottom temperature °C', xlab='Year', main='NEUS')] 
+temp.ts[s.reg=='neus',lines(lowess(y=mu.btemp, x=year, f=1/5), type='l', col=cols[2], lwd=8)] 
 
 dev.off()
 
