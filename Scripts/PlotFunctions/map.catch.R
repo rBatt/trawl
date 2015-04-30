@@ -1,12 +1,30 @@
 
+
 # Scale Weight: Replicate x based on the value of y (rep rows based on wtcpue)
-sw <- function(x,y, thresh=25){ # scale the abundance according to wtcpue 
+sw <- function(x,y, y.range=NULL, thresh=25){ # scale the abundance according to wtcpue 
 	# x is a value to repeat a number of times proportional to its y value
 	# a positive numeric representing the relative abundance of y
 	# rep(x, y/min(y[y>0], na.rm=TRUE))
 	# rep(x, y)
-	rep.f0 <- y/min(y[y>0], na.rm=TRUE)
-	mrf0 <- max(rep.f0, na.rm=TRUE)
+	
+	if(is.null(y.range)){
+		y.min <- min(y[y>0], na.rm=TRUE)
+	}else{
+		y.min <- y.range[1]
+		if(y.min<=0){y.min <- 0.001}
+	}
+	
+	
+	if(is.null(y.range)){
+		y.max <- max(y, na.rm=TRUE)
+	}else{
+		y.max <- y.range[2]
+	}
+	
+	
+	
+	rep.f0 <- y/y.min # y/min(y[y>0], na.rm=TRUE)
+	mrf0 <- y.max/y.min #max(rep.f0, na.rm=TRUE)
 	if(mrf0>thresh){
 		rep.f <- rep.f0/(mrf0/thresh)
 	}else{
@@ -121,12 +139,11 @@ print(prod(pm.uniques[pm.keys])) # the number of rows we'd have if the data were
 
 
 
-test <- pew.maps[SPECIESCOMMONNAME=="BANDED DRUM" & SERIES == "1990-94",]
-y <- test[,LATITUDE]
-x <- test[,LONGITUDE]
-z <- test[,BIOMASS]
-
-map.catch(x,y,z, main="BANDED DRUM")
+# test <- pew.maps[SPECIESCOMMONNAME=="BANDED DRUM" & SERIES == "1990-94",]
+# y <- test[,LATITUDE]
+# x <- test[,LONGITUDE]
+# z <- test[,BIOMASS]
+# map.catch(x,y,z, main="BANDED DRUM")
 
 
 pdf("~/Desktop/jim.pew.maps.pdf", width=3.5, height=6.25)
