@@ -8,8 +8,6 @@ library(EML)
 
 
 
-test.dat <- head(ai.raw)
-
 # ====================
 # = Aleutian Islands =
 # ====================
@@ -39,6 +37,57 @@ ai.md.col.defs <- c(
 # Define custom units
 # need numberPerHectare for cntcpue
 cntpue.unit <- eml_define_unit("numberPerHectare", unitType="otherUnitType", parentSI="numberPerKilometerSquared", multiplierToSI="0.01", description="number per hectare")
+
+# ai.md.unit.defs <- list(
+# 	"year"=c(
+# 		unit = "number",
+# 		precision = 1
+# 		),
+# 	"datetime" = c(
+# 		format = "MM/DD/YYYY HH:MM"
+# 		),
+# 	"spp" = "Genus species",
+# 	"haulid" = "haul id",
+# 	"stratum" = "1 degree lon lat",
+# 	"stratumarea"=c(
+# 		unit = "kilometer",
+# 		precision = 1
+# 		),
+# 	"lat"=c(
+# 		unit = "degree",
+# 		precision = 0.5
+# 		),
+# 	"lon"=c(
+# 		unit = "degree",
+# 		precision = 0.5
+# 		),
+# 	"depth"=c(
+# 		unit = "meter",
+# 		precision = 1
+# 		),
+# 	"stemp"=c(
+# 		unit = "celsius",
+# 		precision = 0.1
+# 		),
+# 	"btemp"=c(
+# 		unit = "celsius",
+# 		precision = 0.1
+# 		),
+# 	"wtcpue" =c(
+# 		unit = "kilogramsPerHectare",
+# 		precision = 0.0001
+# 		),
+# 	"cntcpue"=c(
+# 		unit = "numberPerHectare",
+# 		precision = 0.0001
+# 		),
+# 	"region"="region",
+# 	"s.reg"="short region"
+#
+# )
+
+
+
 
 ai.md.unit.defs <- list(
 	"year"=c(
@@ -80,8 +129,8 @@ ai.md.unit.defs <- list(
 		precision = 0.0001
 		),
 	"cntcpue"=c(
-		unit = "numberPerHectare",
-		precision = 0.0001
+		unit = "numberPerKilometerSquared", # this is wrong, needs to be per hectare
+		precision = 0.01
 		), 
 	"region"="region", 
 	"s.reg"="short region"
@@ -89,12 +138,15 @@ ai.md.unit.defs <- list(
 )
 
 
-eml_write(ai.mdData, col.defs=ai.md.col.defs, unit.defs=ai.md.unit.defs, creator="Ryan Batt <battrd@gmail.com>",file="testAI_metaData.xml")
+
+
+
+# eml_write(ai.mdData, col.defs=ai.md.col.defs, unit.defs=ai.md.unit.defs, creator="Ryan Batt <battrd@gmail.com>",file="testAI_metaData.xml")
 
 
 blah <- eml(dat=ai.mdData, title="aiMetaData", col.defs=ai.md.col.defs, unit.defs=ai.md.unit.defs, creator="Ryan Batt <battrd@gmail.com>")
 
-eml_write(blah, , title="aiMetaData", col.defs=ai.md.col.defs, unit.defs=ai.md.unit.defs, creator="Ryan Batt <battrd@gmail.com>",file="testAI_metaData.xml")
+eml_write(blah, title="aiMetaData", col.defs=ai.md.col.defs, unit.defs=ai.md.unit.defs, creator="Ryan Batt <battrd@gmail.com>",file="testAI_metaData.xml")
 
 eml_validate("testAI_metaData.xml")
 
