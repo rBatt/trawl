@@ -36,11 +36,12 @@ invisible(sapply(paste(stat.location, list.files(stat.location), sep="/"), sourc
 # ================================
 # = Combine 2 West Coast surveys =
 # ================================
+
+trawl <- trawl2 # need this to update for the big overhaul of the trawl data set and how it's organized by strata and substrata
+
 trawl[s.reg=="wcann",s.reg:="wc"]
 trawl[s.reg=="wctri",s.reg:="wc"]
 setkey(trawl, spp, s.reg, year)
-
-
 
 # ==================================================
 # = Trim data for plotting spatial catch over time =
@@ -48,11 +49,13 @@ setkey(trawl, spp, s.reg, year)
 # Trim data
 long.spp <- trawl[taxLvl=="Species",][,n.yrs:=lu(year[wtcpue>0]), by=c("spp","s.reg")][n.yrs>=4,]
 long.spp[,cut.yrs:=cy(year), by=c("spp","s.reg")]
-long.space.spp <- long.spp[,min.locs.yr:=min(colSums(table(stratum,year)>0)),by=c("spp","s.reg")][min.locs.yr>=16 & is.finite(wtcpue),]
+long.space.spp <- long.spp[,min.locs.yr:=min(colSums(table(stratum,year)>0)),by=c("spp","s.reg")][min.locs.yr>=4 & is.finite(wtcpue),]
+
+
 
 s.reg.key <- c(
 	"ai"="Aleutian Islands", 
-	"ebs"="Eastern Bering Strait", 
+	"ebs"="Eastern Bering Sea", 
 	"gmex"="Gulf of Mexico", 
 	"goa"="Gulf of Alaska",
 	"neus"="Northeast US",
@@ -90,13 +93,14 @@ spp.plot <- bquote({ # Create a back-quoted expression
 			
 			# create the short time series plot
 			# have to set the ylim so that min/max wtcpue's are same across all panels
-			par(new=TRUE) # next plot will be on its own x-y scale
-			t.ts0 <- aggregate(list(wtcpue2=wtcpue),list(stratum2=stratum,year2=year),mean, na.rm=TRUE)
-			t.ts <- aggregate(t.ts0[,"wtcpue2"], list(t.ts0[,"year2"]), sum, na.rm=TRUE)
-			plot(t.ts, col="aliceblue", type="l", ylim=wt.yl2, xaxt="n", yaxt="n", xlab="", ylab="", lwd=3)
-			lines(t.ts, col="red", type="l")
-			axis(side=3, col.ticks="red", col="red")
-			axis(side=4, col.ticks="red", col="red")
+			# par(new=TRUE) # next plot will be on its own x-y scale
+			# t.ts0 <- aggregate(list(wtcpue2=wtcpue),list(stratum2=stratum,year2=year),mean, na.rm=TRUE)
+			# t.ts <- aggregate(t.ts0[,"wtcpue2"], list(t.ts0[,"year2"]), sum, na.rm=TRUE)
+			# plot(t.ts, col="aliceblue", type="l", ylim=wt.yl2, xaxt="n", yaxt="n", xlab="", ylab="", lwd=3)
+			# lines(t.ts, col="red", type="l")
+			# axis(side=3, col.ticks="red", col="red")
+			# axis(side=4, col.ticks="red", col="red")
+			mtext(paste(range(year), collapse=" - "), side=3, line=0.1, adj=0, font=2)
 		}, 
 		by="cut.yrs" # cut.yrs are groups of ~4 yr periods
 	]
@@ -104,8 +108,8 @@ spp.plot <- bquote({ # Create a back-quoted expression
 	# Label axes
 	mtext("Longitude", outer=TRUE, side=1, font=2)
 	mtext("Latitude", outer=TRUE, side=2, font=2)
-	mtext("Year", outer=TRUE, side=3, font=2)
-	mtext("Weight CPUE", outer=TRUE, side=4, font=2)
+	# mtext("Year", outer=TRUE, side=3, font=2)
+	# mtext("Weight CPUE", outer=TRUE, side=4, font=2)
 	
 	# Add label in top outer margin for spp names and location
 	t.cmn <- ifelse(is.na(unique(common)), "?", unique(common)) # grab the common name; if it's NA, just use a "?"
@@ -118,7 +122,8 @@ spp.plot <- bquote({ # Create a back-quoted expression
 # ============================
 # = Actually do the spp plot =
 # ============================
-pdf("~/Documents/School&Work/pinskyPost/trawl/Figures/catch.SpaceTime3.pdf", width=4, height=7)
+# pdf("~/Documents/School&Work/pinskyPost/trawl/Figures/catch.SpaceTime3.pdf", width=4, height=7)
+pdf("~/Desktop/catch.SpaceTime_noLine.pdf", width=4, height=7)
 long.space.spp[, 
 	j={
 		xl <- .SD[, range(lon)]
