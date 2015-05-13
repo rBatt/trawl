@@ -127,53 +127,53 @@ map.catch <- function(x, y, z, main=NULL, ylim=range(y, na.rm=TRUE), xlim=range(
 # ===========
 # = Example =
 # ===========
-load("/Users/Battrd/Downloads/pewmaps_Apr 28.rdata") #pew.maps object
-head(pew.maps)
-pm.keys <- c("STRATA", "SPECIESCOMMONNAME", "SERIES") # columns to key on
-setkeyv(pew.maps, pm.keys) # set key for pew.maps
-
-(pm.uniques <- apply(pew.maps, 2, function(x)length(unique(x)))) # the number of unique values in each of those columns
-print(nrow(pew.maps)) # number of rows in our data set
-print(prod(pm.uniques[pm.keys])) # the number of rows we'd have if the data were fully crossed – i.e., all possible combinations of those identifying factors
-# OK, so data are already fully crossed
-
-
-
-# test <- pew.maps[SPECIESCOMMONNAME=="BANDED DRUM" & SERIES == "1990-94",]
-# y <- test[,LATITUDE]
-# x <- test[,LONGITUDE]
-# z <- test[,BIOMASS]
-# map.catch(x,y,z, main="BANDED DRUM")
-
-
-pdf("~/Desktop/jim.pew.maps.pdf", width=3.5, height=6.25)
-
-pew.maps[,
-	j={
-		t.spp <- SPECIESCOMMONNAME[1]
-		t.zlim <- .SD[,range(BIOMASS, na.rm=TRUE)]
-		t.ylim <- .SD[,range(LATITUDE, na.rm=TRUE)]
-		t.xlim <- .SD[,range(LONGITUDE, na.rm=TRUE)]
-				
-		par(mfrow=c(2,1), mar=c(1.75,1.75,1,0.1), oma=c(0,0,0,0), mgp=c(1.5,0.25,0), tcl=-0.15, ps=10, cex=1)
-		
-		.SD[,
-			j={
-				
-				main <- paste(t.spp, SERIES[1])
-				map.catch(LONGITUDE,LATITUDE,BIOMASS, main=main, ylim=t.ylim, xlim=t.xlim, zlim=t.zlim)
-				
-			},
-			by=c("SERIES")
-		]
-	},
-	by=c("SPECIESCOMMONNAME")
-
-]
-
-
-dev.off()
-
+# load("/Users/Battrd/Downloads/pewmaps_Apr 28.rdata") #pew.maps object
+# head(pew.maps)
+# pm.keys <- c("STRATA", "SPECIESCOMMONNAME", "SERIES") # columns to key on
+# setkeyv(pew.maps, pm.keys) # set key for pew.maps
+#
+# (pm.uniques <- apply(pew.maps, 2, function(x)length(unique(x)))) # the number of unique values in each of those columns
+# print(nrow(pew.maps)) # number of rows in our data set
+# print(prod(pm.uniques[pm.keys])) # the number of rows we'd have if the data were fully crossed – i.e., all possible combinations of those identifying factors
+# # OK, so data are already fully crossed
+#
+#
+#
+# # test <- pew.maps[SPECIESCOMMONNAME=="BANDED DRUM" & SERIES == "1990-94",]
+# # y <- test[,LATITUDE]
+# # x <- test[,LONGITUDE]
+# # z <- test[,BIOMASS]
+# # map.catch(x,y,z, main="BANDED DRUM")
+#
+#
+# pdf("~/Desktop/jim.pew.maps.pdf", width=3.5, height=6.25)
+#
+# pew.maps[,
+# 	j={
+# 		t.spp <- SPECIESCOMMONNAME[1]
+# 		t.zlim <- .SD[,range(BIOMASS, na.rm=TRUE)]
+# 		t.ylim <- .SD[,range(LATITUDE, na.rm=TRUE)]
+# 		t.xlim <- .SD[,range(LONGITUDE, na.rm=TRUE)]
+#
+# 		par(mfrow=c(2,1), mar=c(1.75,1.75,1,0.1), oma=c(0,0,0,0), mgp=c(1.5,0.25,0), tcl=-0.15, ps=10, cex=1)
+#
+# 		.SD[,
+# 			j={
+#
+# 				main <- paste(t.spp, SERIES[1])
+# 				map.catch(LONGITUDE,LATITUDE,BIOMASS, main=main, ylim=t.ylim, xlim=t.xlim, zlim=t.zlim)
+#
+# 			},
+# 			by=c("SERIES")
+# 		]
+# 	},
+# 	by=c("SPECIESCOMMONNAME")
+#
+# ]
+#
+#
+# dev.off()
+#
 
 
 
