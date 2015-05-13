@@ -6,30 +6,54 @@
 library(data.table)
 library(maps)
 
-# =============
-# = Load Data =
-# =============
-load("/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/trawl.RData")
+
+# ===============================
+# = Guess appropriate directory =
+# ===============================
+if(Sys.info()["sysname"]=="Linux"){
+	setwd("~/Documents/School&Work/pinskyPost")
+}else{
+	setwd("~/Documents/School&Work/pinskyPost")
+}
+
+
+# ==================
+# = Load Functions =
+# ==================
+data.location <- "./trawl/Scripts/DataFunctions"
+invisible(sapply(paste(data.location, list.files(data.location), sep="/"), source, .GlobalEnv))
+
+stat.location <- "./trawl/Scripts/StatFunctions"
+invisible(sapply(paste(stat.location, list.files(stat.location), sep="/"), source, .GlobalEnv))
+
+plot.location <- "./trawl/Scripts/PlotFunctions"
+invisible(sapply(paste(plot.location, list.files(plot.location), sep="/"), source, .GlobalEnv))
+
+
+# =======================
+# = Load trawl2 Dataset =
+# =======================
+load("./trawl/Data/trawl2.RData")
 
 
 # =======================
 # = Load data functions =
 # =======================
-data.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/DataFunctions"
+data.location <- "./trawl/Scripts/DataFunctions"
 invisible(sapply(paste(data.location, list.files(data.location), sep="/"), source, .GlobalEnv))
 
 
 # =======================
 # = Load Plot Functions =
 # =======================
-plot.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/PlotFunctions"
+plot.location <- "./trawl/Scripts/PlotFunctions"
 invisible(sapply(paste(plot.location, list.files(plot.location), sep="/"), source, .GlobalEnv))
 
 
 # =======================
 # = Load Stat Functions =
 # =======================
-stat.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/StatFunctions"
+stat.location <- "./trawl/Scripts/StatFunctions"
 invisible(sapply(paste(stat.location, list.files(stat.location), sep="/"), source, .GlobalEnv))
 
 
