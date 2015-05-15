@@ -277,15 +277,250 @@ if(taxLvl1[,sum(is.na(spp))]==0){
 taxInfo <- trawl0[,list(spp, common, taxLvl, species, genus, family, order, class, superclass, subphylum, phylum, kingdom, raw.spp, isSpecies, correctSpp)]
 setkeyv(taxInfo, names(taxInfo))
 taxInfo <- unique(taxInfo)
-save(taxInfo, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/taxInfo.RData")
+
+
+# ===========================================
+# = Merge in Rachel Taxa and Trophic Levels =
+# ===========================================
+# ==============================================
+# = Read Rachel Taxa, Merge with Prior taxInfo =
+# ==============================================
+rachelTax00 <- fread("./trawl/Data/Taxonomy/rachelTaxa.csv", na.strings=c("NA","","?"))
+rachelTax0 <- rachelTax00[!is.na(spp)]
+rachelTax <- rachelTax0[,list(trophicDiet,trophicOrig,Picture,rachelSpp,rachelCommon,trophicLevel,trophicLevel.se,raw.spp)]
+rmWhite(rachelTax) # remove leading and trailing white space
+
+
+taxInfo[,raw.spp][!taxInfo[,raw.spp]%in%rachelTax0[,raw.spp]]
+
+# Merge Rachel's taxonomy with taxInfo
+taxInfo2 <- merge(taxInfo, rachelTax, by=c("raw.spp"), all=TRUE)
+
+# ============================================================================
+# = Perform Basic Checks on Rachel's Taxonomy Entries (few errors, but some) =
+# ============================================================================
+# Next, make sure that for a given `spp`, all of the rachelSpp are the same
+spp2 <- taxInfo2[duplicated(spp)|duplicated(spp, fromLast=TRUE)][,list(spp,rachelSpp)]
+spp2[,list(lu(spp), lu(rachelSpp))] # well, they're of different lengths, probably because rachel just left NA's if she thought the entered `spp` was correct; so it doesn't prove anything (wouldn't anyway, but if these were the same, it'd suggest she was consistent, although it wouldn't prove it)
+uspp <- spp2[,unique(spp)] # there are 565 names that were entered multiple (>=2) times, presumably because various raw species names would have converged to the same `spp` after correction. Each of these 565 names thus presents *at least* 565 opportunities for Rachel to have made  mistake (not counting extra white space, because I trimmed that out).
+
+# Loop through to make sure she entered taxonomy consistently
+consistent.names <- logical(length(uspp))
+for(i in 1:length(uspp)){
+	consistent.names[i] <- spp2[spp==uspp[i],lu(rachelSpp)==1L]
+}
+
+spp2[spp%in%uspp[!consistent.names]] # found 3 typos; but in no case did she offer multiple alternatives to the same "spp"
+
+# Fix Rachel Typos
+taxInfo2[rachelSpp=="Apogon pseduomaculatus", rachelSpp:="Apogon pseudomaculatus"]
+taxInfo2[rachelSpp=="Actinoscyhpia", rachelSpp:="Actinoscyphia"]
+taxInfo2[rachelSpp=="Anuropus bathypelagiucs", rachelSpp:="Anuropus bathypelagicus"]
+
+
+# ============================
+# = Fix Random Rachel Errors =
+# ============================
+# I found this too – I don't want any punctuation
+taxInfo2[rachelSpp=="Ancylopsetta (ommata) quadrocellata", rachelSpp:="Ancylopsetta quadrocem"]
+
+# There was one critter, where for different raw.spp but same spp, Rachel either didn't enter the same thing for both, or she only entered the taxonomy for 1 which happened to be different from the other (i.e., I gave her 1 case that was blank and she didn't fill it in, or I gave her 1 case that was filled and she left blank). Either way, it's clear how to fix: if they're the same species they should have the same info, and there's only 1 non-NA option. Later when I combine down to trawl2 this fix would be implemented for 3 columns (common, taxLvl, phylum) but with a warning (in that case the logic is implemented for all possible combines, not just this particular `spp`). I am fixing surgically here for "Brisaster latifrons", with the intent of avoiding warnings later (kinda remove the impact of the warning if I see it every time)
+for(i in names(taxInfo2)){
+	topts <- taxInfo2[spp=="Brisaster latifrons", get(i)]
+	if(any(is.na(topts)) & sum(!is.na(unique(topts)))==1){
+		taxInfo2[spp=="Brisaster latifrons", c(i):=list(topts[!is.na(topts)])]
+	}
+}
+
+
+# ====================================
+# = Check Taxonomy for many-to-one's =
+# ====================================
+# One `spp` is related to many values in another column; e.g., multiple trophicLevel per species, or multiple `family` per `spp`
+out <- taxInfo2[,lapply(.SD, lu), by="spp"]
+out2 <- copy(out)
+
+print(out[apply(out2[,c("spp"):=list(NULL)], 1, max)>1], nrow=Inf) # 565 cases where some of the information differs for a given `spp`
+print(out[apply(out2[,c("spp","raw.spp"):=list(NULL)], 1, max)>1], nrow=Inf) # if you drop the raw.spp column, then there are only 38 cases where for a `spp` there is more than 1 unique value across rows for a given column, which implies that *at least* 527 `spp` originally had more than 1 (between 2 and 10) raw.spp name.
+print(out[apply(out2[,c("spp","raw.spp","isSpecies"):=list(NULL)], 1, max)>1], nrow=Inf) # if we additionally remove the isSpecies column, we see that there are only 3 spp for which multiple column values were assigned for that same spp. 2 of these are multiple values under `Picture`, 1 of these is a case where 2 values were assigned under `trophicLevel`. Additionally, in these 3 cases isSpecies was not duplicated, which means that there were 35 instances where a single `spp` was given multiple isSpecies values.
+
+# The many-to-1 relationship for raw.spp-to-spp is OK/ desired/ expected. The many-to-1 for isSpecies-to-spp is a little annoying (unexpected, but not terribly surprising), but not a big deal because I can simply recompute isSpecies on the new `spp`. The `Picture` issue is trivial, but surprising, and should be investigated manually (only 2 instances). The `trohpicLevel` issue is important and problematic, however, it is also easily investigated manually as there is only 1 isntance. Finally, it is important to note that `common`, `taxLvl`, and `phylum` were not duplicated for a given `spp`, which was the original problem I was investigating.
+
+# ==================================
+# = Correct Isolated many-to-one's =
+# ==================================
+# Multiple `Picture` per `spp`:
+taxInfo2[spp%in%c("Acanella arbuscula", "Acanthephyra")]
+# For both species there was a "y", and the non-"y" values were NA; if there's a picture for 1 instance of this `spp`, there's a picture for them all!
+taxInfo2[spp%in%c("Acanella arbuscula", "Acanthephyra"), Picture:="y"]
+
+# Multiple `trophicLevel` per `spp`:
+taxInfo2[spp%in%c("Syngnathus floridae")]
+# http://www.fishbase.org/Ecology/FishEcologySummary.php?StockCode=3496&GenusName=Syngnathus&SpeciesName=floridae
+# the true value is 3.32
+taxInfo2[spp%in%c("Syngnathus floridae"), trophicLevel:=3.32]
+
+
+# ==========================================================
+# = Update correctSpp to reflect trust in Rachel's entries =
+# ==========================================================
+# If it's a 2+ word "rachelSpp", or if isTRUE(correctSpp), then correctSpp:=TRUE
+taxInfo2[correctSpp | is.species(rachelSpp), correctSpp:=TRUE] # if Rachel wrote 2 words, it's legit! I think there were only 3 cases where Rachel took something that wasn't a species according to correctSpp, and found its identity. I think her main contribution was not increasing the number of taxa; rather, it may have been to reduce it by taking outdated taxonomy and finding the appropriate name.
+
+# Note on above: see the end of script; I'm now thinking we have 2557 verified species in the data set. I think before we were between 1900 and 2000. So after Rachel's efforts we have ~600 more species. That seems to contradict what I wrote above. Part of the difference could be that I had previously been relying on `taxLvl`, which I realized had several hundred entries that were `species` instead of `Species`.
+
+# taxInfo2[!correctSpp&!is.na(spp)&isSpecies]
+
+
+# ===================================================================
+# = Overwrite `common` and `spp` where Rachel supplied alternatives =
+# ===================================================================
+# Insert Rachel's spp where needed
+useRach.spp <- (taxInfo2[,spp]!=taxInfo2[,rachelSpp] | is.na(taxInfo2[,spp])) & !is.na(taxInfo2[,rachelSpp]) # there were 308 instances here before I removed leading and trailing whitespace, now there are only 290! ;) Spaces matter, Rachel! :) ... I did more things, and now it's down to 287.
+# print(taxInfo2[useRach.spp,list(spp, rachelSpp)], nrow=Inf) # all of Rachel's proposed changes to `spp`; there are several cases where her changes result in a convergence of taxonomy
+# When merging in rachel's species values, need to address issues where convergence of taxonomy could lead to discrepancies in the columns aside from `spp`. Hopefully most of these discrepancies are issues where one instance has an NA and the other does not.
+for(i in names(taxInfo2)){
+	topts <- taxInfo2[spp=="Brisaster latifrons", get(i)]
+	if(any(is.na(topts)) & sum(!is.na(unique(topts)))==1){
+		taxInfo2[spp=="Brisaster latifrons", c(i):=list(topts[!is.na(topts)])]
+	}
+}
+taxInfo2[useRach.spp, spp:=rachelSpp]
+
+# Insert Rachel's common names where needed
+useRach.com <- (taxInfo2[,common]!=taxInfo2[,rachelCommon] | is.na(taxInfo2[,common])) & !is.na(taxInfo2[,rachelCommon]) # there were 718 instances here, now only 698 after removing white space
+taxInfo2[useRach.com, common:=rachelCommon]
+
+# Delete the old columns after their necessary elements have been used
+taxInfo2[,c("rachelSpp", "rachelCommon"):=NULL]
+
+# =======================
+# = Recompute isSpecies =
+# =======================
+taxInfo2[,isSpecies:=is.species(spp)]
+
+
+
+# ==================================================
+# = Do an exhaustive many-to-one check and correct =
+# ==================================================
+# This phase will require manually deciding between conflicting entries (the is.na() vs !is.na() case is easy and automated, others done manually)
+
+# First, check to see if for a saved file of manual corrections (when I first did this, there were 43)
+if("taxProblemSolution.RData"%in%list.files("./trawl/Data/Taxonomy")){
+	load("./trawl/Data/Taxonomy/taxProblemSolution.RData")
+	tPS <- TRUE # the tPS logic will be used in the loops to figure out if taxProblemSolution exists
+}else{
+	taxProblemSolution <- data.table(spp=character(), prob.col=character(), solution=character())
+	tPS <- FALSE
+}
+
+# Copy taxInfo2 into taxInfo3, and use key
+# note that I have run into some very odd errors with index something like taxInfo[spp=="Genus species"] and it returnign some `spp` that are *not* "Genus species". If I flanked the logic with a `&!is.na(spp)`, or if I used a key, I avoided this weird result (even when no `spp` in the entire data set were NA). I don't know why this was happening. But that's why I'm using a key here.
+taxInfo3 <- copy(taxInfo2)
+setkey(taxInfo3, spp)
+
+# Identify columns to check as being "many's" in the many-to-one
+col2check <- names(taxInfo3)[!names(taxInfo3)%in%c("raw.spp","spp","rachelSpp","rachelCommon","isSpecies")]
+
+# Set up vectors to track progress for fixing, failing, or not needing to fix many-to-one for each `spp`
+# I.e., replacementsMade+replacementsFailed+replacementUnneeded == taxInfo3[,lu(spp)] ... in theory (at least before I created the taxProblemSolution file)
+replacementsMade <- 0
+replacementsFailed <- 0
+replacementUnneeded <- 0
+
+# Begin looping: i's loop through unique `spp`, j's loop through the different columns that should only have 1 unique value per `spp`, but which might have more, in which case I will make manual corrections such that there will subsequently be only 1 unique value in that column per `spp`
+for(i in taxInfo3[,unique(spp)]){
+	for(j in col2check){
+		t.out <- taxInfo3[i,get(j)] # temporary value for a given `spp` and the j column
+		if(lu(t.out)>1){
+			if(lu(t.out[!is.na(t.out)])==1){
+				replacementsMade <- replacementsMade + 1L
+				taxInfo3[i,c(j):=list(unique(t.out[!is.na(t.out)]))]
+			}else{
+				prob.spp <- i # prob. means "problem" / "problematic"
+				prob.col <- j
+				prob.opts <- unique(t.out[!is.na(t.out)])
+				
+
+				fix.taxProb <- function(){ # defining in function in loop for readability
+					readline(paste("Pick your solution. SKIP to skip, otherwise enter one of the following:\n ", paste0(prob.opts, collapse="\n  "), "\n"))
+				}
+				
+				if(tPS){
+					prob.fix.t <- taxProblemSolution[spp==i & prob.col==j,solution]
+					if(length(prob.fix.t)>0){
+						prob.fix <- prob.fix.t
+					}else{
+						print(j)
+						print(taxInfo3[i])
+						prob.fix <- fix.taxProb()
+						taxProblemSolution <- rbind(taxProblemSolution, data.table(spp=i, prob.col=j, solution=prob.fix))
+					}
+				}else{
+					print(j)
+					print(taxInfo3[i])
+					prob.fix <- fix.taxProb()
+					taxProblemSolution <- rbind(taxProblemSolution, data.table(spp=i, prob.col=j, solution=prob.fix))
+				}
+				
+				
+				if(prob.fix!="SKIP"){ # I've never tested the use of the SKIP response ...
+					taxInfo3[i,c(j):=list(prob.fix)]
+					replacementsMade <- replacementsMade + 1L
+				}else{
+					replacementsFailed <- replacementsFailed + 1L
+				}
+				
+			}
+		}else{
+			replacementUnneeded <- replacementUnneeded + 1L
+		}
+	}
+	
+}
+
+# Save Solutions to many-to-one problems in the taxonomy
+save(taxProblemSolution, file="./trawl/Data/Taxonomy/taxProblemSolution.RData") # save it!
+
+# Save the taxonomy
+taxInfo <- taxInfo3 # renaming so that loading taxInfo gives you the object taxInfo (I don't want to create confusing versions, and I want the file name to match the object name)
+save(taxInfo3, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/taxInfo.RData")
+
+# TODO Still need to incorporate the rest of Rachel's taxonomy ... phylum, etc. Haven't done that, but I also don't think it matters much (very few things changed, I believe)
+
+
+# =================================================================
+# = Recreate trawl0 after adding in Rachel's Taxonomy and Trophic =
+# =================================================================
+trawl.notTax <- bquote(list(
+	year,
+	datetime,
+	haulid,
+	stratum,
+	stratumarea,
+	lat,
+	lon,
+	depth,
+	stemp,
+	btemp,
+	wtcpue,
+	cntcpue,
+	region,
+	s.reg,
+	raw.spp
+))
+trawl0 <- merge(trawl0[,eval(trawl.notTax)], taxInfo, all.x=TRUE, by=c("raw.spp"))
 
 
 # ===========================
 # = Trim trawl columns down =
 # ===========================
-trawl4 <- trawl0[,list(region, s.reg, phylum, spp, taxLvl, common, year, datetime, haulid, stratum, lat, lon, depth, stemp, btemp, wtcpue, cntcpue, correctSpp)] # this is where I drop all of the other pieces of taxonomic information
+trawl4 <- trawl0[,list(region, s.reg, phylum, spp, taxLvl, common, year, datetime, haulid, stratum, lat, lon, depth, stemp, btemp, wtcpue, cntcpue, trophicLevel, trophicLevel.se, trophicDiet, trophicOrig, Picture, correctSpp)] # this is where I drop all of the other pieces of taxonomic information
 setkey(trawl4, s.reg, taxLvl, phylum, spp, year, stratum)
 trawl4[,depth:=as.numeric(depth)]
+
+
 
 
 # ==================
@@ -344,17 +579,46 @@ if(delOldTrawl){
 # this could probably be made much faster by using lapply at the end, but that's a little difficult b/c different columns require different functions
 trawl2 <- trawl3[, # this aggregates among multiple hauls within the same substratum (K); 
 	{
-		if(length(unique(common))>1){
-			print(unique(common))
-			stop("trying to add too many common names – match of species name to multiple commons")
+		ucom <- unique(common)
+		if(length(ucom)>1){
+			if(sum(!is.na(ucom))>1){ # if the length is >1 due to non-NA's
+				print(unique(spp))
+				print(ucom)
+				stop("trying to add too many common names – match of species name to multiple commons")
+			}else{
+				common <- ucom[!is.na(ucom)]
+				warning(paste(ucom, unique(spp), "trying to add too many common names – match of species name to multiple commons; if NA's are dropped, 1 unqiue common. Replacing NA's with unique non-NA value", sep=" -- "))
+			}	
 		}
-		if(length(unique(taxLvl))>1){
-			print(unique(taxLvl))
-			stop("trying to add too many taxLvl – match of species name to multiple taxonomic classifications")
+		
+		utax <- unique(taxLvl)
+		if(length(utax)>1){
+			if(sum(!is.na(utax))>1){ # if the length is >1 due to non-NA's
+				print(unique(spp))
+				print(utax)
+				stop("trying to add too many taxLvl – match of species name to multiple taxonomic classifications")
+			}else{
+				taxLvl <- utax[!is.na(utax)]
+				warning(paste(utax, unique(spp), "trying to add too many taxLvl – match of species name to multiple taxonomic classifications; if NA's are dropped, 1 unqiue taxLvl. Replacing NA's with unique non-NA value", sep=" -- "))
+			}	
+			
 		}
-		if(length(unique(phylum))>1){
-			print(unique(phylum))
-			stop("trying to add too many phylum – match of species name to multiple taxonomic classifications")
+		
+		uphy <- unique(phylum)
+		if(length(uphy)>1){
+			if(sum(!is.na(uphy))>1){ # if the length is >1 due to non-NA's
+				print(unique(spp))
+				print(uphy)
+				stop("trying to add too many phylum – match of species name to multiple taxonomic classifications")
+			}else{
+				phylum <- uphy[!is.na(uphy)]
+				warning(paste(uphy, unique(spp),"trying to add too many phylum – match of species name to multiple taxonomic classifications; if NA's are dropped, 1 unqiue phylum. Replacing NA's with unique non-NA value", sep=" -- "))
+			}
+			
+		}
+		
+		if(lu(common)>1 | lu(phylum)>1 | lu(taxLvl)>1){
+			stop("crap; not successful in dropping NA levels when non-NA level of common, pnylum ,or taxLvl exists.")
 		}
 		
 		# OK, create condensed output list
@@ -368,6 +632,7 @@ trawl2 <- trawl3[, # this aggregates among multiple hauls within the same substr
 			stemp=meanna(stemp), 
 			btemp=meanna(btemp), 
 			wtcpue=meanna(wtcpue), 
+			trophicLevel=meanna(trophicLevel),
 			correctSpp=any(correctSpp),
 			# common=.SD[correctSpp,unique(common)],
 			# taxLvl=.SD[correctSpp,unique(taxLvl)]
@@ -393,3 +658,69 @@ if(delOldTrawl){
 setkey(trawl2, s.reg, year, stratum, K, phylum, spp)
 save(trawl2, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/trawl2.RData")
 
+
+
+# =================================================================================
+# = Notes on the Number of Species in the Data Set (evening counting is tricky!!) =
+# =================================================================================
+# trawl2[,lu(spp)]
+# [1] 3624
+#
+#
+# trawl2[(correctSpp),lu(spp)]
+# [1] 3600
+#
+#
+# trawl2[(correctSpp)&is.species(spp),lu(spp)]
+# [1] 2571
+#
+# trawl2[(correctSpp)&taxLvl=="Species",lu(spp)]
+# [1] 1856
+#
+# trawl2[(correctSpp)&taxLvl!="Species"&is.species(spp),lu(spp)]
+# [1] 261 # note: I checked, and these really do look like actual species; not a glitch
+#
+# trawl2[(correctSpp)&taxLvl=="Species"&is.species(spp),lu(spp)]
+# [1] 1855 # note that adding the `is.species` restriction only reduces the # of species by 1 ... somewhere "Species" was entered for a taxLvl that was only 1 word, and thus highly unlikely to be identified to species
+#
+# trawl2[is.na(taxLvl),lu(spp)]
+# [1] 620 # lots of times the taxLvl wasn't identified (mostly from taxize, some from rachel maybe)
+#
+# trawl2[(correctSpp)&is.na(taxLvl)&is.species(spp),lu(spp)]
+# [1] 455 # if we say that the species had to be identified as "correct" (either confirmed by taxize or manual checking [i.e., found it on the web somewhere] ... only applies to if the identifier is valid, not actually if ID'd to spp), and if we focus on the cases where taxLvl is not informative (NA), and then we say that additionally that the `spp` has to be at least 2 words, then there are 455 of these cases.
+#
+# 1855 + 261 + 455 # if we sum up all 2+ word identifiers that were manually (website by me, rachel, or malin) or automatically (taxize), we cover all 3 cases of what taxLvl could be (is Species, not Species, is.na()), and thus we get the number of identifiers of that are 2 words and confirmed (i.e., `trawl2[(correctSpp)&is.species(spp),lu(spp)]`)
+#
+# trawl2[(correctSpp)&(taxLvl=="Species"|taxLvl=="species")&is.species(spp),lu(spp)]
+# [1] 2102 # accounting for the instances where taxLvl could be Species or species, we see that speces accounts for a few hundred more taxa, so that makes sense ...
+#
+# trawl2[(correctSpp)&(taxLvl=="Species"|taxLvl=="species"|is.na(taxLvl))&is.species(spp),lu(spp)]
+# [1] 2557 # we get really close to the 2571 count if we say that taxLvl has to say Species, species, or be uninformative. This means that there are 2571-2557 = 14 instances where taxLvl says something other than S/species (or nothing), but it seems like this could really be a species. Any guesses?
+#
+# trawl2[(correctSpp)&!(taxLvl=="Species"|taxLvl=="species"|is.na(taxLvl))&is.species(spp),lu(spp)]
+# [1] 14 # see previous/ above
+#
+# > trawl2[(correctSpp)&!(taxLvl=="Species"|taxLvl=="species"|is.na(taxLvl))&is.species(spp),unique(spp)]
+#  [1] "Parthenope agonus" "Aplatophis chauliodus" "Astrocyclus caecilia" "Fasciolaria lilium"
+#  [5] "Busycon candelabrum" "Opisthognathus lonchurus" "Rochinia crassa" "Coelorinchus caelorinchus"
+#  [9] "Stomias boa ferox" "Paralepis coregonoides borealis" "Notoscopelus elongatus kroyeri" "Pilumnus pannosus"
+# [13] "Hyperoglyphe perciformes" "Chlamys hastata hericia" # here we see the 14 species meeting those criteria.... but what were the taxLvl's??
+#
+# unique(trawl2[(correctSpp)&!(taxLvl=="Species"|taxLvl=="species"|is.na(taxLvl))&is.species(spp),list(taxLvl, spp)])
+#         taxLvl                             spp
+#  1:      genus               Parthenope agonus
+#  2:      genus           Aplatophis chauliodus
+#  3:      genus            Astrocyclus caecilia
+#  4:      genus              Fasciolaria lilium
+#  5:      genus             Busycon candelabrum
+#  6:      genus        Opisthognathus lonchurus
+#  7:      genus                 Rochinia crassa
+#  8: Subspecies       Coelorinchus caelorinchus
+#  9: Subspecies               Stomias boa ferox
+# 10: Subspecies Paralepis coregonoides borealis
+# 11: Subspecies  Notoscopelus elongatus kroyeri
+# 12:      genus               Pilumnus pannosus
+# 13:      order        Hyperoglyphe perciformes
+# 14: Subspecies         Chlamys hastata hericia
+#
+# # And there it is! several of them were ID'd as subspecies. It might be that the other taxLvl values were the most specific taxonomic levels that I was able to grab from taxize, but then rachel confirmed the taxa, and didn't add the new taxLvl, or that
