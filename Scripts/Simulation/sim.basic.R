@@ -1,3 +1,8 @@
+# =================
+# = Load Packages =
+# =================
+library(raster)
+
 
 # ======================
 # = Load Sim Functions =
@@ -14,10 +19,10 @@ invisible(sapply(paste(sim.location, list.files(sim.location), sep="/"), source,
 # Grid Size
 
 	# Width
-	grid.w <- 15
+	grid.w <- 5
 	
 	# Height
-	grid.h <- 20
+	grid.h <- 7
 	
 	# Time
 	grid.t <- 12
@@ -59,7 +64,7 @@ for(i in 2:grid.t){
 }
 
 # Plot temperature time series
-plot(grid.temp, zlim=c(min(values(grid.temp)), max(values(grid.temp))))
+plot(grid.temp, zlim=c(min(values(grid.temp)), max(values(grid.temp))), col=tim.colors())
 
 
 # ==================
@@ -67,6 +72,20 @@ plot(grid.temp, zlim=c(min(values(grid.temp)), max(values(grid.temp))))
 # ==================
 
 # Number of Species
+ns <- 100
+
+# Create a matrix indicating which cells are neighbors on the grid
+L <- (grid.w*grid.h) # L is the total number of cells on the grid
+G.adj <- adjacent(subset(grid.blank,1), cells=1:L) # G.adj calculates which cells on the Grid are neighbors
+G.n <- matrix(0, nrow=L, ncol=L) # G.n is an LxL matrix indicating whether cells can interact (are rook neighbors)
+G.n[G.adj] <- 1 # update to indicate which cells can interact
+plot(raster(G.n)) # visualize the pattern b/c the matrix will likely be too big to print out in console
+
+
+# Create a brick of Species in space and time
+S <- grid.blank
+S.start <- # TODO 
+S.1 <- subset(S,1)
 
 # Distribution (density) of Species across Grid Attributes
 
