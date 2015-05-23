@@ -21,10 +21,10 @@ invisible(sapply(paste(sim.location, list.files(sim.location), sep="/"), source,
 # Grid Size
 
 	# Width
-	grid.w <- 5
+	grid.w <- 50
 	
 	# Height
-	grid.h <- 7
+	grid.h <- 70
 	
 	# Time
 	grid.t <- 12
@@ -75,7 +75,7 @@ plot(grid.temp, zlim=c(temp.range[1], temp.range[2]), col=tim.colors())
 # ==================
 
 # Number of Species
-ns <- 100
+ns <- 200
 
 # Create a matrix indicating which cells are neighbors on the grid
 L <- (grid.w*grid.h) # L is the total number of cells on the grid
@@ -89,15 +89,43 @@ plot(raster(G.n)) # visualize the pattern b/c the matrix will likely be too big 
 S <- replicate(grid.t, gen.grid(dims=c(grid.h, grid.w, ns), xmn=0, ymn=0, xmx=grid.w, ymx=grid.h), simplify=FALSE) # species information over space and time; different times are different elements of the list (top level), whereas different species are different layers in the brick. Note that in other bricks the different layers are different time steps, so be careful of that. It's done this way b/c time is going to be the top level of the process, so no more than 2 time steps need to be accessed at once, whereas 2 dimensions of space and all species might need to be accessed simultaneously.
 R <- gen.grid(dims=c(grid.h, grid.w, grid.t), xmn=0, ymn=0, xmx=grid.w, ymx=grid.h) # Richness. Structured as other bricks (not S), b/c richness doesn't need species-specific information.
 
-S.temp.mu <- rnorm(n=ns, mean=mean(values(grid.temp)), sd(values(grid.temp)))
-S.temp.var <- runif(n=ns, min=1E-3, max=1E2)
-S.obs.temps <- mapply(rnorm, mean=S.temp.mu, sd=sqrt(S.temp.var), MoreArgs=list(n=300))
+
+
+# S.temp.mu <- runif(n=ns, min=min(values(grid.temp)), max=max(values(grid.temp))) #rnorm(n=ns, mean=mean(values(grid.temp)), sd(values(grid.temp)))
+# S.temp.var <- runif(n=ns, min=1E-3, max=1E2)
+# S.obs.temps <- mapply(rnorm, mean=S.temp.mu, sd=sqrt(S.temp.var), MoreArgs=list(n=300))
+# Replacing the above temperature preference simulation with a new one that uses the beta distribution (below)
+
+rtemp <- function(n, alpha, beta, min, max){
+	del <- max - min
+	rbeta(n, alpha, beta)*del + min
+}
+
+min.t <- min(values(grid.temp))
+max.t <- max(values(grid.temp))
+mm <- replicate(ns, sort(runif(n=2, min=min.t, max=max.t)))
+ab <- replicate(ns, runif(n=2, min=1, max=10))
+S.obs.temps <- mapply(rtemp, alpha=ab[1,], beta=ab[2,], min=mm[1,], max=mm[2,], MoreArgs=list(n=300))
+
 S.dens.temps <- apply(S.obs.temps, 2, density, from=temp.range[1], to=temp.range[2])
+
+
+# trying to find a way to get skew to go in either direction
+# k0 <- seq(2, 50, length.out=50)
+# lambda0 <- seq(0.1, 5, length.out=50)
+# kl.grid <- expand.grid(k=k0, lambda=lambda0)
+# k <- kl.grid[,"k"]
+# lambda <- kl.grid[,"lambda"]
+# mu <- lambda*gamma(1+1/k)
+# sigma2 <- lambda^2*(gamma(1+2/k)-gamma(1+1/k)^2)
+# skew <- (gamma(1+3/k)*lambda^3 - 3*mu*sigma2 - mu^3)/sqrt(sigma2)^3
+# OK, you can get it with the weibull, but the weibull always has to be positive, so you can only get the left skew when the values are very small and positive
+
 
 Sdt.max <- max(sapply(S.dens.temps, function(x)max(x$y)))
 myGray <- rgb(t(col2rgb("black", alpha=TRUE)), alpha=75, maxColorValue=256)
 plot(S.dens.temps[[1]], ylim=c(0,Sdt.max), col=myGray)
-for(i in 2:100){lines(S.dens.temps[[i]], col=myGray)}
+for(i in 2:length(S.dens.temps)){lines(S.dens.temps[[i]], col=myGray)}
 
 store <- c()
 for(d in 1:512){
@@ -123,7 +151,7 @@ plot(S.dens.temps[[1]]$x, store, type="l", xlab="Temperature", ylab="Density (co
 # hist(table(individs.world))
 
 
-p.s.bg <- 0.5
+p.s.bg <- 1 #rep(runif(n=ns, min=0.005, max=0.5), each=grid.w*grid.h)
 
 # For each environmental temperature, what is the species' density at the closest match density()$x (temperature) value??
 
@@ -154,18 +182,25 @@ dsample <- function(ref,x, relative=FALSE){
 	
 }
 
-species.prob.temp <- sapply(X=S.dens.temps, FUN=dsample, values(subset(grid.temp, 1))) # columns are different species, rows are different elements of the grid, with the ordering of the rows mapping onto the grid according to the default of raster package (starting upper-left corner, progressing as when reading English; note this is different than default in matrix or array). Thus, if the grid is 7x5, species.prob.temp[23, 60] is the probability of the 60th species of existing at the temperature of the 23rd element of the grid, and the 23rd element of the grid is at [5,3] (column = 23%%5, row = ceiling(23/5))
+species.prob.temp <- sapply(X=S.dens.temps, FUN=dsample, values(subset(grid.temp, 1)), relative=TRUE) # columns are different species, rows are different elements of the grid, with the ordering of the rows mapping onto the grid according to the default of raster package (starting upper-left corner, progressing as when reading English; note this is different than default in matrix or array). Thus, if the grid is 7x5, species.prob.temp[23, 60] is the probability of the 60th species of existing at the temperature of the 23rd element of the grid, and the 23rd element of the grid is at [5,3] (column = 23%%5, row = ceiling(23/5))
 
 spp.prob <- species.prob.background * species.prob.temp
 
-relative.spt <- species.prob.temp <- sapply(X=S.dens.temps, FUN=dsample, values(subset(grid.temp, 1)), relative=TRUE)
+
+relative.spt <- sapply(X=S.dens.temps, FUN=dsample, values(subset(grid.temp, 1)), relative=TRUE)
 
 species.biomass0 <- rep(rnorm(n=ns), each=grid.w*grid.h) + 1*(c(relative.spt)-0.5) # think of this as a linear regression on log(biomass), where the right-hand side of the equation is = intercept + coefficient*temperature + coefficient*temperature^2. But the 2 temperature terms are condensed and slightly more complicated by using the empirical density. The -0.5 is there to make it so that temperatures outside of the optimum lower the biomass relative to the average. Won't really matter much. Overall point is that the right-hand term is added to the default biomass, not multiplied, because this is in log space, and that this setup should represent something recoverable by a regression of some form.
 
-species.pres <- c(NA,1)[1+rbinom(n=ns*grid.w*grid.h, size=1, prob=p.s.bg)]
+species.pres <- c(NA,1)[1+rbinom(n=ns*grid.w*grid.h, size=1, prob=spp.prob)]
 species.biomass <-  species.pres * species.biomass0 # first part is pres-abs, second is biomass given present
 spp.1.m <- matrix(species.pres, nrow=grid.w*grid.h, ncol=ns)
 spp.1 <- setValues(S[[1]], species.biomass)
+
+smplt <- c(0.9,0.92, 0.2,0.8)
+bgplt <- c(0.05,0.89,0.15,0.95)
+axargs <- list(mgp=c(0.75,0.5,0))
+dev.new(width=16, height=8)
+plot(spp.1, maxnl=200, col=tim.colors(), zlim=range(values(spp.1), na.rm=TRUE),smallplot=smplt, bigplot=bgplt, axis.args=axargs, nr=8, nc=25, legend=FALSE, colNA="darkgray")
 
 spp.sample <- function(x, n){
 	sub <- matrix(x[sample(nrow(x), n),], ncol=ncol(x))
@@ -173,10 +208,10 @@ spp.sample <- function(x, n){
 }
 
 rich <- c()
-for(i in 1:10){
+for(i in 1:200){
 	rich[i] <- spp.sample(spp.1.m, n=i)
 }
-plot(rich, type="o")
+plot(rich, type="o", ylim=c(0,ns))
 
 
 
