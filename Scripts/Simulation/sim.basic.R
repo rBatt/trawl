@@ -4,6 +4,7 @@
 # =================
 library(raster)
 library(fields)
+library(igraph)
 
 
 # ======================
@@ -82,7 +83,7 @@ L <- (grid.w*grid.h) # L is the total number of cells on the grid
 G.adj <- adjacent(subset(grid.blank,1), cells=1:L) # G.adj calculates which cells on the Grid are neighbors
 G.n <- matrix(0, nrow=L, ncol=L) # G.n is an LxL matrix indicating whether cells can interact (are rook neighbors)
 G.n[G.adj] <- 1 # update to indicate which cells can interact
-plot(raster(G.n)) # visualize the pattern b/c the matrix will likely be too big to print out in console
+# plot(raster(G.n)) # visualize the pattern b/c the matrix will likely be too big to print out in console
 
 
 G <- matrix(1, nrow=3, ncol=4) # graph
@@ -92,32 +93,6 @@ D <- degree(graph.lattice(c(3,4))) # uses igraph ... might have to convert much 
 
 L <- as.matrix(graph.laplacian(graph.adjacency(A), norm=T))
 # diag(L) <- 0
-
-L2 <- L
-diag(L2) <- 0
-
-(L.out <- rowSums(L2))
-(L.in <- colSums(-L2))
-myPhi <- matrix(L.out+L.in, nrow=3)
-image.plot(myPhi)
-
-
-L.out <- L*1 # if each cell has 10% of it's mass diffuse 
-L.in <- t(L.out)*-1
-
-e.vec <- eigen(L)$vectors
-e.val <- eigen(L)$values
-
-G.v <- matrix(G, nrow=1)
-C0V <- t(e.vec)%*%t(G.v)
-
-Phi <- C0V*exp(-e.val*1)
-Phi.new <- e.vec%*%Phi
-Phi.mat <- matrix(Phi.new, nrow=3)
-image.plot(Phi.mat)
-
-G - matrix(G, nrow=1)%*%L.out
-L.out%*%matrix(G, ncol=1)
 
 
 # ============================================
@@ -188,33 +163,6 @@ disp <- 0.1 # 10% of the biomass in each vertex will disperse at each time step;
 # Dinv <- solve(Deg) # inverse of the degree matrix
 
 Trans00 <- matrix(0, nrow=M*N, ncol=M*N)
-
-
-cardinal <- function(nr, nc, cdir="north"){ # TODO This is doing a little bit of boundary reflection, kinda, which is not by design and needs to be fixed (what I'm calling a boundary reflection is not actually a boundary reflection, so it isn't right even if I wanted boundary reflection)
-	# stopifnot(dim(mat)==2 & ncol(mat)==2)
-	stopifnot(nr>=3 & nc>=3)
-	
-	N <- nr*nc
-	mat <- expand.grid(1:N, 1:N)
-	colnames(mat) <- c("row", "column")
-	mat <- as.matrix(mat)
-	
-	del <- mat[,2] - mat[,1]
-	
-	ind <- switch(cdir,
-		north = del==1,
-		south = del==-1,
-		northwest = del==(nr+1),
-		southeast = del==(-nr-1),
-		northeast = del==(-nr+1),
-		southwest = del==(nr-1)
-	)
-	
-	mat[ind,] # output refers to coordinates in an adjacency matrix
-	
-}
-
-
 Trans00[cardinal(M, N, "north")] <- 0.5
 Trans00[cardinal(M, N, "northwest")] <- 0.25
 Trans00[cardinal(M, N, "northeast")] <- 0.25
