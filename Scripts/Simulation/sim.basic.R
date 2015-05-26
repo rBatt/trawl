@@ -85,6 +85,190 @@ G.n[G.adj] <- 1 # update to indicate which cells can interact
 plot(raster(G.n)) # visualize the pattern b/c the matrix will likely be too big to print out in console
 
 
+G <- matrix(1, nrow=3, ncol=4) # graph
+A <- matrix(0, nrow=length(G), ncol=length(G))
+A[adjacent(as.array(G), cells=1:length(G), direction=8)] <- 1 # adjacency matrix
+D <- degree(graph.lattice(c(3,4))) # uses igraph ... might have to convert much of my code to this format for the sake of modeling interactions between cells
+
+L <- as.matrix(graph.laplacian(graph.adjacency(A), norm=T))
+# diag(L) <- 0
+
+L2 <- L
+diag(L2) <- 0
+
+(L.out <- rowSums(L2))
+(L.in <- colSums(-L2))
+myPhi <- matrix(L.out+L.in, nrow=3)
+image.plot(myPhi)
+
+
+L.out <- L*1 # if each cell has 10% of it's mass diffuse 
+L.in <- t(L.out)*-1
+
+e.vec <- eigen(L)$vectors
+e.val <- eigen(L)$values
+
+G.v <- matrix(G, nrow=1)
+C0V <- t(e.vec)%*%t(G.v)
+
+Phi <- C0V*exp(-e.val*1)
+Phi.new <- e.vec%*%Phi
+Phi.mat <- matrix(Phi.new, nrow=3)
+image.plot(Phi.mat)
+
+G - matrix(G, nrow=1)%*%L.out
+L.out%*%matrix(G, ncol=1)
+
+
+# ============================================
+# = Wikipedia Example for Laplacian Operator =
+# ============================================
+N <- 20
+C0 <- matrix(0, nrow=N, ncol=N)
+C0[2:5, 2:5] <- 5
+C0[10:15, 10:15] <- 10
+C0[2:5, 8:13] <- 7
+C0 <- matrix(C0,ncol=1)
+
+Adj <- matrix(0, nrow=N*N, ncol=N*N)
+Adj[adjacent(as.array(matrix(1, nrow=N, ncol=N)), cells=1:(N*N), direction=8)] <- 1
+Deg <- diag(degree(graph.adjacency(Adj), mode="out"))
+
+L <- Deg - Adj
+# L <- as.matrix(graph.laplacian(graph.adjacency(Adj), norm=F)) # same as above, but skips calculating the degree matrix and goes straight to the Laplacian matrix
+eig.L <- eigen(L)
+V <- eig.L$vectors
+D <- eig.L$values
+
+C0V <- t(V)%*%C0
+
+
+dev.new(width=12, height=8)
+par(mfrow=c(4,6), mar=c(1,1,0.1,0.1))
+for(i in seq(0,5, by=0.25)){
+	Phi <- C0V*exp(-D*i) # this is the solution to the differential equation dC/dt = k*lambda*c[i]; thus, to predict one time step ahead (dt=1), simply multiply the previous C by the eigenvalues (lambda)
+	Phi <- V%*%Phi
+	Phi <- matrix(Phi, nrow=N, ncol=N)
+	image.plot(t(Phi), ylim=c(1,0), xlim=c(0,1), zlim=c(0,10))
+}
+
+# ======================
+# = End Wiki Eg for LO =
+# ======================
+
+
+# ======================================
+# = Experimented with Laplacian Matrix =
+# ======================================
+M <- 60
+N <- 30
+C0 <- matrix(0, nrow=M, ncol=N)
+C0[(M-10):M, 10:20] <- 50
+image.plot(t(C0), ylim=c(1,0))
+# C0[10:15, 10:15] <- 10
+# C0[2:5, 8:13] <- 7
+C0 <- matrix(C0,ncol=1)
+
+# Adj <- matrix(0, nrow=M*N, ncol=M*N)
+# Adj[adjacent(as.array(matrix(1, nrow=M, ncol=N)), cells=1:(M*N), direction=8)] <- 1
+# Deg <- diag(degree(graph.adjacency(Adj), mode="out"))
+
+
+# L <- Deg - Adj
+# L <- as.matrix(graph.laplacian(graph.adjacency(Adj), norm=F)) # same as above, but skips calculating the degree matrix and goes straight to the Laplacian matrix
+# eig.L <- eigen(L)
+# V <- eig.L$vectors
+# D <- eig.L$values
+
+# L0 <- -as.matrix(graph.laplacian(graph.adjacency(Adj), norm=F))
+# Dinv <- solve(diag(diag(L0), nrow=nrow(L0), ncol=ncol(L0))) # inverse of the degree matrix
+
+
+disp <- 0.1 # 10% of the biomass in each vertex will disperse at each time step; i.e., the non-self-connecting edges would be 1/D where D is the degree of the vertex from which an edge is leaving. This would be a directed graph.
+# Dinv <- solve(Deg) # inverse of the degree matrix
+
+Trans00 <- matrix(0, nrow=M*N, ncol=M*N)
+
+
+cardinal <- function(nr, nc, cdir="north"){ # TODO This is doing a little bit of boundary reflection, kinda, which is not by design and needs to be fixed (what I'm calling a boundary reflection is not actually a boundary reflection, so it isn't right even if I wanted boundary reflection)
+	# stopifnot(dim(mat)==2 & ncol(mat)==2)
+	stopifnot(nr>=3 & nc>=3)
+	
+	N <- nr*nc
+	mat <- expand.grid(1:N, 1:N)
+	colnames(mat) <- c("row", "column")
+	mat <- as.matrix(mat)
+	
+	del <- mat[,2] - mat[,1]
+	
+	ind <- switch(cdir,
+		north = del==1,
+		south = del==-1,
+		northwest = del==(nr+1),
+		southeast = del==(-nr-1),
+		northeast = del==(-nr+1),
+		southwest = del==(nr-1)
+	)
+	
+	mat[ind,] # output refers to coordinates in an adjacency matrix
+	
+}
+
+
+Trans00[cardinal(M, N, "north")] <- 0.5
+Trans00[cardinal(M, N, "northwest")] <- 0.25
+Trans00[cardinal(M, N, "northeast")] <- 0.25
+
+Trans0 <- Trans00
+Trans0 <- Trans0*disp
+
+Trans <- Trans0
+diag(Trans) <- 1 - colSums(Trans)
+
+
+
+# C0V <- t(V)%*%C0
+#
+# beta <- 1
+# # L.rw <- Adj%*%solve(Deg)
+# L.rw <- solve(Deg)%*%Adj
+# L.rw[lower.tri(L.rw)] <- L.rw[lower.tri(L.rw)]*beta # amplifying the upper triangle of the transition matrix makes things move "up" when the graph is represented as a matrix. If the columns are C, and the rows are R, if there is an element at [R,C], you can think of this element as representing an input from C to R; when C > R
+# L.rw[upper.tri(L.rw)] <- L.rw[upper.tri(L.rw)]/beta
+#
+
+dev.new(width=16, height=12)
+par(mfrow=c(10,15), mar=c(1,1,0.1,0.1))
+C.old <- C0
+for(i in 1:150){
+	# Phi <- C0V*exp(-D*i) # this is the solution to the differential equation dC/dt = k*lambda*c[i]; thus, to predict one time step ahead (dt=1), simply multiply the previous C by the eigenvalues (lambda)
+	# Phi <- V%*%Phi
+	# Phi <- matrix(Phi, nrow=N, ncol=N)
+	# image.plot(t(Phi), ylim=c(1,0), xlim=c(0,1), zlim=c(0,10))
+	C.t <- matrix(Trans%*%C.old, nrow=M)
+	C.old <- matrix(C.t, ncol=1)
+	
+	image.plot(t(C.t), zlim=c(0,50), ylim=c(1,0))
+}
+
+
+
+
+
+
+
+
+# ==================
+# = End Expt w/ LM =
+# ==================
+
+
+
+lay.mat <- as.matrix(expand.grid(4:1, 1:3))
+lay.mat <- lay.mat[,c(2,1)]
+plot(graph.adjacency(A), layout=lay.mat)
+
+
+
 # Create a brick of Species in space and time
 S <- replicate(grid.t, gen.grid(dims=c(grid.h, grid.w, ns), xmn=0, ymn=0, xmx=grid.w, ymx=grid.h), simplify=FALSE) # species information over space and time; different times are different elements of the list (top level), whereas different species are different layers in the brick. Note that in other bricks the different layers are different time steps, so be careful of that. It's done this way b/c time is going to be the top level of the process, so no more than 2 time steps need to be accessed at once, whereas 2 dimensions of space and all species might need to be accessed simultaneously.
 R <- gen.grid(dims=c(grid.h, grid.w, grid.t), xmn=0, ymn=0, xmx=grid.w, ymx=grid.h) # Richness. Structured as other bricks (not S), b/c richness doesn't need species-specific information.
