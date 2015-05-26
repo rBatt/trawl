@@ -11,8 +11,8 @@ dsample <- function(ref,x, relative=FALSE){
 		ref <- density(ref)
 	}
 	
-	ref.y <- ref$y
-	ref.x <- ref$x
+	# ref.y <- ref$y
+	# ref.x <- ref$x
 	
 	ds <- approxfun(ref)
 	
