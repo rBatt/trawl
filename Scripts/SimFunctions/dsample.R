@@ -14,7 +14,7 @@ dsample <- function(ref,x, relative=FALSE){
 	# ref.y <- ref$y
 	# ref.x <- ref$x
 	
-	ds <- approxfun(ref)
+	ds <- approxfun(ref, yleft=0, yright=0)
 	
 	dsx <- ds(x)
 	if(relative){
