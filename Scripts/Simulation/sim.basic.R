@@ -179,16 +179,35 @@ p.persist <- function(temp.prop, temp.obs, method=c("ks.test", "dsample")){
 	method <- match.arg(method, c("ks.test","dsample"))
 	
 	if(method=="ks.test"){
-		pp <- approx
+		ks.pp <- function(x){
+			# 1-ks.test(x, y=temp.obs)$stat
+			ks.test(x, y=temp.obs)$p
+		}
+		pp <- mapply(ks.pp, temp.prop)
 	}
 	
 	if(method=="dsample"){
-		
+		pp <- dsample(ref=temp.obs, x=temp.prop, relative=TRUE)
 	}
 	
 	
+	return(pp)
 	
 }
+
+test.t <- seq(-10, 10, length.out=500)
+
+
+dev.new(width=12, height=8)
+par(mfrow=c(7,10), mar=c(1,1,0,0))
+for(i in 1:70){
+	test.ks <- p.persist(test.t, S.obs.temps[,i], method="ks")
+	test.ds <- p.persist(test.t, S.obs.temps[,i], method="ds")
+
+	plot(test.t, test.ks, type="l", ylim=c(0,1))
+	lines(test.t, test.ds, col="red")
+}
+# after seeing these plots, I'm a bit torn about which approach to use. Given that they aren't wildly different, KS test has an advantage b/c it is an established test, and the statistical interpretation of the p-value of this test is spot-on: the probability that a temperature was drawn from the same distribution as the temperature values previously-observed to be associated with the species. On the other hand, the reason the dsample() method gives higher "probabilities" within the previously-observed temperature range is b/c it's assumed to be 0 outside that range; which can be useful in its own right. However, even on the off-chance that the KS p-value allows a species to expand far outside its previous observed temperatures, this isn't all that unreasonable if temperature isn't given too much of a physiological interpretation and is simply viewed as a correlate of suitable habitat. I think that in this case the KS will win out b/c it'll be much easier to explain and defend.
 
 
 # trying to find a way to get skew to go in either direction
