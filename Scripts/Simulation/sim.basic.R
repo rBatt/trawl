@@ -138,13 +138,6 @@ for(i in 1:39){
 	image.plot(t(C.t), zlim=c(0,60), ylim=c(1.05,0))
 }
 
-
-
-
-
-
-
-
 # ==================
 # = End Expt w/ LM =
 # ==================
@@ -180,6 +173,22 @@ ab <- replicate(ns, runif(n=2, min=1, max=10))
 S.obs.temps <- mapply(rtemp, alpha=ab[1,], beta=ab[2,], min=mm[1,], max=mm[2,], MoreArgs=list(n=300))
 
 S.dens.temps <- apply(S.obs.temps, 2, density, from=temp.range[1], to=temp.range[2])
+
+
+p.persist <- function(temp.prop, temp.obs, method=c("ks.test", "dsample")){
+	method <- match.arg(method, c("ks.test","dsample"))
+	
+	if(method=="ks.test"){
+		pp <- approx
+	}
+	
+	if(method=="dsample"){
+		
+	}
+	
+	
+	
+}
 
 
 # trying to find a way to get skew to go in either direction
@@ -232,36 +241,16 @@ species.prob.background <- matrix(p.s.bg, nrow=grid.w*grid.h, ncol=ns)
 
 
 
-dsample <- function(ref,x, relative=FALSE){
-	# What is the density of each observation in X given the empirical distribution of a sample ref?
-	# Similar to dnorm(), e.g., but instead of assuming the normal distribution, instead assumes an empirical distribution based on density(ref)
-	# If ref is of class == "density", then the density of a value in x is calculated based on ref, otherwise, calculated based on density(ref).
-	if(class(ref)!="density"){
-		ref <- density(ref)
-	}
-	
-	ref.y <- ref$y
-	ref.x <- ref$x
-	
-	ds <- approxfun(ref)
-	
-	dsx <- ds(x)
-	if(relative){
-		return(dsx/max(dsx))
-	}else{
-		return(dsx)
-	}
-	
-}
+
 
 species.prob.temp <- sapply(X=S.dens.temps, FUN=dsample, values(subset(grid.temp, 1)), relative=TRUE) # columns are different species, rows are different elements of the grid, with the ordering of the rows mapping onto the grid according to the default of raster package (starting upper-left corner, progressing as when reading English; note this is different than default in matrix or array). Thus, if the grid is 7x5, species.prob.temp[23, 60] is the probability of the 60th species of existing at the temperature of the 23rd element of the grid, and the 23rd element of the grid is at [5,3] (column = 23%%5, row = ceiling(23/5))
 
 spp.prob <- species.prob.background * species.prob.temp
 
 
-relative.spt <- sapply(X=S.dens.temps, FUN=dsample, values(subset(grid.temp, 1)), relative=TRUE)
+# relative.spt <- sapply(X=S.dens.temps, FUN=dsample, values(subset(grid.temp, 1)), relative=TRUE)
 
-species.biomass0 <- rep(rnorm(n=ns), each=grid.w*grid.h) + 1*(c(relative.spt)-0.5) # think of this as a linear regression on log(biomass), where the right-hand side of the equation is = intercept + coefficient*temperature + coefficient*temperature^2. But the 2 temperature terms are condensed and slightly more complicated by using the empirical density. The -0.5 is there to make it so that temperatures outside of the optimum lower the biomass relative to the average. Won't really matter much. Overall point is that the right-hand term is added to the default biomass, not multiplied, because this is in log space, and that this setup should represent something recoverable by a regression of some form.
+species.biomass0 <- rep(rnorm(n=ns), each=grid.w*grid.h) + 1*(c(species.prob.temp)-0.5) # think of this as a linear regression on log(biomass), where the right-hand side of the equation is = intercept + coefficient*temperature + coefficient*temperature^2. But the 2 temperature terms are condensed and slightly more complicated by using the empirical density. The -0.5 is there to make it so that temperatures outside of the optimum lower the biomass relative to the average. Won't really matter much. Overall point is that the right-hand term is added to the default biomass, not multiplied, because this is in log space, and that this setup should represent something recoverable by a regression of some form.
 
 species.pres <- c(NA,1)[1+rbinom(n=ns*grid.w*grid.h, size=1, prob=spp.prob)]
 species.biomass <-  species.pres * species.biomass0 # first part is pres-abs, second is biomass given present
@@ -283,6 +272,7 @@ rich <- c()
 for(i in 1:200){
 	rich[i] <- spp.sample(spp.1.m, n=i)
 }
+dev.new()
 plot(rich, type="o", ylim=c(0,ns))
 
 
