@@ -18,7 +18,11 @@ dsample <- function(ref,x, relative=FALSE){
 	
 	dsx <- ds(x)
 	if(relative){
-		return(dsx/max(dsx))
+		if(all(dsx==0)){
+			return(dsx)
+		}else{
+			return(dsx/max(dsx))
+		}
 	}else{
 		return(dsx)
 	}
