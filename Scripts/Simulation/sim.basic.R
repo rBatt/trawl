@@ -144,9 +144,9 @@ for(i in 1:39){
 
 
 
-lay.mat <- as.matrix(expand.grid(4:1, 1:3))
-lay.mat <- lay.mat[,c(2,1)]
-plot(graph.adjacency(A), layout=lay.mat)
+# lay.mat <- as.matrix(expand.grid(4:1, 1:3))
+# lay.mat <- lay.mat[,c(2,1)]
+# plot(graph.adjacency(A), layout=lay.mat)
 
 
 
@@ -195,18 +195,17 @@ p.persist <- function(temp.prop, temp.obs, method=c("ks.test", "dsample")){
 	
 }
 
-test.t <- seq(-10, 10, length.out=500)
-
-
-dev.new(width=12, height=8)
-par(mfrow=c(7,10), mar=c(1,1,0,0))
-for(i in 1:70){
-	test.ks <- p.persist(test.t, S.obs.temps[,i], method="ks")
-	test.ds <- p.persist(test.t, S.obs.temps[,i], method="ds")
-
-	plot(test.t, test.ks, type="l", ylim=c(0,1))
-	lines(test.t, test.ds, col="red")
-}
+#
+# test.t <- seq(-10, 10, length.out=500)
+# dev.new(width=12, height=8)
+# par(mfrow=c(7,10), mar=c(1,1,0,0))
+# for(i in 1:70){
+# 	test.ks <- p.persist(test.t, S.obs.temps[,i], method="ks")
+# 	test.ds <- p.persist(test.t, S.obs.temps[,i], method="ds")
+#
+# 	plot(test.t, test.ks, type="l", ylim=c(0,1))
+# 	lines(test.t, test.ds, col="red")
+# }
 # after seeing these plots, I'm a bit torn about which approach to use. Given that they aren't wildly different, KS test has an advantage b/c it is an established test, and the statistical interpretation of the p-value of this test is spot-on: the probability that a temperature was drawn from the same distribution as the temperature values previously-observed to be associated with the species. On the other hand, the reason the dsample() method gives higher "probabilities" within the previously-observed temperature range is b/c it's assumed to be 0 outside that range; which can be useful in its own right. However, even on the off-chance that the KS p-value allows a species to expand far outside its previous observed temperatures, this isn't all that unreasonable if temperature isn't given too much of a physiological interpretation and is simply viewed as a correlate of suitable habitat. I think that in this case the KS will win out b/c it'll be much easier to explain and defend.
 
 
@@ -222,10 +221,11 @@ for(i in 1:70){
 # OK, you can get it with the weibull, but the weibull always has to be positive, so you can only get the left skew when the values are very small and positive
 
 
-Sdt.max <- max(sapply(S.dens.temps, function(x)max(x$y)))
-myGray <- rgb(t(col2rgb("black", alpha=TRUE)), alpha=75, maxColorValue=256)
-plot(S.dens.temps[[1]], ylim=c(0,Sdt.max), col=myGray)
-for(i in 2:length(S.dens.temps)){lines(S.dens.temps[[i]], col=myGray)}
+# Sdt.max <- max(sapply(S.dens.temps, function(x)max(x$y)))
+# myGray <- rgb(t(col2rgb("black", alpha=TRUE)), alpha=75, maxColorValue=256)
+# dev.new()
+# plot(S.dens.temps[[1]], ylim=c(0,Sdt.max), col=myGray)
+# for(i in 2:length(S.dens.temps)){lines(S.dens.temps[[i]], col=myGray)}
 
 store <- c()
 for(d in 1:512){
@@ -250,7 +250,9 @@ plot(S.dens.temps[[1]]$x, store, type="l", xlab="Temperature", ylab="Density (co
 # }
 # hist(table(individs.world))
 
-
+# =====================================
+# = Initial Secies Population of Grid =
+# =====================================
 p.s.bg <- 1 #rep(runif(n=ns, min=0.005, max=0.5), each=grid.w*grid.h)
 
 # For each environmental temperature, what is the species' density at the closest match density()$x (temperature) value??
@@ -258,23 +260,25 @@ p.s.bg <- 1 #rep(runif(n=ns, min=0.005, max=0.5), each=grid.w*grid.h)
 # rbinom(n=ns*grid.w*grid.h, size=1, prob=p.s.bg)
 species.prob.background <- matrix(p.s.bg, nrow=grid.w*grid.h, ncol=ns)
 
-
-
-
-
 species.prob.temp <- sapply(X=S.dens.temps, FUN=dsample, values(subset(grid.temp, 1)), relative=TRUE) # columns are different species, rows are different elements of the grid, with the ordering of the rows mapping onto the grid according to the default of raster package (starting upper-left corner, progressing as when reading English; note this is different than default in matrix or array). Thus, if the grid is 7x5, species.prob.temp[23, 60] is the probability of the 60th species of existing at the temperature of the 23rd element of the grid, and the 23rd element of the grid is at [5,3] (column = 23%%5, row = ceiling(23/5))
 
-spp.prob <- species.prob.background * species.prob.temp
-
+spp.prob <- species.prob.background * species.prob.temp # cell ordering is for raster
 
 # relative.spt <- sapply(X=S.dens.temps, FUN=dsample, values(subset(grid.temp, 1)), relative=TRUE)
 
-species.biomass0 <- rep(rnorm(n=ns), each=grid.w*grid.h) + 1*(c(species.prob.temp)-0.5) # think of this as a linear regression on log(biomass), where the right-hand side of the equation is = intercept + coefficient*temperature + coefficient*temperature^2. But the 2 temperature terms are condensed and slightly more complicated by using the empirical density. The -0.5 is there to make it so that temperatures outside of the optimum lower the biomass relative to the average. Won't really matter much. Overall point is that the right-hand term is added to the default biomass, not multiplied, because this is in log space, and that this setup should represent something recoverable by a regression of some form.
+spp.bio0 <- rep(rnorm(n=ns), each=grid.w*grid.h) + 1*(c(species.prob.temp)-0.5) # think of this as a linear regression on log(biomass), where the right-hand side of the equation is = intercept + coefficient*temperature + coefficient*temperature^2. But the 2 temperature terms are condensed and slightly more complicated by using the empirical density. The -0.5 is there to make it so that temperatures outside of the optimum lower the biomass relative to the average. Won't really matter much. Overall point is that the right-hand term is added to the default biomass, not multiplied, because this is in log space, and that this setup should represent something recoverable by a regression of some form.
 
-species.pres <- c(NA,1)[1+rbinom(n=ns*grid.w*grid.h, size=1, prob=spp.prob)]
-species.biomass <-  species.pres * species.biomass0 # first part is pres-abs, second is biomass given present
-spp.1.m <- matrix(species.pres, nrow=grid.w*grid.h, ncol=ns)
-spp.1 <- setValues(S[[1]], species.biomass)
+# Set up empty arrays to store species presence and biomass
+spp.pres <- array(NA, dim=c(grid.w*grid.h, ns, grid.t))
+spp.bio <- array(NA, dim=c(grid.w*grid.h, ns, grid.t))
+
+# Add initial species presence and biomass to arrays
+spp.pres[,,1] <- c(NA,1)[1+rbinom(n=ns*grid.w*grid.h, size=1, prob=spp.prob)] # cell ordering is for raster
+spp.bio[,,1] <-  spp.pres[,,1] * spp.bio0 # cell ordering is for raster; first part is pres-abs, second is biomass given present
+
+# Plot Initial Biomass of Each Species
+# spp.1.m <- matrix(spp.pres[,,1], nrow=grid.w*grid.h, ncol=ns) # cell ordering is for raster
+spp.1 <- setValues(S[[1]], spp.bio[,,1]) # cell ordering is for raster
 
 smplt <- c(0.9,0.92, 0.2,0.8)
 bgplt <- c(0.05,0.89,0.15,0.95)
@@ -282,6 +286,8 @@ axargs <- list(mgp=c(0.75,0.5,0))
 dev.new(width=16, height=8)
 plot(spp.1, maxnl=200, col=tim.colors(), zlim=range(values(spp.1), na.rm=TRUE),smallplot=smplt, bigplot=bgplt, axis.args=axargs, nr=8, nc=25, legend=FALSE, colNA="darkgray")
 
+
+# Look at Initial Richness
 spp.sample <- function(x, n){
 	sub <- matrix(x[sample(nrow(x), n),], ncol=ncol(x))
 	sum(apply(sub, 2, function(x)any(!is.na(x))))
@@ -299,9 +305,48 @@ plot(rich, type="o", ylim=c(0,ns))
 R.1 <- stackApply(spp.1, indices=1, function(x, ...)sum(!is.na(x)))
 
 
+
+# IDK
 S.start <- # TODO 
 S.1 <- subset(S,1)
-nlayers
 
-# Distribution (density) of Species across Grid Attributes
 
+# ====================
+# = Spatial Dynamics =
+# ====================
+i = 2
+s = 1
+
+
+
+# Suitability of Persistance (p.persist)
+t.temp <- subset(grid.temp, i)
+perist.bonus <- 1 # Factor by which to adjust the probability that a species will fail to persist; decreasing this factors makes the species more likely to stick around, increasing it makes it less likely to stick around. When 1, no adjustment is made; when 0, the species will always stick around.
+for(s in 1:ns){
+	suit.pers <- p.persist(temp.prop=values(t.temp), temp.obs=S.obs.temps[,s], method="ds")
+	# image.plot(t(matrix(rbinom(n=length(suit.pers), size=1, prob=suit.pers), ncol=grid.w)), ylim=c(1,0)) # just a visual check/ reference
+	pers.outcome <- c(NA,1)[1+rbinom(n=length(suit.pers), size=1, prob=(1-(1-suit.pers)*perist.bonus))]
+	
+	spp.pres[,s,i] <- pers.outcome*spp.pres[,s,i-1]
+	
+	dev.new()
+	par(mar=c(1,1,0,0), mfrow=c(1,3))
+	image.plot((matrix(spp.pres[,s,i-1], ncol=grid.w)), ylim=c(1,0))
+	image.plot((matrix(pers.outcome, ncol=grid.w)), ylim=c(1,0))
+	image.plot((matrix(spp.pres[,s,i], ncol=grid.w)), ylim=c(1,0)) # just a visual check/ reference
+	
+}
+dev.new()
+image.plot(t(suit.pers), ylim=c(1,0), zlim=c(0,1))
+
+# Dispersal Targets (create adjacency matrix)
+
+# Suitability of Dispersal Targets (p.persist on adjacency)
+
+# Disperse (as a fraction of source biomass; each successful target gets ~50%)
+
+# Persist (or not)
+
+# Random Walk (or maybe AR(1); don't do any MA, might as well just use a population model at that point)
+
+# End of Year
