@@ -18,11 +18,11 @@ invisible(sapply(paste(sim.location, list.files(sim.location), sep="/"), source,
 # = Grid Size =
 # =============
 # Grid Size
-grid.w <- 50 # Width
-grid.h <- 70 # Height
+grid.w <- 5 # Width
+grid.h <- 7 # Height
 grid.t <- 12 # Time
 
-Nv <- (Nv) # Number of vertices if the Grid is a Graph (number of cells in 1 year of the grid)
+Nv <- (grid.w*grid.h) # Number of vertices if the Grid is a Graph (number of cells in 1 year of the grid)
 
 
 
@@ -198,7 +198,7 @@ spp.sample <- function(x, n){
 
 spp.1.m <- matrix(spp.pres[,,1], nrow=Nv, ncol=ns) # cell ordering is for raster
 rich <- c()
-for(i in 1:200){
+for(i in 1:min(Nv,200)){
 	rich[i] <- spp.sample(spp.1.m, n=i)
 }
 dev.new()
@@ -224,18 +224,18 @@ s = 1
 suit.pers <- array(NA, dim=c(Nv, ns, grid.t))
 
 
-# Create a matrix indicating which cells are neighbors on the grid
-G.adj <- adjacent(subset(grid.blank,1), cells=1:Nv) # G.adj calculates which cells on the Grid are neighbors
-G.n <- matrix(0, nrow=Nv, ncol=Nv) # G.n is an NvxNv matrix indicating whether cells can interact (are rook neighbors)
-G.n[G.adj] <- 1 # update to indicate which cells can interact
-# plot(raster(G.n)) # visualize the pattern b/c the matrix will likely be too big to print out in console
-
-
-G <- matrix(1, nrow=3, ncol=4) # graph
-A <- matrix(0, nrow=length(G), ncol=length(G))
-A[adjacent(as.array(G), cells=1:length(G), direction=8)] <- 1 # adjacency matrix
-D <- degree(graph.lattice(c(3,4))) # uses igraph ... might have to convert much of my code to this format for the sake of modeling interactions between cells
-L <- as.matrix(graph.laplacian(graph.adjacency(A), norm=T))
+# # Create a matrix indicating which cells are neighbors on the grid
+# G.adj <- adjacent(subset(grid.blank,1), cells=1:Nv) # G.adj calculates which cells on the Grid are neighbors
+# G.n <- matrix(0, nrow=Nv, ncol=Nv) # G.n is an NvxNv matrix indicating whether cells can interact (are rook neighbors)
+# G.n[G.adj] <- 1 # update to indicate which cells can interact
+# # plot(raster(G.n)) # visualize the pattern b/c the matrix will likely be too big to print out in console
+#
+#
+# G <- matrix(1, nrow=3, ncol=4) # graph
+# A <- matrix(0, nrow=length(G), ncol=length(G))
+# A[adjacent(G, cells=1:length(G), direction=8)] <- 1 # adjacency matrix
+# D <- degree(graph.lattice(c(3,4))) # uses igraph ... might have to convert much of my code to this format for the sake of modeling interactions between cells
+# L <- as.matrix(graph.laplacian(graph.adjacency(A), norm=T))
 
 
 
@@ -244,7 +244,7 @@ t.temp <- subset(grid.temp, i)
 perist.bonus <- 1 # Factor by which to adjust the probability that a species will fail to persist; decreasing this factors makes the species more likely to stick around, increasing it makes it less likely to stick around. When 1, no adjustment is made; when 0, the species will always stick around.
 for(s in 1:ns){
 	suit.pers[,s,i] <- p.persist(temp.prop=values(t.temp), temp.obs=S.obs.temps[,s], method="ds")
-	pers.outcome <- c(NA,1)[1+rbinom(n=length(suit.pers[,s,i]), size=1, prob=(1-(1-suit.pers)*perist.bonus))]
+	pers.outcome <- c(NA,1)[1+rbinom(n=Nv, size=1, prob=(1-(1-suit.pers[,s,i])*perist.bonus))]
 	spp.pres[,s,i] <- pers.outcome*spp.pres[,s,i-1] # TODO This alone shouldn't be the presence for this time step, because it doesn't account for dispersal. I'll have to delete this step once dispersal is determined. Either that or I keep it and overwrite the values by adding the dispersal result to it (removing NA's first, obviously). What's also tough is that I do need to know this product (persistence outcome times previous presence) so that I know what biomasses should attempt to disperse 100%
 	
 	# dev.new()
@@ -255,11 +255,80 @@ for(s in 1:ns){
 	# image.plot((matrix(spp.pres[,s,i], ncol=grid.w)), ylim=c(1,0), main="New Presence") # just a visual check/ reference
 	
 }
-as.matrix(t.temp)
+
+# Deg <- matrix(0, nrow=3, ncol=3)
+# diag(Deg) <- 1:3
+# solve(Deg)
+# matrix(1, nrow=3, ncol=3)%*%solve(Deg)
+#
+#
+# diag(c(1,0,1), nrow=3, ncol=3)%*%diag(0.5, nrow=3, ncol=3)%*%matrix(1, nrow=3, ncol=3)
+#
+# size <- 4
+#
+# S <- diag(c(0,1), nrow=size, ncol=size)
+#
+#
+#
+#
+# D <- diag(0.5, nrow=size, ncol=size)
+# M <- diag(1, nrow=size, ncol=size)
+# L <- matrix(0, size, size)
+# L[adjacent(matrix(0, sqrt(size), sqrt(size)), cells=1:size, direction=8)] <- 1
+# L <- L%*%solve(diag(colSums(L)))
+#
+# B <- matrix(1:size, nrow=size)
+#
+#
+#
+# S%*%M%*%L%*%D
+
+
+
+# Columns of L indicate where the biomass from the jth cell is going, and rows of L indicate where the ith row is receiving biomass. So diagonal operators to the left side of the Laplacian need to have 0's on the diagonal elements that can't receive (aren't suitable), and operators to the right need to have 0's on the diagonal elements that can't give (weren't suitable).
+
+
+# The suitability matrix (S) is a diagonal matrix (diag(s1, s2, ... sV)) with 1's where s[i] is suitable, and 0's where s[i] is not suitable for habitation by the species. The dispersal matrix (D) is a diagonal matrix indicating  of 0.5's, and the movement matrix (M) is a diagonal matrix of 1's.
+
+
 
 # Dispersal Targets (create adjacency matrix)
 A <- matrix(0, nrow=Nv, ncol=Nv)
-A[adjacent(as.matrix(t.temp), cells=1:length(t.temp), direction=8)] <- 1 # adjacency matrix
+A[adjacent(as.matrix(t.temp), cells=1:Nv, direction=8)] <- 1 # adjacency matrix; note that this is ordered like the default for matrix(); it's very convenient that the as.matrix() on a raster converts the raster ordering to the matrix ordering! :)
+
+Trans <- A # Create Transition Matrix
+present.previous <- !is.na(spp.pres[,s,i-1])
+cease <- !is.na(spp.pres[,s,i-1])&is.na(pers.outcome)
+D <- 0.5 # fraction of biomass to disperse from local cell to surroundings; think of it like reproduction, such that it doesn't result in a decrease in the biomass of the focal cell
+disp.bio.frac <- c(0, D, 1)[present.previous + cease + 1] # see previous and following comments for D and disp, respectively. 0 mean 0% disperses, which only happens when there's nothing here (should be redundant, but something has to go here, and I want the lack of dispersal for empty cells to be explicit in all cases). Note that no matter what, biomass has to be present in the previous time step for anything to disperse from the cell. So a cell that just became suitable cannot have biomass disperse from it, even if during the same time step it receives another cell's dispersed biomass or if there's colonization to the newly suitable cell (the latter might not be implemented, it's just an idea I had)
+disp <- (1/colSums(A)) * disp.bio.frac # if 50% of biomass is available for dispersal, have to split this mass up among neighbors. If a cell is no longer suitable for a species (was present previously, but no longer), 100% of the biomass is split between neighbors.
+Trans <- Trans*matrix(disp, nrow=Nv, ncol=Nv, byrow=TRUE) # This fills in the proportional transfer of biomass from each cell to its neighbors; however, the diagonals are still 0 (next step)
+AR1 <- 0.8 # first order autoregressive coefficient for each cell; to be placed on the diagonal of the transition matrix for cells that previous had biomass and presently remain suitable
+diag(Trans) <- c(0, AR1)[as.integer(present.previous&!is.na(pers.outcome)) + 1] # diagonal elements indicate the proportion of biomass that a cell transfers to itself betwen time steps; thus, for a diagonal element to be non-0, it must be suitable (present) both in the previous time step and in the current time step. 
+# unique(colSums(Trans)) # a good and cheap check. Values should be 0, 1, or D+AR1
+
+# The last step, I think, should be to knock out the rows of Trans (turn to 0) that can't receive any biomass b/c they're unsuitable.
+Trans[is.na(pers.outcome),] <- 0
+
+
+sum(is.na(spp.pres[,s,i-1])) # Number of columns that have 0's because they cannot give biomass
+sum(is.na(pers.outcome)) # Number of rows that have 0's because they cannot receive biomass
+sum(is.na(spp.pres[,s,i-1]) | is.na(pers.outcome)) # Number of cells that can't give and/or can't receive biomass
+sum(is.na(spp.pres[,s,i-1]) & is.na(pers.outcome)) # Number of cells that can't give AND can't receive
+
+
+sum(colSums(Trans)==0)
+sum(rowSums(Trans)==0)
+sum(colSums(Trans)==0 | rowSums(Trans)==0) # Number of cells that won't give and/or receive biomass
+sum(colSums(Trans)==0 & rowSums(Trans)==0) # Number of cells that wont give AND will not receive biomass
+
+matrix(spp.pres[,s,i-1], nrow=grid.h, byrow=T) # where the species was before
+matrix(pers.outcome, nrow=grid.h, byrow=T) # where the species will be able to persist (suitable locations)
+
+# The elements on the diagonal of Trans represent the proportion of biomass that a cell retains (transfers to itself) between time steps. The elements E[i,j] (where i≠j) represent the proportion of j's biomass transferred to i between time steps.
+
+B <- matrix(matrix(spp.bio[,s,i-1], nrow=grid.h, ncol=grid.w, byrow=TRUE), ncol=1)
+
 
 # Suitability of Dispersal Targets (p.persist on adjacency)
 
@@ -270,3 +339,4 @@ A[adjacent(as.matrix(t.temp), cells=1:length(t.temp), direction=8)] <- 1 # adjac
 # Random Walk (or maybe AR(1); don't do any MA, might as well just use a population model at that point)
 
 # End of Year
+
