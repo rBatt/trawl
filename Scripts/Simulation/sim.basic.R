@@ -218,6 +218,13 @@ R.1 <- stackApply(spp.1, indices=1, function(x, ...)sum(!is.na(x)))
 # ====================
 # = Spatial Dynamics =
 # ====================
+AR1 <- 0.8 # first order autoregressive coefficient for each cell; to be placed on the diagonal of the transition matrix for cells that previous had biomass and presently remain suitable
+D <- 0.5 # fraction of biomass to disperse from local cell to surroundings; think of it like reproduction, such that it doesn't result in a decrease in the biomass of the focal cell
+
+r2m <- order(c(r2m.cell(1:Nv, nrow=grid.h, ncol=grid.w)))
+
+
+
 i = 2
 s = 1
 
@@ -294,55 +301,22 @@ for(s in 1:ns){
 #
 # x <- head(adjacent((t.temp), cells=1:Nv, direction=8))
 
-r2m.cell <- function(x, nrow=NULL, ncol=NULL, from=c("raster", "matrix")){
-	from <- match.arg(from)
-	to <- c("matrix","raster")[c("matrix","raster")!=from]
-	
-	if(is.null(nrow)){
-		nrow <- nrow(x)
-		stopifnot(!is.null(nrow))
-	}
-	if(is.null(ncol)){
-		ncol <- ncol(x)
-		stopifnot(!is.null(ncol))
-	}
-	
-	vals <- 1:(nrow*ncol)
-	
-	r.hold <- c(matrix(vals, nrow=nrow, ncol=ncol, byrow=TRUE))
-	m.hold <- c(matrix(vals, nrow=nrow, ncol=ncol, byrow=FALSE))
-	
-	lookup <- data.frame(raster=r.hold, matrix=m.hold)
-	lookup <- lookup[order(lookup[,from]),]
-	
-	m.x <- as.matrix(x)
-	x2 <- c(m.x)
-	x.converted <- lookup[,to][c(m.x)]
-	
-	x3 <- m.x
-	x3[] <- x.converted
-	
-	return(x3)
-	
-}
 
-
-# matrix(1:35, nrow=7)
+# ===========================
+# = Create Adjacency Matrix =
+# ===========================
 # Dispersal Targets (create adjacency matrix)
 A <- matrix(0, nrow=Nv, ncol=Nv)
 adjac <- r2m.cell(adjacent((t.temp), cells=1:Nv, direction=8), nrow=grid.h, ncol=grid.w)
 A[adjac] <- 1 # adjacency matrix; note that this is ordered like the default for matrix(); it's very convenient that the as.matrix() on a raster converts the raster ordering to the matrix ordering! :)
 
-r2m <- order(c(r2m.cell(1:35, nrow=7, ncol=5)))
 
 Trans <- A # Create Transition Matrix
 present.previous <- !is.na(spp.pres[,s,i-1][r2m])
 cease <- (!is.na(spp.pres[,s,i-1])&is.na(pers.outcome))[r2m]
-D <- 0.5 # fraction of biomass to disperse from local cell to surroundings; think of it like reproduction, such that it doesn't result in a decrease in the biomass of the focal cell
 disp.bio.frac <- c(0, D, 1)[present.previous + cease + 1] # see previous and following comments for D and disp, respectively. 0 mean 0% disperses, which only happens when there's nothing here (should be redundant, but something has to go here, and I want the lack of dispersal for empty cells to be explicit in all cases). Note that no matter what, biomass has to be present in the previous time step for anything to disperse from the cell. So a cell that just became suitable cannot have biomass disperse from it, even if during the same time step it receives another cell's dispersed biomass or if there's colonization to the newly suitable cell (the latter might not be implemented, it's just an idea I had)
 disp <- (1/colSums(A)) * disp.bio.frac # if 50% of biomass is available for dispersal, have to split this mass up among neighbors. If a cell is no longer suitable for a species (was present previously, but no longer), 100% of the biomass is split between neighbors.
 Trans <- Trans*matrix(disp, nrow=Nv, ncol=Nv, byrow=TRUE) # This fills in the proportional transfer of biomass from each cell to its neighbors; however, the diagonals are still 0 (next step). Note: this `byrow=TRUE` should be this way regardless of the matrix/raster notation of disp etc.
-AR1 <- 0.8 # first order autoregressive coefficient for each cell; to be placed on the diagonal of the transition matrix for cells that previous had biomass and presently remain suitable
 diag(Trans) <- c(0, AR1)[as.integer(present.previous&!is.na(pers.outcome)[r2m]) + 1] # diagonal elements indicate the proportion of biomass that a cell transfers to itself betwen time steps; thus, for a diagonal element to be non-0, it must be suitable (present) both in the previous time step and in the current time step. 
 # unique(colSums(Trans)) # a good and cheap check. Values should be 0, 1, or D+AR1
 
