@@ -200,75 +200,116 @@ R.1 <- stackApply(spp.1, indices=1, function(x, ...)sum(!is.na(x)))
 # ====================
 # = Spatial Dynamics =
 # ====================
-AR1 <- 0.8 # first order autoregressive coefficient for each cell; to be placed on the diagonal of the transition matrix for cells that previous had biomass and presently remain suitable
+AR1.coef <- 0.8 # first order autoregressive coefficient for each cell; to be placed on the diagonal of the transition matrix for cells that previous had biomass and presently remain suitable
 D.frac <- 0.5 # fraction of biomass to disperse from local cell to surroundings; think of it like reproduction, such that it doesn't result in a decrease in the biomass of the focal cell
 M.frac <- 1 # proportion of biomass that will leave cell when it becomes unsuitable (this proportion is split evenly among neighbors, but not all neighbors will be suitable, so in many cases less than 100% of the biomass will find a new home)
 
 perist.bonus <- 1 # Factor by which to adjust the probability that a species will fail to persist; decreasing this factors makes the species more likely to stick around, increasing it makes it less likely to stick around. When 1, no adjustment is made; when 0, the species will always stick around.
 
 
-r2m <- order(c(r2m.cell(1:Nv, nrow=grid.h, ncol=grid.w)))
+# Create indices to convert between matrix() and raster() conventions for naming/indexing cells
+r2m <- order(c(r2m.cell(1:Nv, nrow=grid.h, ncol=grid.w))) # put this in brackets after a vector of cells ordered by the raster convention to put them in the order of the matrix convention
+m2r <- order(r2m) # use this to reverse the above process
 
 
+for(i in 2:grid.t){
 
-i = 2
-s = 1
+	# Suitability of Persistance (p.persist)
+	t.temp <- subset(grid.temp, i)
+	c.t <- colonize(values(t.temp), S.dens.temps, spp.bio.mu)
+	suit.pers[,,i] <- c.t[["suit.pers"]]
 
-
-
-
-# Suitability of Persistance (p.persist)
-t.temp <- subset(grid.temp, i)
-for(s in 1:ns){
-	spp.pres.t1 <- spp.pres[,s,i-1]
+	for(s in 2:ns){
+	
+		# =========================
+		# = Define Suitable Cells =
+		# =========================
+		spp.pres.t1 <- spp.pres[,s,i-1]
+		pers.outcome <- c.t[["spp.pres"]][,s]
+		# spp.pres.t.0 <- pers.outcome*spp.pres.t1
 	
 	
-	suit.pers[,s,i] <- dsample(S.obs.temps[,s], values(t.temp)) #p.persist(temp.prop=values(t.temp), temp.obs=S.obs.temps[,s], method="ds")
+		# ===========================
+		# = Create Adjacency Matrix =
+		# ===========================
+		# Dispersal Targets (create adjacency matrix)
+		A <- matrix(0, nrow=Nv, ncol=Nv)
+		adjac <- r2m.cell(adjacent(t.temp, cells=1:Nv, direction=8), nrow=grid.h, ncol=grid.w)
+		A[adjac] <- 1 # Put a value of 1 to indicate vertices that are connected
+
+
+		# ============================
+		# = Create Transition Matrix =
+		# ============================
+		Trans <- A # Create Transition Matrix
+
+		# Logic for dispersal, movement, and self-return
+		Disperse.i <- (!is.na(spp.pres.t1) & !is.na(pers.outcome))[r2m] # present previously and currently
+		Move.i <- (!is.na(spp.pres.t1) & is.na(pers.outcome))[r2m] # present previously but not currently
+		AR1.i <- Disperse.i # same as for dispersal, but giving a new name just for clarity
+
+		# Create vectors for the edge proportions
+		D <- Disperse.i*D.frac
+		M <- Move.i*M.frac
+		AR1 <- AR1.i*AR1.coef
+
+		# Put the edges for when i!=j into matrix form, and weight them by the degree of j
+		W.v <- (D+M) * (1/colSums(A)) # vector of of the weighted movements and dispersals
+		W <- matrix(W.v, nrow=Nv, ncol=Nv, byrow=TRUE) # Note: this `byrow=TRUE` should be this way regardless of the matrix/raster notation of D M etc.
+		W[is.na(pers.outcome)[r2m],] <- 0 # sum(is.na(pers.outcome)[r2m] & AR1==0.8) shows that this only needs to be done for the W, not for the AR1 on the diagonal.
+
+		# Update Transition Matrix
+		Trans <- Trans*W # Update Transition matrix to include edges between vertices (no self loops yet)
+		diag(Trans) <- AR1 # Update Transition matrix to include self loops (essentially autocorrelation coefficient)
 	
-	pers.outcome <- c(NA,1)[1+rbinom(n=Nv, size=1, prob=(1-(1-suit.pers[,s,i])*perist.bonus))]
-	spp.pres.t.0 <- pers.outcome*spp.pres.t1 # TODO This alone shouldn't be the presence for this time step, because it doesn't account for dispersal. I'll have to delete this step once dispersal is determined. Either that or I keep it and overwrite the values by adding the dispersal result to it (removing NA's first, obviously). What's also tough is that I do need to know this product (persistence outcome times previous presence) so that I know what biomasses should attempt to disperse 100%
 	
-	# dev.new()
-	# par(mar=c(1,1,0,0), mfrow=c(1,4))
-	# image.plot((matrix(spp.pres[,s,i-1], ncol=grid.w)), ylim=c(1,0))
-	# image.plot(matrix(suit.pers[,s,i], ncol=grid.w), ylim=c(1,0), zlim=c(0,1))
-	# image.plot((matrix(pers.outcome, ncol=grid.w)), ylim=c(1,0))
-	# image.plot((matrix(spp.pres[,s,i], ncol=grid.w)), ylim=c(1,0), main="New Presence") # just a visual check/ reference
-	#
+		# ====================================
+		# = Transition to the Next Time Step =
+		# ====================================
+		G.t1 <- spp.bio[r2m,s,i-1]
+		G.na <- is.na(G.t1)
+		G.t1[G.na] <- 0
+	
+		G <- Trans%*%G.t1
+		G[G==0] <- NA # TODO might want to find a more reliable way of doing this; I could use pers.outcome, but this isn't always reliable because sometimes there are cells 
+	
+		# is.na(pers.outcome)[r2m] & G!=0
+		# !is.na(pers.outcome)[r2m] & G==0
+		# all((rowSums(Trans)==0) == (c(G)==0)) # maybe could use the rowSums of the transition matrix instead of the G==0
+		
+		spp.pres[r2m,s,i][!is.na(G)] <- 1
+		spp.bio[r2m,s,i] <- G
+	
+
+	
+	
+	}
 }
 
 
-# ===========================
-# = Create Adjacency Matrix =
-# ===========================
-# Dispersal Targets (create adjacency matrix)
-A <- matrix(0, nrow=Nv, ncol=Nv)
-adjac <- r2m.cell(adjacent(t.temp, cells=1:Nv, direction=8), nrow=grid.h, ncol=grid.w)
-A[adjac] <- 1 # adjacency matrix; note that this is ordered like the default for matrix(); it's very convenient that the as.matrix() on a raster converts the raster ordering to the matrix ordering! :)
 
+# Plot up transition results
+smplt <- c(0.85,0.88, 0.2,0.8)
+bgplt <- c(0.05,0.82,0.15,0.95)
+axargs <- list(mgp=c(0.5,0.15,0))
 
-# ============================
-# = Create Transition Matrix =
-# ============================
-Trans <- A # Create Transition Matrix
+dev.new(width=5, height=2)
 
-Disperse.i <- (!is.na(spp.pres.t1) & !(!is.na(spp.pres.t1)&is.na(pers.outcome)))[r2m]
-Move.i <- (!is.na(spp.pres.t1) & (!is.na(spp.pres.t1)&is.na(pers.outcome)))[r2m]
-AR1.i <- (present.previous&!is.na(pers.outcome))
+n.steps <- 6
+spp.id <- 9
 
-D <- Disperse.i*D.frac
+par(mfrow=c(2, n.steps), oma=c(0.5,1,0,0))
+year.index <- seq(1, grid.t, length.out=n.steps)
+for(i in 1:n.steps){
+	t.y <- year.index[i]
+	
+	par(mar=c(0.25,0.25,0.15,0), ps=6, mgp=c(1,0.15,0), tcl=-0.15, cex=1, mfg=c(1,i))
+	image.plot(t(matrix(values(subset(grid.temp, t.y)), nrow=grid.h, byrow=TRUE)), zlim=range(values(grid.temp), na.rm=TRUE), ylim=c(1.085,0), axis.args=axargs, xaxt="n", yaxt="n", smallplot=smplt, bigplot=bgplt)
+	
+	par(mar=c(0.25,0.25,0.15,0), ps=6, mgp=c(1,0.15,0), tcl=-0.15, cex=1, mfg=c(2,i))
+	image.plot(t(matrix(spp.bio[,spp.id,t.y], nrow=grid.h, byrow=TRUE)), zlim=range(spp.bio[,spp.id,], na.rm=TRUE), ylim=c(1.085,0), bg="gray", axis.args=axargs, xaxt="n", yaxt="n", smallplot=smplt, bigplot=bgplt)
+}
 
-
-present.previous <- !is.na(spp.pres.t1)[r2m]
-cease <- (!is.na(spp.pres.t1)&is.na(pers.outcome))[r2m]
-disp.bio.frac <- c(0, D.frac, 1)[present.previous + cease + 1] # see previous and following comments for D and disp, respectively. 0 mean 0% disperses, which only happens when there's nothing here (should be redundant, but something has to go here, and I want the lack of dispersal for empty cells to be explicit in all cases). Note that no matter what, biomass has to be present in the previous time step for anything to disperse from the cell. So a cell that just became suitable cannot have biomass disperse from it, even if during the same time step it receives another cell's dispersed biomass or if there's colonization to the newly suitable cell (the latter might not be implemented, it's just an idea I had)
-D <- (1/colSums(A)) * disp.bio.frac # if 50% of biomass is available for dispersal, have to split this mass up among neighbors. If a cell is no longer suitable for a species (was present previously, but no longer), 100% of the biomass is split between neighbors.
-Trans <- Trans*matrix(disp, nrow=Nv, ncol=Nv, byrow=TRUE) # This fills in the proportional transfer of biomass from each cell to its neighbors; however, the diagonals are still 0 (next step). Note: this `byrow=TRUE` should be this way regardless of the matrix/raster notation of disp etc.
-diag(Trans) <- c(0, AR1)[as.integer(present.previous&!is.na(pers.outcome))[r2m] + 1] # diagonal elements indicate the proportion of biomass that a cell transfers to itself betwen time steps; thus, for a diagonal element to be non-0, it must be suitable (present) both in the previous time step and in the current time step. 
-# unique(colSums(Trans)) # a good and cheap check. Values should be 0, 1, or D+AR1
-
-# The last step, I think, should be to knock out the rows of Trans (turn to 0) that can't receive any biomass b/c they're unsuitable.
-Trans[is.na(pers.outcome)[r2m],] <- 0
 
 
 
