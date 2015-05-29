@@ -33,7 +33,7 @@ colonize <- function(temps, spp.dens.temps, bio.mu){
 		p.suit[] <- sapply(X=spp.dens.temps, FUN=dsample, temps, relative=TRUE)
 		
 		# Binary Presence/Absence
-		set.seed(1)
+		# set.seed(1)
 		pres[] <- c(NA,1)[1+rbinom(n=n.spp*Nv, size=1, prob=p.suit)]
 	
 		# Species Biomass
