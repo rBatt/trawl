@@ -14,17 +14,29 @@ dsample <- function(ref,x, relative=FALSE){
 	# ref.y <- ref$y
 	# ref.x <- ref$x
 	
-	ds <- approxfun(ref, yleft=0, yright=0)
+	ref.xy <- list(x=ref$x, y=ref$y)
+	
+	if(relative | max(ref.xy$y)>1){
+		if(all(ref.xy$y==0)){
+			
+		}else{
+			ref.xy$y <- ref.xy$y/max(ref.xy$y)
+		}
+	}
+	
+	ds <- approxfun(ref.xy, yleft=0, yright=0)
 	
 	dsx <- ds(x)
-	if(relative){
-		if(all(dsx==0)){
-			return(dsx)
-		}else{
-			return(dsx/max(dsx))
-		}
-	}else{
-		return(dsx)
-	}
+	# if(relative | max(dsx)>1){
+# 		if(all(dsx==0)){
+# 			return(dsx)
+# 		}else{
+# 			return(dsx/max(dsx))
+# 		}
+# 	}else{
+# 		return(dsx)
+# 	}
+
+	return(dsx)
 	
 }
