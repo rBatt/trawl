@@ -14,9 +14,9 @@ sim.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/SimFunctions"
 invisible(sapply(paste(sim.location, list.files(sim.location), sep="/"), source, .GlobalEnv))
 
 
-# =============
-# = Grid Size =
-# =============
+# ================
+# = Grid Options =
+# ================
 # Grid Size
 grid.w <- 5 # Width
 grid.h <- 7 # Height
@@ -24,21 +24,24 @@ grid.t <- 12 # Time
 
 Nv <- (grid.w*grid.h) # Number of vertices if the Grid is a Graph (number of cells in 1 year of the grid)
 
+# Define temperature change in ºC per year
+temp.slope <- 0.75
 
 
 # ===================
-# = Grid Attributes =
+# = Species Options =
 # ===================
-# Grid Lat
-# Grid Lon
-# Grid depth
+# Number of Species
+ns <- 200
 
-# Grid temperature
-temp.h <- seq(-10, 0, length.out=grid.h)
-temp <- c()
-for(i in 1:grid.w){
-	temp <- c(temp, temp.h+rnorm(grid.h))
-}
+
+# ====================
+# = Dynamics Options =
+# ====================
+AR1.coef <- 0.8 # first order autoregressive coefficient for each cell; to be placed on the diagonal of the transition matrix for cells that previous had biomass and presently remain suitable
+D.frac <- 0.5 # fraction of biomass to disperse from local cell to surroundings; think of it like reproduction, such that it doesn't result in a decrease in the biomass of the focal cell
+M.frac <- 1 # proportion of biomass that will leave cell when it becomes unsuitable (this proportion is split evenly among neighbors, but not all neighbors will be suitable, so in many cases less than 100% of the biomass will find a new home)
+perist.bonus <- 1 # Factor by which to adjust the probability that a species will fail to persist; decreasing this factors makes the species more likely to stick around, increasing it makes it less likely to stick around. When 1, no adjustment is made; when 0, the species will always stick around.
 
 
 # =====================
@@ -51,23 +54,28 @@ grid.blank <- gen.grid(dims=c(grid.h, grid.w, grid.t), xmn=0, ymn=0, xmx=grid.w,
 # ========================================
 # = Create Temperature Grid/ Time Series =
 # ========================================
+# Generate Grid Temperature
+temp.h <- seq(-10, 0, length.out=grid.h)
+temp <- c()
+for(i in 1:grid.w){
+	temp <- c(temp, temp.h+rnorm(grid.h))
+}
+
 # Insert first year of temperature grid
 grid.temp.1 <- gen.grid(temp, dims=c(grid.h, grid.w, 1), xmn=0, ymn=0, xmx=grid.w, ymx=grid.h)
-
-# Define temperature change in ºC per year
-temp.slope <- 0.75
 
 # Create time series of temperature grid
 grid.temp <- grid.blank
 grid.temp <- setValues(grid.temp, values(grid.temp.1), layer=1)
 
-rg <- function(){ # function to add noise to the temperature process (kinda weird, b/c I apply the noise at each time step)
+rg <- function(){ # function to add noise to the temperature process
 	rnorm(n=Nv, sd=0.1)
 }
-for(i in 2:grid.t){
+for(i in 2:grid.t){ # loop through years adding noise
 	grid.temp <- setValues(grid.temp, values(subset(grid.temp, i-1))+rg()+temp.slope, layer=i)
 }
 
+# Range of observed temperture values across all years and cells
 temp.range <- range(values(grid.temp))
 
 
@@ -75,27 +83,27 @@ temp.range <- range(values(grid.temp))
 # = Create Species =
 # ==================
 
-# Number of Species
-ns <- 200
-
 # Create a brick of Species in space and time
-S <- replicate(grid.t, gen.grid(dims=c(grid.h, grid.w, ns), xmn=0, ymn=0, xmx=grid.w, ymx=grid.h), simplify=FALSE) # species information over space and time; different times are different elements of the list (top level), whereas different species are different layers in the brick. Note that in other bricks the different layers are different time steps, so be careful of that. It's done this way b/c time is going to be the top level of the process, so no more than 2 time steps need to be accessed at once, whereas 2 dimensions of space and all species might need to be accessed simultaneously.
-R <- gen.grid(dims=c(grid.h, grid.w, grid.t), xmn=0, ymn=0, xmx=grid.w, ymx=grid.h) # Richness. Structured as other bricks (not S), b/c richness doesn't need species-specific information.
+S <- replicate(grid.t, gen.grid(dims=c(grid.h, grid.w, ns), xmn=0, ymn=0, xmx=grid.w, ymx=grid.h), simplify=FALSE) 
+# species information over space and time; different times are different elements of the list (top level), whereas different species are different layers in the brick. 
+# Note that in other bricks the different layers are different time steps, so be careful of that. It's done this way b/c time is going to be the top level of the process, so no more than 2 time steps need to be accessed at once, whereas 2 dimensions of space and all species might need to be accessed simultaneously.
 
 # Give the Species Temperature Preferences
 rtemp <- function(n, alpha, beta, min, max){
 	del <- max - min
-	rbeta(n, alpha, beta)*del + min
+	rbeta(n, alpha, beta)*del + min # random beta distribution, rescaled
 }
 
-min.t <- min(values(grid.temp))
-max.t <- max(values(grid.temp))
-mm <- replicate(ns, sort(runif(n=2, min=min.t, max=max.t)))
-ab <- replicate(ns, runif(n=2, min=1, max=10))
+min.t <- min(values(grid.temp)) # minimum possible temperature tolerance
+max.t <- max(values(grid.temp)) # the maximum temperature a species can tolerate
+mm <- replicate(ns, sort(runif(n=2, min=min.t, max=max.t))) # give each species its own min/max temp tolerance
+ab <- replicate(ns, runif(n=2, min=1, max=10)) # alpha beta parameters determine the "shape" of the beta distribution
 
-S.obs.temps <- mapply(rtemp, alpha=ab[1,], beta=ab[2,], min=mm[1,], max=mm[2,], MoreArgs=list(n=500)) # Temperatures at which each species has been observed
+# Use the rescaled beta distribution to give each species a fake history of observed temperatures
+S.obs.temps <- mapply(rtemp, alpha=ab[1,], beta=ab[2,], min=mm[1,], max=mm[2,], MoreArgs=list(n=500))
 
-S.dens.temps <- apply(S.obs.temps, 2, density, from=temp.range[1], to=temp.range[2], adjust=1) # density (prob) of each species at all possible temperatures
+# Use that fake history of observed temperatures to generate an empirical density (like histogram)
+S.dens.temps <- apply(S.obs.temps, 2, density, from=temp.range[1], to=temp.range[2], adjust=1)
 
 
 # =====================================
@@ -107,10 +115,21 @@ suit.pers <- array(NA, dim=c(Nv, ns, grid.t)) # environmental suitability to spe
 spp.pres <- array(NA, dim=c(Nv, ns, grid.t)) # binary; species presence/ absence
 spp.bio <- array(NA, dim=c(Nv, ns, grid.t)) # biomass (log units)
 
+# Give each species its own average biomass
+# Note that this biomass feature doesn't affect the simulation in terms of presence/ absence
 spp.bio.mu <- rnorm(n=ns)
 
-c0 <- colonize(values(subset(grid.temp, 1)), S.dens.temps, spp.bio.mu) # initial colonization
+# Initial Colonization (colonize() is a custom function)
+# colonize() looks at the empirical history of an enivornmental
+# gradient for a species, and then uses that history to calculate the probability of the
+# species being present at a given temperature
+# given that probability, we can flip a count to decide 1 (present) or 0 (absent)
+# This process is repeated for each grid cell in the first year, and each species
+# The result is an initial distribution of species
+c0 <- colonize(values(subset(grid.temp, 1)), S.dens.temps, spp.bio.mu)
 
+# Store some values from the initial colonization
+# These array were defined above.
 suit.pers[,,1] <- c0[["suit.pers"]]
 spp.pres[,,1] <- c0[["spp.pres"]]
 spp.bio[,,1] <- c0[["spp.bio"]]
@@ -119,11 +138,6 @@ spp.bio[,,1] <- c0[["spp.bio"]]
 # ====================
 # = Spatial Dynamics =
 # ====================
-AR1.coef <- 0.8 # first order autoregressive coefficient for each cell; to be placed on the diagonal of the transition matrix for cells that previous had biomass and presently remain suitable
-D.frac <- 0.5 # fraction of biomass to disperse from local cell to surroundings; think of it like reproduction, such that it doesn't result in a decrease in the biomass of the focal cell
-M.frac <- 1 # proportion of biomass that will leave cell when it becomes unsuitable (this proportion is split evenly among neighbors, but not all neighbors will be suitable, so in many cases less than 100% of the biomass will find a new home)
-perist.bonus <- 1 # Factor by which to adjust the probability that a species will fail to persist; decreasing this factors makes the species more likely to stick around, increasing it makes it less likely to stick around. When 1, no adjustment is made; when 0, the species will always stick around.
-
 # Create indices to convert between matrix() and raster() conventions for naming/indexing cells
 r2m <- order(c(r2m.cell(1:Nv, nrow=grid.h, ncol=grid.w))) # put this in brackets after a vector of cells ordered by the raster convention to put them in the order of the matrix convention
 m2r <- order(r2m) # use this to reverse the above process
@@ -226,6 +240,7 @@ for(i in 2:grid.t){ # through time
 # ===========================
 # = Temperature Time Series =
 # ===========================
+# ---- Graph_Temp_Space_Time ----
 # Plot temperature time series
 temp.range <- range(values(grid.temp))
 smplt <- c(0.89,0.95, 0.2,0.8)
