@@ -1,4 +1,53 @@
-\documentclass{article}
+\documentclass{article}\usepackage[]{graphicx}\usepackage[]{color}
+%% maxwidth is the original width if it is less than linewidth
+%% otherwise use linewidth (to make sure the graphics do not exceed the margin)
+\makeatletter
+\def\maxwidth{ %
+  \ifdim\Gin@nat@width>\linewidth
+    \linewidth
+  \else
+    \Gin@nat@width
+  \fi
+}
+\makeatother
+
+\definecolor{fgcolor}{rgb}{0.345, 0.345, 0.345}
+\newcommand{\hlnum}[1]{\textcolor[rgb]{0.686,0.059,0.569}{#1}}%
+\newcommand{\hlstr}[1]{\textcolor[rgb]{0.192,0.494,0.8}{#1}}%
+\newcommand{\hlcom}[1]{\textcolor[rgb]{0.678,0.584,0.686}{\textit{#1}}}%
+\newcommand{\hlopt}[1]{\textcolor[rgb]{0,0,0}{#1}}%
+\newcommand{\hlstd}[1]{\textcolor[rgb]{0.345,0.345,0.345}{#1}}%
+\newcommand{\hlkwa}[1]{\textcolor[rgb]{0.161,0.373,0.58}{\textbf{#1}}}%
+\newcommand{\hlkwb}[1]{\textcolor[rgb]{0.69,0.353,0.396}{#1}}%
+\newcommand{\hlkwc}[1]{\textcolor[rgb]{0.333,0.667,0.333}{#1}}%
+\newcommand{\hlkwd}[1]{\textcolor[rgb]{0.737,0.353,0.396}{\textbf{#1}}}%
+
+\usepackage{framed}
+\makeatletter
+\newenvironment{kframe}{%
+ \def\at@end@of@kframe{}%
+ \ifinner\ifhmode%
+  \def\at@end@of@kframe{\end{minipage}}%
+  \begin{minipage}{\columnwidth}%
+ \fi\fi%
+ \def\FrameCommand##1{\hskip\@totalleftmargin \hskip-\fboxsep
+ \colorbox{shadecolor}{##1}\hskip-\fboxsep
+     % There is no \\@totalrightmargin, so:
+     \hskip-\linewidth \hskip-\@totalleftmargin \hskip\columnwidth}%
+ \MakeFramed {\advance\hsize-\width
+   \@totalleftmargin\z@ \linewidth\hsize
+   \@setminipage}}%
+ {\par\unskip\endMakeFramed%
+ \at@end@of@kframe}
+\makeatother
+
+\definecolor{shadecolor}{rgb}{.97, .97, .97}
+\definecolor{messagecolor}{rgb}{0, 0, 0}
+\definecolor{warningcolor}{rgb}{1, 0, 1}
+\definecolor{errorcolor}{rgb}{1, 0, 0}
+\newenvironment{knitrout}{}{} % an empty environment to be redefined in TeX
+
+\usepackage{alltt}
 \usepackage[sc]{mathpazo}
 \renewcommand{\sfdefault}{lmss}
 \renewcommand{\ttdefault}{lmtt}
@@ -27,17 +76,13 @@
 \setlength{\parindent}{0em}
 \setlength{\parskip}{1em}
 \renewcommand{\baselinestretch}{1.5}
-
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
 \begin{document}
 
 % =================
 % = Knitr Options =
 % =================
-<<setup,include=FALSE,cache=FALSE>>=
-options(width=90)
-opts_chunk$set(out.width = '.6\\linewidth')
-opts_knit$set(root.dir="~/Documents/School&Work/pinskyPost/trawl")
-@
+
 
 
 % ==============
@@ -45,15 +90,13 @@ opts_knit$set(root.dir="~/Documents/School&Work/pinskyPost/trawl")
 % ==============
 \title{\textbf{\emph{sim.basic}: A first step in testing the suitability of trawl data for detecting spatial dyanmics of diversity}}
 \author{Ryan Batt}
-\date{\Sexpr{Sys.Date()}}
+\date{2015-06-02}
 \maketitle
 
 % ==============================
 % = Read Full sim.basic.R Code =
 % ==============================
-<<full-sim, cache=TRUE, echo=FALSE>>=
-	read_chunk("./Scripts/Simulation/sim.basic.R")
-@
+
 
 % ================
 % = Introduction =
@@ -75,7 +118,7 @@ The first step in this procedure is to simulate a basic version of NDGP. It is t
 % = Approach =
 % ============
 \section{Approach}
-To understand the simulation, I need to provide context concerning the data (bottom trawl survey), what information we want from those data (richness), and how how we intend to derive that information from the data (MSOM). After introducing those basics, I'll describe my approach to simulating a basic process that involves a \Sexpr{grid.h}x\Sexpr{grid.w} spatial grid monitored over \Sexpr{grid.t} years, how I filled that grid with temperatures that changed over time and space, and how I put \Sexpr{ns} species on that grid and let them move around. 
+To understand the simulation, I need to provide context concerning the data (bottom trawl survey), what information we want from those data (richness), and how how we intend to derive that information from the data (MSOM). After introducing those basics, I'll describe my approach to simulating a basic process that involves a 7x5 spatial grid monitored over 12 years, how I filled that grid with temperatures that changed over time and space, and how I put 200 species on that grid and let them move around. 
 
 % Basics of the model, data, and richness
 \subsection{The Basic Context: Model, Data, Richness}
@@ -116,7 +159,7 @@ It is worth mentioning that by incorporating these elements of species, temperat
 In this section I will describe the statistics/ framework I used in a semi-generic form. It is in this section where I explain the framework of the analysis and the statistics and how they relate to achieving the goal of the basic simulation. The next section (\hyperref[sec:IandR]{See~Section~\ref{sec:IandR}}) will reiterate many of these points in terms of what I actually simulated (the code, choices for model parameters, and simulated output), but I will not explain the statistics as much.
 
 \par
-The goal of the simulation model is to create \Sexpr{ns} species that each have their own thermal preferences, and to allow these species to move between grid cells (\Sexpr{grid.h}x\Sexpr{grid.w} grid) between years. I wanted the ability for a species to occupy by a grid cell to be restricted by some sort of thermal tolerance, and I wanted to be able to describe this tolerance using observations (more on that later).
+The goal of the simulation model is to create 200 species that each have their own thermal preferences, and to allow these species to move between grid cells (7x5 grid) between years. I wanted the ability for a species to occupy by a grid cell to be restricted by some sort of thermal tolerance, and I wanted to be able to describe this tolerance using observations (more on that later).
 
 \par
 To explain how I achieve such a simulation, I will start with a simple time series model of a single variable (i.e., 1 species), expand that time series model to temporal dynamics in 2-dimensional space, add in environmental constraint, and generalize the model to many species.
@@ -128,19 +171,32 @@ To explain how I achieve such a simulation, I will start with a simple time seri
 \end{equation}
 \par
 where $X$ is our ``state'' variable of interest (e.g., biomass), $t$ a subscript denoting the time step ($t=1, 2, ... T$ where $T$ is the length of the time series), $\beta_1$ is known as the autoregressive coefficient (``auto'' because it describes how the variable is related to itself), and $\epsilon_t$ are normally distributed errors ($\epsilon~\sim \mathcal{N}(0,\sigma^2)$). In R, we might program an autoregressive process like so:
-<<AR_eg, echo=TRUE, fig.width=3, fig.height=3, fig.align="center", fig.cap=paste("Example AR(1) process with autocorrelation of",beta), eval.after="fig.cap">>=
-	beta <- 0.8 # AR(1) coefficient
-	Tn <- 100 # length of time series
-	X <- rep(NA, Tn) # create empty vector to store results
-	X[1] <- 0 # set starting value
-	sigma2 <- 1 # variance of epsilon
-	for(i in 2:Tn){
-		X[i] <- beta*X[i-1] + rnorm(1, 0, sqrt(sigma2))
-	}
-	par(mar=c(2,2,0.1,0.1), mgp=c(1.15, 0.15, 0), tcl=-0.15, ps=8, cex=1)
-	plot(X, xlab="time", ylab="X", type="o")
-	abline(h=0, lty="dashed")
-@
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+        \hlstd{beta} \hlkwb{<-} \hlnum{0.8} \hlcom{# AR(1) coefficient}
+        \hlstd{Tn} \hlkwb{<-} \hlnum{100} \hlcom{# length of time series}
+        \hlstd{X} \hlkwb{<-} \hlkwd{rep}\hlstd{(}\hlnum{NA}\hlstd{, Tn)} \hlcom{# create empty vector to store results}
+        \hlstd{X[}\hlnum{1}\hlstd{]} \hlkwb{<-} \hlnum{0} \hlcom{# set starting value}
+        \hlstd{sigma2} \hlkwb{<-} \hlnum{1} \hlcom{# variance of epsilon}
+        \hlkwa{for}\hlstd{(i} \hlkwa{in} \hlnum{2}\hlopt{:}\hlstd{Tn)\{}
+                \hlstd{X[i]} \hlkwb{<-} \hlstd{beta}\hlopt{*}\hlstd{X[i}\hlopt{-}\hlnum{1}\hlstd{]} \hlopt{+} \hlkwd{rnorm}\hlstd{(}\hlnum{1}\hlstd{,} \hlnum{0}\hlstd{,} \hlkwd{sqrt}\hlstd{(sigma2))}
+        \hlstd{\}}
+        \hlkwd{par}\hlstd{(}\hlkwc{mar}\hlstd{=}\hlkwd{c}\hlstd{(}\hlnum{2}\hlstd{,}\hlnum{2}\hlstd{,}\hlnum{0.1}\hlstd{,}\hlnum{0.1}\hlstd{),} \hlkwc{mgp}\hlstd{=}\hlkwd{c}\hlstd{(}\hlnum{1.15}\hlstd{,} \hlnum{0.15}\hlstd{,} \hlnum{0}\hlstd{),} \hlkwc{tcl}\hlstd{=}\hlopt{-}\hlnum{0.15}\hlstd{,} \hlkwc{ps}\hlstd{=}\hlnum{8}\hlstd{,} \hlkwc{cex}\hlstd{=}\hlnum{1}\hlstd{)}
+        \hlkwd{plot}\hlstd{(X,} \hlkwc{xlab}\hlstd{=}\hlstr{"time"}\hlstd{,} \hlkwc{ylab}\hlstd{=}\hlstr{"X"}\hlstd{,} \hlkwc{type}\hlstd{=}\hlstr{"o"}\hlstd{)}
+        \hlkwd{abline}\hlstd{(}\hlkwc{h}\hlstd{=}\hlnum{0}\hlstd{,} \hlkwc{lty}\hlstd{=}\hlstr{"dashed"}\hlstd{)}
+\end{alltt}
+\end{kframe}\begin{figure}
+
+{\centering \includegraphics[width=.6\linewidth]{figure/AR_eg-1} 
+
+}
+
+\caption[Example AR(1) process with autocorrelation of 0]{Example AR(1) process with autocorrelation of 0.8}\label{fig:AR_eg}
+\end{figure}
+
+
+\end{knitrout}
 Autoregressive processes are generic time series models that can approximate a wide range of complex, and even nonlinear, processes. When the model is AR(1) and the coefficient is 1, then the model is simply a so-called random walk. Conveniently, Eq. 1 is very similar in form to the Gompertz growth equation when the Gompertz is on a log scale and in discrete time ($X_t=a+bX_{t-1}$), and the intrinsic rate of increase ($a$) is set to 1 and there is no noise term $(\epsilon)$. The key here is that autoregressive models, which will make an appearence in the final simulation methods, can be useful approximations to nonlinear models of ecological populations.
 
 \par
@@ -156,32 +212,18 @@ where $\bm{X}_t$ is a 1x$S$ vector of $S$ populations at time $t$, $\bm{B}$ is a
 \par
 It turns out to be a fairly smally leap to go from a MAR model to a model that is discrete and explicit in space and time. As was mentioned earlier, the simulation will operate on a 2D grid. However, it is not wholly constructive to think of a 2D grid as a matrix upon which we can perform algebraic operations. Rather, it is better to think of the grid as instead being a ``graph'' ---- graphs consist of vertices (nodes) and edges (links connecting nodes). The vertices would be things like species, who might have a certain biomass ---- this is not unlike the values of the species in $\bm{X}$ from the MAR example. The edges connecting those vertices describe the transfer of mass between the species, like $\bm{B}$ from the MAR model.
 
-<<Markov_eg, echo=FALSE, fig.width=4, fig.height=4, fig.align="center", fig.cap="A Markov chain as an example graph.">>=
-	edges <- c(
-		1,1,
-		1,2,
-		1,3,
-		2,2,
-		2,1,
-		2,3,
-		3,4,
-		4,4,
-		4,3
-	)
-	edge.labs <- c(
-		0.25,
-		0.4,
-		0.35,
-		0.5,
-		0.2,
-		0.3,
-		1,
-		0.7,
-		0.3
-	)
-	par(mar=rep(0.5,4))
-	plot.igraph(graph(edges), margin=c(0,0,0,0.5), edge.label=edge.labs, edge.curved=TRUE, vertex.label=LETTERS[1:4])
-@
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{figure}
+
+{\centering \includegraphics[width=.6\linewidth]{figure/Markov_eg-1} 
+
+}
+
+\caption[A Markov chain as an example graph]{A Markov chain as an example graph.}\label{fig:Markov_eg}
+\end{figure}
+
+
+\end{knitrout}
 
 \par
 For example, consider \hyperref[fig:Markov_eg]{Figure~\ref{fig:Markov_eg}}, which as 4 vertices (A through D), and a series of edges. All vertices are connected to at least 1 other vertex, and those connections are directed (i.e., not all relationships are symmetrical).
@@ -202,8 +244,7 @@ Content.
 
 
 
-<<test-a, echo=TRUE>>=
-@
+
 
 
 
