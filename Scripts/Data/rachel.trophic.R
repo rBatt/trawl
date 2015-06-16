@@ -85,7 +85,7 @@ tt.local <- tt.noK[,j={
 		btemp=meanna(btemp),
 		wtcpue.sum=sumna(wtcpue),
 		wtcpue.mean=meanna(wtcpue),
-		# trophicLevel=mean(trophicLevel, na.rm=TRUE), # TODO  this needs to be a waited mean?! This is where I left off. Can probably just drop the wtcpue at this point and only provided the weighted mean of this value. Then for the spatially collapsed data set, I'd want to first aggregate over space, using the mean of wtcpue to aggregate, then I would want to do the weighted mean from there. So don't create the spatially aggregated data set from this data set!
+		# trophicLevel=mean(trophicLevel, na.rm=TRUE), # TODO  this needs to be a weighted mean?! This is where I left off. Can probably just drop the wtcpue at this point and only provided the weighted mean of this value. Then for the spatially collapsed data set, I'd want to first aggregate over space, using the mean of wtcpue to aggregate, then I would want to do the weighted mean from there. So don't create the spatially aggregated data set from this data set!
 		trophicLevel.se=mean(trophicLevel.se, na.rm=TRUE)
 	)
 	
@@ -143,7 +143,24 @@ tt.region <- tt.region.spp[,j={
 setkey(tt.region, s.reg, year, trophicGroup)
 
 
-write.csv(tt.region, "~/Desktop/trophicTrawl.csv", row.names=FALSE)
+# ================================================================
+# = Make each trophicGroup a regular time series w/in the region =
+# ================================================================
+tt.region2 <- tt.region[,j={
+		regts <- expand.grid(year=.SD[,unique(year)], trophicGroup=.SD[,unique(trophicGroup)])
+		# head(regts)
+		out <- merge(regts, .SD, all=TRUE, by=c("year","trophicGroup"))
+	},
+	by=c("s.reg")
+
+
+]
+
+fill0s <- c("wtcpue.sum", "trophicLevel.region.wmean", "trophicLevel.sum", "trophicLevel.wmean", "trophicLevel.se.squareSum", "nSpp.perGroup.perYear", "nSpp.perGroup")
+
+tt.region2[tt.region2[,is.na(region)], (fill0s):=0]
+
+write.csv(tt.region2, "./trawl/Data/trophicTrawl/trophicTrawl.csv", row.names=FALSE)
 
 # tt.region[,plot((trophicLevel.sum/nSpp.perGroup.perYear~trophicLevel.wmean))]
 # abline(a=0, b=1)
