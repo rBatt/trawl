@@ -5,6 +5,10 @@
 # OS Files
 .DS_Store
 
+*.log
+*.gz
+*.aux
+
 
 /Data/**/*.txt
 /Data/**/*.csv
@@ -12,6 +16,7 @@
 /Data/**/*.nc
 /Data/**/*.fwf
 /Data/**/*.zip
+!/Data/trophicTrawl/*
 
 *.xlsx
 *.docx
