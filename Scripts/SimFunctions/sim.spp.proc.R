@@ -1,6 +1,62 @@
 
+# sppd <- setClass("sppd", slots=c(pres.true="array", grid.X="RasterBrick", spp.densX="list"), contains="array")
 
-sim.spp.proc <- function(grid.X, ns=200){
+# setMethod("print", c("spp"),
+
+print.spp <- function(x, ...) {
+		cat(
+			"Dimensions: ", paste(dim(x), collapse=", "), "\n", 
+			paste(c("grid.h","grid.w","grid.t"), c(dim(attr(x, "grid.X"))), sep=" = ", collapse="\n"),
+			sep=""
+		)
+		
+		cat("\n\n", "Number Species Possible (ns):", "\n", dim(x)[2], sep="")
+		
+		cat("\n", "Total Species Richness:", "\n", sum(apply(x, c(2), function(x)any(!is.na(x)))), sep="")
+		
+		# cat("\n\n", "Richness Across Years: ", "\n")
+		s <- summary(colSums(apply(x, c(2,3), function(x)any(!is.na(x)))))
+		# print(summary(s))
+		
+		# cat("\n\n", "Richness in any given Year/ Grid Cell: ", "\n")
+		s2 <- summary(c(apply(x, c(1,3), function(x)sum(!is.na(x)))))
+		# print(summary(s2))
+		cat("\n\n", "Annual Species Richness:", "\n", sep="")
+		rn <- c("All cells", "One cell")
+		print(matrix(c(s, s2), nrow=2, byrow=TRUE, dimnames=list(rn,names(s))))
+		
+		invisible(x)			
+}
+
+getS <- function(x){
+	stopifnot(any(class(x)=="spp"))
+	d <- attr(x, "dims") #c(dim(attr(x, "grid.X")), dim(x)[2])
+	# names(d) <- c("grid.h","grid.w","grid.t", "ns")
+	# replicate(d["grid.t"], gen.grid(x, dims=c(d["grid.h"], d["grid.w"], d["ns"]), xmn=0, ymn=0, xmx=d["grid.w"], ymx=d["grid.h"]), simplify=FALSE)
+	# gen.grid(x, dims=c(d["grid.h"], d["grid.w"], d["ns"]), xmn=0, ymn=0, xmx=d["grid.w"], ymx=d["grid.h"])
+	
+	S0 <- unlist(apply(out, 3, function(x)list(array(c(x), dim=c(d["grid.h"],d["grid.w"],d["ns"])))),F,F)
+	lapply(S0, brick, xmn=0, xmx=d["grid.w"], ymn=0, ymx=d["grid.h"])
+	
+}  
+
+# et <- sim.env()
+# Rprof()
+# sim.spp.proc(et)
+# Rprof(NULL)
+# summaryRprof()
+
+sim.spp.proc <- function(grid.X, ns=200, niche.bias){
+	
+	# =================
+	# = Niche Options =
+	# =================
+	if(missing(niche.bias)){
+		niche.bias <- c(1, 1)
+	}else{
+		stopifnot(length(niche.bias)==2 & all(niche.bias>=0))
+	}
+	 # Alters the potential environmental preferences of species relative to the observed minimum and maximum of that environmental variable. Goes to beta distribution. If the first number is higher, high X favored; if second number higher, low X favored. If niche.bias[1]/niche.bias[2] > 1, then the upper extreme of the environment will be favored by more species; if < 1, then the lower extreme will be favored. If niche.bias[1] == niche.bias[2] and they are both less than 1, then extreme environments will be equally preferred over moderate temperature (concave pdf). If niche.bias[1] == niche.bias[2] and both are greater than 1, the moderature temperatures will be preferred over extremes.
 
 	# ====================
 	# = Dynamics Options =
@@ -41,8 +97,9 @@ sim.spp.proc <- function(grid.X, ns=200){
 		del <- max - min
 		rbeta(n, alpha, beta)*del + min # random beta distribution, rescaled
 	}
-
-	mm <- replicate(ns, sort(runif(n=2, min=min.X, max=max.X))) # give each species its own min/max X tolerance
+	
+	mm <- replicate(ns, sort(rX(n=2, niche.bias[1], niche.bias[2], min=min.X, max=max.X)))
+	# mm <- replicate(ns, sort(runif(n=2, min=min.X, max=max.X))) # give each species its own min/max X tolerance
 	ab <- replicate(ns, runif(n=2, min=1, max=10)) # alpha beta parameters determine the "shape" of the beta distribution
 
 	# Use the rescaled beta distribution to give each species a fake history of observed temperatures
@@ -79,8 +136,16 @@ sim.spp.proc <- function(grid.X, ns=200){
 	suit.pers[,,1] <- c0[["suit.pers"]]
 	spp.pres[,,1] <- c0[["spp.pres"]]
 	spp.bio[,,1] <- c0[["spp.bio"]]
-
-
+	
+	# ===========================
+	# = Create Adjacency Matrix =
+	# ===========================
+	# Dispersal Targets (create adjacency matrix)
+	A <- matrix(0, nrow=Nv, ncol=Nv)
+	adjac <- r2m.cell(adjacent(subset(grid.X, 1), cells=1:Nv, direction=8), nrow=grid.h, ncol=grid.w)
+	A[adjac] <- 1 # Put a value of 1 to indicate vertices that are connected
+	
+	
 	# ====================
 	# = Spatial Dynamics =
 	# ====================
@@ -104,15 +169,6 @@ sim.spp.proc <- function(grid.X, ns=200){
 			spp.pres.t1 <- spp.pres[,s,i-1]
 			pers.outcome <- c.t[["spp.pres"]][,s]
 			# spp.pres.t.0 <- pers.outcome*spp.pres.t1
-	
-	
-			# ===========================
-			# = Create Adjacency Matrix =
-			# ===========================
-			# Dispersal Targets (create adjacency matrix)
-			A <- matrix(0, nrow=Nv, ncol=Nv)
-			adjac <- r2m.cell(adjacent(t.X, cells=1:Nv, direction=8), nrow=grid.h, ncol=grid.w)
-			A[adjac] <- 1 # Put a value of 1 to indicate vertices that are connected
 
 
 			# ============================
@@ -177,5 +233,13 @@ sim.spp.proc <- function(grid.X, ns=200){
 		}
 	}
 	
-	return(spp.pres)
+	out <- structure(spp.pres, class=c("spp", "array"))
+	attr(out, "spp.bio") <- spp.bio
+	attr(out, "grid.X") <- grid.X
+	attr(out, "spp.densX") <- S.dens.X
+	d <- c(dim(grid.X), ns)
+	names(d) <- c("grid.h","grid.w","grid.t", "ns")
+	attr(out, "dims") <- d
+	
+	out
 }
