@@ -202,6 +202,7 @@ manualTax <- unique(manualTax)
 # checkManDupCmmn <- manualTax[,list(nCmmn=lu(common),cmmn=paste0(unique(common))),by="sppCorr"]
 # checkManDupCmmn[nCmmn!=1]
 
+
 # ========================================================================
 # = Define intersections of information in automated and manual tax info =
 # ========================================================================
@@ -215,6 +216,7 @@ manualTax[spp%in%shared.spp, share.spp:=TRUE]
 shared.sppCorr <- intersect(trawl.newSpp[,sppCorr],manualTax[,sppCorr])
 trawl.newSpp[sppCorr%in%shared.sppCorr, share.sppCorr:=TRUE]
 manualTax[sppCorr%in%shared.sppCorr, share.sppCorr:=TRUE]
+
 
 # ===============================
 # = Combine Sources of tax info =
@@ -296,6 +298,7 @@ taxInfo[,raw.spp][!taxInfo[,raw.spp]%in%rachelTax0[,raw.spp]]
 # Merge Rachel's taxonomy with taxInfo
 taxInfo2 <- merge(taxInfo, rachelTax, by=c("raw.spp"), all=TRUE)
 
+
 # ============================================================================
 # = Perform Basic Checks on Rachel's Taxonomy Entries (few errors, but some) =
 # ============================================================================
@@ -346,6 +349,7 @@ print(out[apply(out2[,c("spp","raw.spp","isSpecies"):=list(NULL)], 1, max)>1], n
 
 # The many-to-1 relationship for raw.spp-to-spp is OK/ desired/ expected. The many-to-1 for isSpecies-to-spp is a little annoying (unexpected, but not terribly surprising), but not a big deal because I can simply recompute isSpecies on the new `spp`. The `Picture` issue is trivial, but surprising, and should be investigated manually (only 2 instances). The `trohpicLevel` issue is important and problematic, however, it is also easily investigated manually as there is only 1 isntance. Finally, it is important to note that `common`, `taxLvl`, and `phylum` were not duplicated for a given `spp`, which was the original problem I was investigating.
 
+
 # ==================================
 # = Correct Isolated many-to-one's =
 # ==================================
@@ -394,11 +398,11 @@ taxInfo2[useRach.com, common:=rachelCommon]
 # Delete the old columns after their necessary elements have been used
 taxInfo2[,c("rachelSpp", "rachelCommon"):=NULL]
 
+
 # =======================
 # = Recompute isSpecies =
 # =======================
 taxInfo2[,isSpecies:=is.species(spp)]
-
 
 
 # ==================================================
@@ -485,7 +489,7 @@ save(taxProblemSolution, file="./trawl/Data/Taxonomy/taxProblemSolution.RData") 
 
 # Save the taxonomy
 taxInfo <- taxInfo3 # renaming so that loading taxInfo gives you the object taxInfo (I don't want to create confusing versions, and I want the file name to match the object name)
-save(taxInfo3, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/taxInfo.RData")
+save(taxInfo, file="/Users/Battrd/Documents/School&Work/pinskyPost/trawl/Data/Taxonomy/taxInfo.RData")
 
 # TODO Still need to incorporate the rest of Rachel's taxonomy ... phylum, etc. Haven't done that, but I also don't think it matters much (very few things changed, I believe)
 
@@ -632,7 +636,8 @@ trawl2 <- trawl3[, # this aggregates among multiple hauls within the same substr
 			stemp=meanna(stemp), 
 			btemp=meanna(btemp), 
 			wtcpue=meanna(wtcpue), 
-			trophicLevel=meanna(trophicLevel),
+			trophicLevel=mean(trophicLevel, na.rm=TRUE),
+			trophicLevel.se=mean(trophicLevel.se, na.rm=TRUE),
 			correctSpp=any(correctSpp),
 			# common=.SD[correctSpp,unique(common)],
 			# taxLvl=.SD[correctSpp,unique(taxLvl)]
@@ -644,6 +649,7 @@ trawl2 <- trawl3[, # this aggregates among multiple hauls within the same substr
 	by=c("region", "s.reg", "year", "stratum", "K", "spp")
 ] # note that sometimes wtcpue is 0 when cntcpue is non-0, hence why you can have normal numerics for depth and temp even though there is 0 cpue (which would seemingly imply a no-obs, but that's not necessarily true)
 setkey(trawl2, s.reg, year, stratum, K, phylum, spp)
+
 
 # ==================
 # = Save Memory #5 =
