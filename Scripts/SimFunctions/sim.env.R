@@ -1,5 +1,6 @@
 
 sim.env <- function(grid.w=5, grid.h=7, grid.t=12, X.slope=0.75){
+	stopifnot(require(raster))
 	
 	Nv <- (grid.w*grid.h) # Number of vertices
 	
