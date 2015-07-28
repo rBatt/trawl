@@ -4,10 +4,13 @@
 
 
 
-# x <- out
-obs.spp <- function(x){
+# @' n.ss.mu the number of substrata to sample (whole region)
+
+obs.spp <- function(x, n.ss.mu){
 	
 	stopifnot(any("spp" == class(x)))
+	
+	
 	
 	
 	# spp.bio <- attr(x, "spp.bio")
@@ -31,9 +34,22 @@ obs.spp <- function(x){
 	stratum <- setValues(subset(grid.X,1), 1:ncell(grid.X))
 	sub.stratum <- disaggregate(stratum, fact=sqrt(n.ss), method="")
 	
+	n.strat <- prod(attr(out, "dims")[1:2])
+	if(missing(n.ss.mu)){
+		n.ss.mu <- max(trunc((n.strat*n.ss)/3), n.strat)
+	}else{
+		if(n.ss.mu < n.strat){
+			n.ss.mu <- n.strat
+			warning("Fewer sampling locations than strata; n.ss.mu set to n.strat")
+		}else if(n.ss.mu>(n.strat*n.ss)){
+			n.ss.mu <- n.strat*n.ss
+			warning("More sampling locations than substrata; n.ss.mu set to n.strat*n.ss")
+		}
+	}
 	
-	n.ss.mu <- trunc((ncell(stratum)*n.ss)/3) # average number of substrata observed (total)
-	n.ss.obs0 <- min(rpois(1, n.ss.mu), ncell(sub.stratum)) # number of substrata observed this time
+	# n.ss.mu <- trunc((ncell(stratum)*n.ss)/3) # average number of substrata observed (total)
+	# n.ss.obs0 <- min(rpois(1, n.ss.mu), ncell(sub.stratum)) # number of substrata observed this time
+	n.ss.obs0 <- n.ss.mu # number of substrata observed this time
 	
 	all.ss <- 1:ncell(sub.stratum) # id of all possible substrata
 	guaran.ss <- sampleStratified(sub.stratum, 1)[,"cell"] # the guaranteed substrata; 1 from each strat
