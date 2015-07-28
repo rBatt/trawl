@@ -47,6 +47,18 @@ dims <- attr(out, "dims")
 # Get S, a list of bricks of length grid.t specifying species presence
 S <- getS(out)
 
+
+
+# ================================
+# = Simulate Observation of True =
+# ================================
+out.obs <- obs.spp(out)
+
+
+
+
+
+
 # ==========
 # = Graphs =
 # ==========
