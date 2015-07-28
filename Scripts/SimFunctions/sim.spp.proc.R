@@ -12,18 +12,26 @@ print.spp <- function(x, ...) {
 		
 		cat("\n\n", "Number Species Possible (ns):", "\n", dim(x)[2], sep="")
 		
-		cat("\n", "Total Species Richness:", "\n", sum(apply(x, c(2), function(x)any(!is.na(x)))), sep="")
+		cat("\n", "Total Species Richness:", "\n", attr(x, "prnt")$tr, sep="")
 		
-		# cat("\n\n", "Richness Across Years: ", "\n")
-		s <- summary(colSums(apply(x, c(2,3), function(x)any(!is.na(x)))))
-		# print(summary(s))
+		obs <- attr(x, "obs")
+		has.obs <- !is.logical(obs)
+		if(has.obs){
+			cat("\n", "Total Observed Species Richness:", "\n", attr(x, "prnt.obs")$tr, sep="")
+		}
 		
-		# cat("\n\n", "Richness in any given Year/ Grid Cell: ", "\n")
-		s2 <- summary(c(apply(x, c(1,3), function(x)sum(!is.na(x)))))
-		# print(summary(s2))
 		cat("\n\n", "Annual Species Richness:", "\n", sep="")
+		s <- attr(x, "prnt")$s
+		s2 <- attr(x, "prnt")$s2
 		rn <- c("All cells", "One cell")
 		print(matrix(c(s, s2), nrow=2, byrow=TRUE, dimnames=list(rn,names(s))))
+		
+		if(has.obs){
+			cat("\n\n", "Observed Annual Species Richness:", "\n", sep="")
+			so <- attr(x, "prnt.obs")$s
+			s2o <- attr(x, "prnt.obs")$s2
+			print(matrix(c(so, s2o), nrow=2, byrow=TRUE, dimnames=list(rn,names(so))))
+		}
 		
 		invisible(x)			
 }
@@ -35,8 +43,16 @@ getS <- function(x){
 	# replicate(d["grid.t"], gen.grid(x, dims=c(d["grid.h"], d["grid.w"], d["ns"]), xmn=0, ymn=0, xmx=d["grid.w"], ymx=d["grid.h"]), simplify=FALSE)
 	# gen.grid(x, dims=c(d["grid.h"], d["grid.w"], d["ns"]), xmn=0, ymn=0, xmx=d["grid.w"], ymx=d["grid.h"])
 	
-	S0 <- unlist(apply(out, 3, function(x)list(array(c(x), dim=c(d["grid.h"],d["grid.w"],d["ns"])))),F,F)
-	lapply(S0, brick, xmn=0, xmx=d["grid.w"], ymn=0, ymx=d["grid.h"])
+	# S0 <- unlist(apply(out, 3, function(x)list(array(c(x), dim=c(d["grid.h"],d["grid.w"],d["ns"])))),F,F)
+	convS <- function(x){
+		list(
+			aperm(array(c(x), dim=c(d["grid.w"],d["grid.h"],d["ns"])), c(2,1,3))
+		)
+	}
+	S0 <- unlist(apply(out, 3, convS), F, F)
+	
+	s.out <- lapply(S0, brick, xmn=0, xmx=d["grid.w"], ymn=0, ymx=d["grid.h"])
+	s.out
 	
 }  
 
@@ -234,12 +250,27 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias){
 	}
 	
 	out <- structure(spp.pres, class=c("spp", "array"))
+	
+	tr <- sum(apply(out, c(2), function(x)any(!is.na(x))))
+	s <- summary(colSums(apply(out, c(2,3), function(x)any(!is.na(x)))))
+	s2 <- summary(c(apply(out, c(1,3), function(x)sum(!is.na(x)))))
+	
+	
 	attr(out, "spp.bio") <- spp.bio
+	
 	attr(out, "grid.X") <- grid.X
 	attr(out, "spp.densX") <- S.dens.X
+	
 	d <- c(dim(grid.X), ns)
 	names(d) <- c("grid.h","grid.w","grid.t", "ns")
 	attr(out, "dims") <- d
+	
+	attr(out, "prnt") <- list(tr=tr, s=s, s2=s2)
+	
+	attr(out, "obs") <- NA
+	attr(out, "n.haul") <- NA
+	attr(out, "obs.params") <- NA
+	attr(out, "prnt.obs") <- NA
 	
 	out
 }
