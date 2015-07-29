@@ -1,7 +1,15 @@
 
 
 
-rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIter=2E3, nThin=NULL){
+rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIter=2E3, nThin=NULL, save.out.dir, save.fit.cov.dir){
+	
+	if(missing(save.out.dir)){
+		save.out.dir <- "trawl/Results/Richness/msomCov/msomCov.smry/"
+	}
+	if(missing(save.fit.cov.dir)){
+		save.fit.cov.dir <- "trawl/Results/Richness/msomCov/msomCov.full/"
+	}
+	
 	if(is.null(nThin)){
 		nThin <- max(1, floor((nIter - floor(nIter/2)) / 1000))
 	}
@@ -145,8 +153,8 @@ rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIte
 	# ========================
 	# = Save Objects to Disk =
 	# ========================
-	save(out, file=paste0(getwd(),"/","trawl/Results/Richness/msomCov/msomCov.smry/",nameID,"_smry",".RData"))
-	save(fit.cov, file=paste0(getwd(),"/","trawl/Results/Richness/msomCov/msomCov.full/",nameID,"_smry",".RData"))
+	save(out, file=paste0(getwd(), "/", save.out.dir, nameID, "_smry", ".RData"))
+	save(fit.cov, file=paste0(getwd(), "/", save.fit.cov.dir, nameID, "_smry", ".RData"))
 	# save(out, file=paste0("./trawl/Results/Richness/msomCov/msomCov.smry/",nameID,"_smry",".RData"))
 	# save(fit.cov, file=paste0("./trawl/Results/Richness/msomCov/msomCov.full/",nameID,"_full",".RData"))
 	
