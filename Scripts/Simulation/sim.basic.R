@@ -136,7 +136,7 @@ grid.t <- attr(out.obs, "dims")["grid.t"]
 
 nChains <- 3
 nIter <- 4E3
-n0s <- 1E2
+n0s <- 20
 nThin <- 60 # max(1, floor((nIter - floor(nIter/2)) / 1000))
 
 test <- rich.cov(
@@ -148,8 +148,50 @@ test <- rich.cov(
 	nChains=nChains, 
 	nIter=nIter, 
 	nThin=nThin,
-	save.out.dir="trawl/Results/Simulation",
-	save.fit.cov.dir="trawl/Results/Simulation"
+	save.out.dir="trawl/Results/Simulation/",
+	save.fit.cov.dir="trawl/Results/Simulation/"
+) # do analysis for this subset
+
+
+test6 <- rich.cov(
+	data=simDat[[6]], 
+	covs=list(simCov.NA[[6]],simCov[[6]]), 
+	cov.precs=list(simCov.precs.bad[[6]],simCov.precs[[6]]), 
+	nameID=paste(sim.cov.names[6,], collapse="_"),
+	nzeroes=n0s, 
+	nChains=nChains, 
+	nIter=nIter, 
+	nThin=nThin,
+	save.out.dir="trawl/Results/Simulation/",
+	save.fit.cov.dir="trawl/Results/Simulation/"
+) # do analysis for this subset
+
+
+test7 <- rich.cov(
+	data=simDat[[7]], 
+	covs=list(simCov.NA[[7]],simCov[[7]]), 
+	cov.precs=list(simCov.precs.bad[[7]],simCov.precs[[7]]), 
+	nameID=paste(sim.cov.names[7,], collapse="_"),
+	nzeroes=n0s, 
+	nChains=nChains, 
+	nIter=nIter, 
+	nThin=nThin,
+	save.out.dir="trawl/Results/Simulation/",
+	save.fit.cov.dir="trawl/Results/Simulation/"
+) # do analysis for this subset
+
+
+test12 <- rich.cov(
+	data=simDat[[12]], 
+	covs=list(simCov.NA[[12]],simCov[[12]]), 
+	cov.precs=list(simCov.precs.bad[[12]],simCov.precs[[12]]), 
+	nameID=paste(sim.cov.names[12,], collapse="_"),
+	nzeroes=n0s, 
+	nChains=nChains, 
+	nIter=nIter, 
+	nThin=nThin,
+	save.out.dir="trawl/Results/Simulation/",
+	save.fit.cov.dir="trawl/Results/Simulation/"
 ) # do analysis for this subset
 
 
