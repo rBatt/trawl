@@ -154,7 +154,7 @@ rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIte
 	# = Save Objects to Disk =
 	# ========================
 	save(out, file=paste0(getwd(), "/", save.out.dir, nameID, "_smry", ".RData"))
-	save(fit.cov, file=paste0(getwd(), "/", save.fit.cov.dir, nameID, "_smry", ".RData"))
+	save(fit.cov, file=paste0(getwd(), "/", save.fit.cov.dir, nameID, "_full", ".RData"))
 	# save(out, file=paste0("./trawl/Results/Richness/msomCov/msomCov.smry/",nameID,"_smry",".RData"))
 	# save(fit.cov, file=paste0("./trawl/Results/Richness/msomCov/msomCov.full/",nameID,"_full",".RData"))
 	
