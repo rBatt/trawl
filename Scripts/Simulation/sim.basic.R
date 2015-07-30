@@ -22,22 +22,6 @@ library(foreach)
 library(rbLib) # library(devtools); install_github("rBatt/rbLib")
 
 
-# =====================================
-# = Set cores for parallel processing =
-# =====================================
-if(Sys.info()["sysname"]=="Windows"){
-	nC <- floor(detectCores()*0.75)
-	registerDoParallel(cores=nC)
-}else if(Sys.info()["sysname"]=="Linux"){
-	# registerDoParallel(cores=min(c(25,floor(detectCores()*0.75))))
-	registerDoParallel(floor(detectCores()*0.50))
-	# registerDoParallel(floor(detectCores()*0.90))
-}else{
-	registerDoParallel()
-}
-
-
-
 # ===============================
 # = Guess appropriate directory =
 # ===============================
@@ -59,6 +43,21 @@ invisible(sapply(paste(data.location, list.files(data.location), sep="/"), sourc
 
 stat.location <- "./trawl/Scripts/StatFunctions"
 invisible(sapply(paste(stat.location, list.files(stat.location), sep="/"), source, .GlobalEnv))
+
+
+# =====================================
+# = Set cores for parallel processing =
+# =====================================
+if(Sys.info()["sysname"]=="Windows"){
+	nC <- floor(detectCores()*0.75)
+	registerDoParallel(cores=nC)
+}else if(Sys.info()["sysname"]=="Linux"){
+	# registerDoParallel(cores=min(c(25,floor(detectCores()*0.75))))
+	registerDoParallel(floor(detectCores()*0.50))
+	# registerDoParallel(floor(detectCores()*0.90))
+}else{
+	registerDoParallel()
+}
 
 
 # ================
@@ -102,7 +101,7 @@ nThin <- 60 # max(1, floor((nIter - floor(nIter/2)) / 1000))
 env <- sim.env(grid.w=grid.w, grid.h=grid.h, grid.t=grid.t, X.slope=0.75)
 
 # Simulate Species
-out <- sim.spp.proc(env, ns=ns, c(0.7,0.7))
+out <- sim.spp.proc(env, ns=ns, niche.bias=c(0.7,0.7))
 
 # name output attributes for easy access
 spp.bio <- attr(out, "spp.bio")
@@ -120,7 +119,7 @@ S <- getS(out)
 # The loop is for re-observing the same true process multiple times
 for(i in 1:n.obs.reps){
 	if(i==1){
-		out.obs <- obs.spp(out, n.ss=9, n.ss.mu, n.noID, base.chance)
+		out.obs <- obs.spp(out, n.ss, n.ss.mu, n.noID, base.chance)
 		formatted <- spp2msom(out.obs)
 		new.simDat <- formatted$simDat 
 		simCov <- formatted$simCov 
@@ -134,7 +133,7 @@ for(i in 1:n.obs.reps){
 		names(new.simDat) <- paste(names(new.simDat),i, sep=".")
 		big.simDat <- new.simDat
 	}else{
-		big.out.obs[[i]] <- obs.spp(out, n.ss=9, n.ss.mu, n.noID, base.chance)
+		big.out.obs[[i]] <- obs.spp(out, n.ss, n.ss.mu, n.noID, base.chance)
 		new.simDat <- spp2msom(big.out.obs[[i]])$simDat
 		names(new.simDat) <- paste(names(new.simDat),i, sep=".")
 		big.simDat <- c(big.simDat, new.simDat)
@@ -165,7 +164,8 @@ sim.rich.cov <- foreach(i=(1:length(big.simDat))) %dopar%{ # run all other subse
 # ===============
 # = Save Output =
 # ===============
-save(richness.cov.out, file="./trawl/Results/Richness/richness.cov.out.RData")
+save(sim.rich.cov, file="./trawl/Results/Richness/sim.rich.cov.RData")
+save.image(file="./trawl/Results/Richness/sim.basic.RData")
 
 
 # =================================
