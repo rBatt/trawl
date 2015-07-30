@@ -181,8 +181,8 @@ sim.rich.cov <- foreach(i=(1:length(big.simDat))) %dopar%{ # run all other subse
 # ===============
 # = Save Output =
 # ===============
-save(sim.rich.cov, file="./trawl/Results/Richness/sim.rich.cov.RData")
-save.image(file="./trawl/Results/Richness/sim.basic.RData")
+save(sim.rich.cov, file="./trawl/Results/Simulation/sim.rich.cov.RData")
+save.image(file="./trawl/Results/Simulation/sim.basic.RData")
 
 
 # =================================
