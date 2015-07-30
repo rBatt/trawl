@@ -54,7 +54,8 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias){
 	
 	mm <- replicate(ns, sort(rX(n=2, niche.bias[1], niche.bias[2], min=min.X, max=max.X)))
 	# mm <- replicate(ns, sort(runif(n=2, min=min.X, max=max.X))) # give each species its own min/max X tolerance
-	ab <- replicate(ns, runif(n=2, min=1, max=10)) # alpha beta parameters determine the "shape" of the beta distribution
+	# ab <- replicate(ns, runif(n=2, min=1, max=5)) # alpha beta parameters determine the "shape" of the beta distribution; increasing the average values of these parameters narrows the niche width of the species, and will also create more skew. See scratch script and equation for variance of beta distribution.
+	ab <- replicate(ns, rlnorm(2, 0, 2))
 
 	# Use the rescaled beta distribution to give each species a fake history of observed temperatures
 	S.obs.X <- mapply(rX, alpha=ab[1,], beta=ab[2,], min=mm[1,], max=mm[2,], MoreArgs=list(n=500))
@@ -198,6 +199,7 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias){
 	
 	attr(out, "grid.X") <- grid.X
 	attr(out, "spp.densX") <- S.dens.X
+	attr(out, "proc.params") <- list(mm=mm, ab=ab, sd.occupiedX=apply(S.obs.X,2,sd))
 	
 	d <- c(dim(grid.X), ns)
 	names(d) <- c("grid.h","grid.w","grid.t", "ns")
