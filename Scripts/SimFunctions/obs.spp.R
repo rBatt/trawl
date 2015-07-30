@@ -3,10 +3,12 @@
 
 
 
+# @' n.ss number of substrata that exist in each stratum (default 9)
+# @' n.ss.mu number of substrata to sample over the whole region (default \code{max(trunc((n.strat*n.ss)/3), n.strat)})
+# @' n.noID number of taxa that will not be ID'd (0% detectability) in the first half of the time series
+# @' base.chance numeric vector with length equal number species indicating each species' detectability (0-1)
 
-# @' n.ss.mu the number of substrata to sample (whole region)
-
-obs.spp <- function(x, n.ss.mu){
+obs.spp <- function(x, n.ss=9, n.ss.mu, n.noID, base.chance){
 	
 	stopifnot(any("spp" == class(x)))
 	
@@ -23,7 +25,6 @@ obs.spp <- function(x, n.ss.mu){
 	# =====================
 	# Probabilities for sampling a spot
 	# Each grid cell needs to be subdivided
-	n.ss <- 9 # number of substrata
 	S <- getS(x)
 	S.ss <- lapply(S, disaggregate, fact=sqrt(n.ss), method="")
 	
@@ -77,10 +78,17 @@ obs.spp <- function(x, n.ss.mu){
 	# = Detectability =
 	# =================
 	# Baseline detectability
-	base.chance <- runif(ns, 0.2, 0.8) # baseline detectability; specific to species, not to place or time
+	if(missing(base.chance) | length(base.chance)!=ns | any(base.chance<0) | any(base.chance>1)){
+		if(length(base.chance)!=ns | any(base.chance<0) | any(base.chance>1)){
+			warning("Discarding supplied base.chance, using default. Number of chances needs to equal number of species, and all chances between 0 and 1.")
+		}
+		base.chance <- runif(ns, 0.2, 0.8) # baseline detectability; specific to species, not to place or time
+	}
 	
 	# Taxonomic detectability
-	n.noID <- dims["ns"]/2 # number of species that won't be ID'd in first part of time series (say half of them)
+	if(missing(n.noID)){
+		n.noID <- dims["ns"]/2 # number of species that won't be ID'd in first part of time series (say half)
+	}
 	tax.chance <- matrix(1, nrow=dims["grid.t"], ncol=dims["ns"]) # start but giving each species 100% chance of being ID'd
 	tax.chance[1:dims["grid.t"]/2, 1:n.noID] <- 0 # then make select species impossible to ID for part of time series (first half, e.g.)
 	
@@ -132,6 +140,8 @@ obs.spp <- function(x, n.ss.mu){
 	s <- summary(rich.obs)
 	s2 <- summary(c(apply(xva, c(1,3), function(x)sum(!is.na(x)&x==1))))
 	
+	detect.smry <- sapply(attr(out.obs, "obs.params")[[3]], function(x)apply(x, 2, mean))
+	
 	# Assign attributes
 	attr(x, "obs") <- obs
 	attr(x, "obs.arr") <- xva
@@ -139,6 +149,7 @@ obs.spp <- function(x, n.ss.mu){
 	attr(x, "obs.params") <- list(base.chance=base.chance, tax.chance=tax.chance, detect.chance=detect.chance)
 	attr(x, "prnt.obs") <- list(tr=tr, s=s, s2=s2)
 	attr(x, "richness") <- data.frame(rich.true=rich.true, rich.obs=rich.obs)
+	
 	
 	# Return observed species
 	x
