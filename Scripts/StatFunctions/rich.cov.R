@@ -1,7 +1,7 @@
 
 
 
-rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIter=2E3, nThin=NULL, save.out.dir, save.fit.cov.dir){
+rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIter=2E3, nThin=NULL, save.out.dir, save.fit.cov.dir, Save=TRUE){
 	
 	if(missing(save.out.dir)){
 		save.out.dir <- "trawl/Results/Richness/msomCov/msomCov.smry/"
@@ -133,7 +133,7 @@ rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIte
 	)
 
 	# print(nameID)
-	print(getwd())
+	# print(getwd())
 	
 	# mus <- fit.cov$BUGSoutput$mean
 	# t.range <- range(covs[[1]], na.rm=TRUE)
@@ -153,10 +153,13 @@ rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIte
 	# ========================
 	# = Save Objects to Disk =
 	# ========================
-	save(out, file=paste0(getwd(), "/", save.out.dir, nameID, "_smry", ".RData"))
-	save(fit.cov, file=paste0(getwd(), "/", save.fit.cov.dir, nameID, "_full", ".RData"))
-	# save(out, file=paste0("./trawl/Results/Richness/msomCov/msomCov.smry/",nameID,"_smry",".RData"))
-	# save(fit.cov, file=paste0("./trawl/Results/Richness/msomCov/msomCov.full/",nameID,"_full",".RData"))
+	if(Save){
+		save(out, file=paste0(getwd(), "/", save.out.dir, nameID, "_smry", ".RData"))
+		save(fit.cov, file=paste0(getwd(), "/", save.fit.cov.dir, nameID, "_full", ".RData"))
+		# save(out, file=paste0("./trawl/Results/Richness/msomCov/msomCov.smry/",nameID,"_smry",".RData"))
+		# save(fit.cov, file=paste0("./trawl/Results/Richness/msomCov/msomCov.full/",nameID,"_full",".RData"))
+	}
+	
 	
 	
 	# ======================================
