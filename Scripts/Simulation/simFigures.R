@@ -1,4 +1,33 @@
 
+# ===============================
+# = Guess appropriate directory =
+# ===============================
+if(Sys.info()["sysname"]=="Linux"){
+	setwd("~/Documents/School&Work/pinskyPost")
+}else{
+	setwd("~/Documents/School&Work/pinskyPost")
+}
+
+
+# ======================
+# = Load Sim Functions =
+# ======================
+sim.location <- "~/Documents/School&Work/pinskyPost/trawl/Scripts/SimFunctions"
+invisible(sapply(paste(sim.location, list.files(sim.location), sep="/"), source, .GlobalEnv))
+
+data.location <- "./trawl/Scripts/DataFunctions"
+invisible(sapply(paste(data.location, list.files(data.location), sep="/"), source, .GlobalEnv))
+
+stat.location <- "./trawl/Scripts/StatFunctions"
+invisible(sapply(paste(stat.location, list.files(stat.location), sep="/"), source, .GlobalEnv))
+
+
+# ==================================
+# = Load Full Image of sim.basic.R =
+# ==================================
+load("./trawl/Results/Richness/sim.basic.RData")
+
+
 # ==========
 # = Graphs =
 # ==========
