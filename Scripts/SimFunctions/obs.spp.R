@@ -8,7 +8,7 @@
 # @' n.noID number of taxa that will not be ID'd (0% detectability) in the first half of the time series
 # @' base.chance numeric vector with length equal number species indicating each species' detectability (0-1)
 
-obs.spp <- function(x, n.ss=9, n.ss.mu, n.noID, base.chance){
+obs.spp <- function(x, n.ss=9, n.ss.mu, n.noID, base.chance, t.noID){
 	
 	stopifnot(any("spp" == class(x)))
 	
@@ -89,8 +89,14 @@ obs.spp <- function(x, n.ss=9, n.ss.mu, n.noID, base.chance){
 	if(missing(n.noID)){
 		n.noID <- dims["ns"]/2 # number of species that won't be ID'd in first part of time series (say half)
 	}
+	if(missing(t.noID) | length(t.noID)!=dims["grid.t"]){
+		if(length(t.noID)!=dims["grid.t"]){
+			warning("t.noID needs to have 1 integer value per year, but had incorrect length; setting t.noID to default.")
+		}
+		t.noID <- 1:dims["grid.t"]/2
+	}
 	tax.chance <- matrix(1, nrow=dims["grid.t"], ncol=dims["ns"]) # start but giving each species 100% chance of being ID'd
-	tax.chance[1:dims["grid.t"]/2, 1:n.noID] <- 0 # then make select species impossible to ID for part of time series (first half, e.g.)
+	tax.chance[t.noID, 1:n.noID] <- 0 # then make select species impossible to ID for part of time series (first half, e.g.)
 	
 	# Total detectabilty
 	detectability <- base.chance * t(tax.chance) # thus the detectability of a species (given that it is present, and given that the spot is sampled) is the product of its baseline detectability and whether or not it is being ID'd

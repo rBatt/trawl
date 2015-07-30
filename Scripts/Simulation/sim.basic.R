@@ -78,11 +78,25 @@ ns <- 100 # Number of Species
 # ======================
 # = Simulation Options =
 # ======================
-n.obs.reps <- 5 # number of time to observe the same true process (each observation is analyzed separately)
+n.obs.reps <- 10 # number of time to observe the same true process (each observation is analyzed separately)
 n.ss <- 9 # number of substrata (for observation)
 n.ss.mu <- max(trunc((n.ss*grid.w*grid.h)/3), grid.w*grid.h) # total substrata observed
 n.noID <- ns/2 # number of species to not be ID'd in first half of time series
 base.chance <- runif(n=ns, 0.2, 0.8) # baseline detectability (before ID chance)
+t.noID <- list()
+for(i in 1:grid.t){
+	if(i%%2 == 0){
+		r1 <- floor(grid.t/2)
+		r2 <- ceiling(grid.t/2)
+		t.t.noID <- c(rep(1, r1), rep(0, r2))
+	}else{
+		r1 <- floor(grid.t/2)
+		r2 <- ceiling(grid.t/2)
+		t.t.noID <- c(rep(0, r1), rep(1, r2))
+	}
+	t.noID[[i]] <- t.t.noID
+}
+
 
 
 # ================
@@ -119,7 +133,7 @@ S <- getS(out)
 # The loop is for re-observing the same true process multiple times
 for(i in 1:n.obs.reps){
 	if(i==1){
-		out.obs <- obs.spp(out, n.ss, n.ss.mu, n.noID, base.chance)
+		out.obs <- obs.spp(out, n.ss, n.ss.mu, n.noID, base.chance, t.noID[[i]])
 		formatted <- spp2msom(out.obs)
 		new.simDat <- formatted$simDat 
 		simCov <- formatted$simCov 
@@ -133,7 +147,7 @@ for(i in 1:n.obs.reps){
 		names(new.simDat) <- paste(names(new.simDat),i, sep=".")
 		big.simDat <- new.simDat
 	}else{
-		big.out.obs[[i]] <- obs.spp(out, n.ss, n.ss.mu, n.noID, base.chance)
+		big.out.obs[[i]] <- obs.spp(out, n.ss, n.ss.mu, n.noID, base.chance, t.noID[[i]])
 		new.simDat <- spp2msom(big.out.obs[[i]])$simDat
 		names(new.simDat) <- paste(names(new.simDat),i, sep=".")
 		big.simDat <- c(big.simDat, new.simDat)
@@ -145,12 +159,14 @@ for(i in 1:n.obs.reps){
 # = Analyze simData with MSOM =
 # =============================
 # Run all other Bayesian richness in parallel
+year <- as.numeric(gsub("year([0-9]{1,2})\\.[0-9]{1,2}","\\1",names(big.simDat)))
 sim.rich.cov <- foreach(i=(1:length(big.simDat))) %dopar%{ # run all other subsets in parallel
+	yi <- year[i]
 	rich.cov(
 		data=big.simDat[[i]], 
-		covs=list(simCov.NA[[i]],simCov[[i]]), 
-		cov.precs=list(simCov.precs.bad[[i]], simCov.precs[[i]]), 
-		nameID=paste(sim.cov.names[i,], collapse="_"),
+		covs=list(simCov.NA[[yi]],simCov[[yi]]), 
+		cov.precs=list(simCov.precs.bad[[yi]], simCov.precs[[yi]]), 
+		nameID=paste(sim.cov.names[yi,], collapse="_"),
 		nzeroes=n0s, 
 		nChains=nChains, 
 		nIter=nIter, 
@@ -172,8 +188,22 @@ save.image(file="./trawl/Results/Richness/sim.basic.RData")
 # = Run this script on amphiprion =
 # =================================
 # Make sure the 
-library(rbLib)
-path <- 
-
-
-
+# library(rbLib)
+# oldwd <- getwd()
+# setwd("~")
+#
+# # Mirror
+# from <- "Documents/School&Work/pinskyPost/trawl/"
+# to <- "ryanb@amphiprion.deenr.rutgers.edu:'Documents/School&Work/pinskyPost/trawl/'"
+# mirror(from, to)
+#
+# # Push, Run, Pull
+# path <- "./Documents/School&Work/pinskyPost/trawl/Scripts/Simulation/"
+# scriptName <- "sim.basic.R"
+# remoteName <- "ryanb@amphiprion.deenr.rutgers.edu"
+# prp(path, scriptName, remoteName, verbose=TRUE)
+#
+# # Pull whole trawl
+# pull("./Documents/School&Work/pinskyPost/trawl/", remoteName)
+#
+# setwd(oldwd)
