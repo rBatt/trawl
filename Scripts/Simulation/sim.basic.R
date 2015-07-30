@@ -172,7 +172,8 @@ sim.rich.cov <- foreach(i=(1:length(big.simDat))) %dopar%{ # run all other subse
 		nIter=nIter, 
 		nThin=nThin,
 		save.out.dir="trawl/Results/Simulation/",
-		save.fit.cov.dir="trawl/Results/Simulation/"
+		save.fit.cov.dir="trawl/Results/Simulation/",
+		Save=FALSE
 	) # do analysis for this subset
 }
 
