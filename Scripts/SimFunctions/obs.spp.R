@@ -140,13 +140,14 @@ obs.spp <- function(x, n.ss=9, n.ss.mu, n.noID, base.chance){
 	s <- summary(rich.obs)
 	s2 <- summary(c(apply(xva, c(1,3), function(x)sum(!is.na(x)&x==1))))
 	
-	detect.smry <- sapply(attr(out.obs, "obs.params")[[3]], function(x)apply(x, 2, mean))
+	detect.smry <- sapply(detect.chance, function(x)apply(x, 2, mean))
+	
 	
 	# Assign attributes
 	attr(x, "obs") <- obs
 	attr(x, "obs.arr") <- xva
 	attr(x, "n.haul") <- n.haul
-	attr(x, "obs.params") <- list(base.chance=base.chance, tax.chance=tax.chance, detect.chance=detect.chance)
+	attr(x, "obs.params") <- list(base.chance=base.chance, tax.chance=tax.chance, detect.chance=detect.chance, detect.smry=detect.smry)
 	attr(x, "prnt.obs") <- list(tr=tr, s=s, s2=s2)
 	attr(x, "richness") <- data.frame(rich.true=rich.true, rich.obs=rich.obs)
 	
