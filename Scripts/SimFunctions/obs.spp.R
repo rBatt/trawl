@@ -127,7 +127,9 @@ obs.spp <- function(x, n.ss.mu){
 	# Values needed for printing method
 	xva <- simplify2array(lapply(obs, values))
 	tr <- sum(apply(xva, c(2), function(x)any(!is.na(x)&x==1)))
-	s <- summary(colSums(apply(xva, c(2,3), function(x)any(!is.na(x)&x==1))))
+	rich.true <- colSums(apply(x, c(2,3), function(x)any(!is.na(x))))
+	rich.obs <- colSums(apply(xva, c(2,3), function(x)any(!is.na(x)&x==1)))
+	s <- summary(rich.obs)
 	s2 <- summary(c(apply(xva, c(1,3), function(x)sum(!is.na(x)&x==1))))
 	
 	# Assign attributes
@@ -136,6 +138,7 @@ obs.spp <- function(x, n.ss.mu){
 	attr(x, "n.haul") <- n.haul
 	attr(x, "obs.params") <- list(base.chance=base.chance, tax.chance=tax.chance, detect.chance=detect.chance)
 	attr(x, "prnt.obs") <- list(tr=tr, s=s, s2=s2)
+	attr(x, "richness") <- data.frame(rich.true=rich.true, rich.obs=rich.obs)
 	
 	# Return observed species
 	x
