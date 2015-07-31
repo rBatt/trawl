@@ -16,7 +16,8 @@ sim.env <- function(grid.w=5, grid.h=7, grid.t=12, X.slope=0.75){
 	# = Create Temperature Grid/ Time Series =
 	# ========================================
 	# Generate Grid Temperature
-	X.h <- seq(-10, 0, length.out=grid.h)
+	X.h <- seq(from=-grid.h^2*X.slope/grid.t, by=grid.h*X.slope/grid.t, length.out=grid.h)
+	# X.h <- seq(-10, 0, length.out=grid.h)
 	X <- c()
 	for(i in 1:grid.w){
 		X <- c(X, X.h+rnorm(grid.h))
