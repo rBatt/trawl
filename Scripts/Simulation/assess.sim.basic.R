@@ -34,7 +34,7 @@ if(Sys.info()["sysname"]=="Linux"){
 # ==================================
 # = Load Full Image of sim.basic.R =
 # ==================================
-load("./trawl/Results/Richness/sim.basic.RData")
+load("./trawl/Results/Simulation/sim.basic.RData")
 
 big.out.obs
 
@@ -51,3 +51,18 @@ estR <- sapply(sim.rich.cov, function(x)x$mean$N)
 R <- data.frame(simR, rich.est=estR)
 
 plot(R[,"rich.obs"], abs(R[,"rich.true"]-R[,"rich.est"]))
+
+
+
+taxChance <- as.integer(unlist(lapply(big.out.obs, function(x)sapply(attributes(x)$obs.params[[3]],min)),F,F)>0)
+
+R <- cbind(R, taxChance=taxChance)
+
+
+dev.new(width=3.5, height=6)
+par(mfrow=c(3,1), mar=c(2.5,2.5,0.1,0.1), cex=1, ps=9, mgp=c(1.5, 0.2, 0), tcl=-0.15)
+boxplot(rich.true~taxChance, data=R, ylab="True Richness")
+boxplot(rich.obs~taxChance, data=R, ylab="Observed Richness")
+boxplot(rich.est~taxChance, data=R, ylab="Estimated Richness", xlab="% Chance of Being ID'd")
+
+
