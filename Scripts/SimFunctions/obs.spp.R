@@ -86,19 +86,23 @@ obs.spp <- function(x, n.ss=9, n.ss.mu, n.noID, base.chance, t.noID){
 	}
 	
 	# Taxonomic detectability
-	if(missing(n.noID)){
-		n.noID <- dims["ns"]/2 # number of species that won't be ID'd in first part of time series (say half)
-	}
-	if(missing(t.noID) | length(t.noID)!=dims["grid.t"]){
-		if(length(t.noID)!=dims["grid.t"]){
-			warning("t.noID needs to have 1 integer value per year, but had incorrect length; setting t.noID to default.")
-		}
-		r1 <- floor(grid.t/2)
-		r2 <- ceiling(grid.t/2)
-		t.noID <- c(rep(0, r1), rep(1, r2))
-	}
+	# if(missing(n.noID)){
+	# 	n.noID <- dims["ns"]#/2 # number of species that won't be ID'd in first part of time series (say half)
+	# }
+	# if(missing(t.noID) | length(t.noID)!=dims["grid.t"]){
+# 		if(length(t.noID)!=dims["grid.t"]){
+# 			warning("t.noID needs to have 1 integer value per year, but had incorrect length; setting t.noID to default.")
+# 		}
+# 		r1 <- floor(grid.t/2)
+# 		r2 <- ceiling(grid.t/2)
+# 		t.noID <- c(rep(0, r1), rep(1, r2))
+# 	}
 	tax.chance <- matrix(1, nrow=dims["grid.t"], ncol=dims["ns"]) # start but giving each species 100% chance of being ID'd
-	tax.chance[,1:n.noID] <- t.noID # then make select species impossible to ID for part of time series (first half, e.g.)
+	if(missing(t.noID) | !all.equal(dim(tax.chance),dim(t.noID))){
+		t.noID <- 1
+		if(!all.equal(dim(tax.chance),dim(t.noID))){warning("Incorrect dim for t.noID; set to 1")}
+	}
+	tax.chance[,] <- t.noID # now this is really more of a time & species-specific detectability
 	
 	# Total detectabilty
 	detectability <- base.chance * t(tax.chance) # thus the detectability of a species (given that it is present, and given that the spot is sampled) is the product of its baseline detectability and whether or not it is being ID'd
