@@ -92,7 +92,7 @@ chance2 <- plogis(rnorm(ns, -1, 2))
 chance3 <- plogis(rnorm(ns, 0, 2))
 v.rep <- function(...){rep(c(...),each=max(floor(grid.t/3),1))}
 t.lvls <- unlist(apply(mapply(v.rep, chance1, chance2, chance3), 2, list),F,F)
-t.noID <- aperm(simplify2array(lapply(t.lvls0, roll.recycle, grid.t, n.obs.reps)), c(1, 3, 2))
+t.noID <- aperm(simplify2array(lapply(t.lvls, roll.recycle, grid.t, n.obs.reps)), c(1, 3, 2))
 # for(i in c(1,5,9)){hist(t.lvls[i,,1])}
 
 
