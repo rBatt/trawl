@@ -41,6 +41,9 @@ big.out.obs
 sim.rich.cov
 
 
+# ======================================================
+# = Compare True, Obs, Est Richness for Tax ID-ability =
+# ======================================================
 simR0 <- lapply(big.out.obs, function(x)as.matrix(attr(x, "richness")))
 simR <- simR0[[1]]
 for(i in 2:length(simR0)){
@@ -50,19 +53,101 @@ estR <- sapply(sim.rich.cov, function(x)x$mean$N)
 
 R <- data.frame(simR, rich.est=estR)
 
-plot(R[,"rich.obs"], abs(R[,"rich.true"]-R[,"rich.est"]))
+# taxChance <- as.integer(unlist(lapply(big.out.obs, function(x)sapply(attributes(x)$obs.params[[3]],min)),F,F)>0)
+taxChance <- c(sapply(big.out.obs, function(x)rowMeans((attributes(x)$obs.params)$tax.chance)))
 
 
-
-taxChance <- as.integer(unlist(lapply(big.out.obs, function(x)sapply(attributes(x)$obs.params[[3]],min)),F,F)>0)
-
-R <- cbind(R, taxChance=taxChance)
+mu.p0 <- lapply(sim.rich.cov, function(x)t(c(plogis(x$mean$v.a0))*t(x$mean$Z)))
+mu.p <- apply(sapply(mu.p0, function(x)apply(x,2,pTot)),2,sum)
 
 
-dev.new(width=3.5, height=6)
-par(mfrow=c(3,1), mar=c(2.5,2.5,0.1,0.1), cex=1, ps=9, mgp=c(1.5, 0.2, 0), tcl=-0.15)
-boxplot(rich.true~taxChance, data=R, ylab="True Richness")
+# Not sure which Z I should be comparing to the richness realized in the process simulation
+Z <- apply(sapply(sim.rich.cov, function(x)apply(x$mean$Z[,1:ns],2,pTot)),2,sum)
+# Z <- apply(sapply(sim.rich.cov, function(x)apply(x$mean$Z,2,pTot)),2,sum)
+
+
+R[,"taxChance"] <- taxChance
+R[,"mu.p"] <- mu.p
+R[,"Z"] <- Z
+
+# dev.new(width=3.5, height=5)
+pdf("~/Desktop/richnessAssessment1.pdf", width=3.5, height=5)
+par(mfrow=c(3,2), mar=c(2.1,2.0,0.1,0.1), cex=1, ps=9, mgp=c(1.15, 0.2, 0), tcl=-0.15, oma=c(0,0,1,0))
+boxplot(rich.true~taxChance, data=R, ylab="Realized Richness")
+mtext("True ", side=3, line=0.1, font=2)
+boxplot(Z~taxChance, data=R, ylab="")
+mtext("Estimated", side=3, line=0.1, font=2)
 boxplot(rich.obs~taxChance, data=R, ylab="Observed Richness")
-boxplot(rich.est~taxChance, data=R, ylab="Estimated Richness", xlab="% Chance of Being ID'd")
+boxplot(mu.p~taxChance, data=R, ylab="")
+plot(0,0, xaxt="n",yaxt="n", ylab="Richness Asymptote", xlab="", pch="?")
+boxplot(rich.est~taxChance, data=R, ylab="", xlab="")
+# mtext(paste("Number Simulated Species =",ns), side=3, line=0, outer=TRUE, font=2)
+mtext("Fraction Capable of Being ID'd", side=1, line=-1, outer=TRUE)
+dev.off()
 
 
+all.same <- function(x){
+    abs(max(x) - min(x)) < 8.881784e-16 # number is (.Machine$double.eps)*4 on my rMBP
+}
+
+pTot <- function(p, n=1){
+    ln <- length(n)
+    if(ln>1 | !all.same(p)){
+        # stopifnot(ln == length(p))
+        pn <- 1-((1-p)^n)
+    }else{
+        pn <- p
+    }
+
+    1-prod(1 - pn)
+
+}
+
+
+# ============================================
+# = Compare True and Estimated Detectability =
+# ============================================
+
+spp.detect0 <- lapply(big.out.obs, function(x)sapply(attributes(x)$obs.params[[3]], colMeans))
+spp.detect <- array(NA, dim=c(ns, grid.t, length(spp.detect0)))
+spp.detect[,,1] <- spp.detect0[[1]]
+for(i in 2:length(spp.detect0)){
+	spp.detect[,,i] <- spp.detect0[[i]]
+}
+
+
+# TODO THIS WHOLE SECTION IN PROGRESS; TOO TIRED
+
+p.true <- c(apply(spp.detect, c(2,3), mean))
+p.hat0 <- lapply(sim.rich.cov, function(x)t(c(plogis(x$mean$v.a0))*t(x$mean$Z)))
+p.hat <- apply(sapply(p.hat0, function(x)apply(x,2,pTot)),2,mean)
+plot(p.true, p.hat)
+abline(a=0, b=1)
+
+
+
+
+x <- sim.rich.cov[[1]]$mean
+covX <- simCov[[1]]
+get.psi <- function(x, covX){
+	a0 <- x$u.a0
+	a3 <- x$a3
+	a4 <- x$a4
+	Z <- x$Z
+	curve0 <- matrix(NA, nrow=length(covX), ncol=length(a0)+1)
+	psi <- curve0[,-1]
+	curve0[,1] <- covX
+	for(i in 1:length(a0)){
+		psi0 <- a3[i]*covX + a4[i]*covX^2
+		curve0[,i+1] <- plogis(psi0)
+		psi[,i] <- plogis(a0[i] + psi0)
+	}	
+}
+
+ref.g <- unstack(grid.X)
+ref.g.i <- (1:length(sim.rich.cov))%%grid.t
+ref.g.i[ref.g.i==0] <- grid.t
+grid.in <- list()
+for(i in 1:length(sim.rich.cov)){
+	grid.in[[i]] <- ref.g[[ref.g.i[i]]]
+}
