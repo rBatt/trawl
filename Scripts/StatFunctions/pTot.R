@@ -14,3 +14,5 @@ pTot <- function(p, n=1){
     1-prod(1 - pn)
 
 }
+
+# blah <- c(); for(i in 1:20){blah[i] <- pTot(rep(0.2,i))}; plot(blah, ylim=0:1)
