@@ -62,16 +62,18 @@ mu.p <- apply(sapply(mu.p0, function(x)apply(x,2,pTot)),2,sum)
 
 
 # Not sure which Z I should be comparing to the richness realized in the process simulation
-Z <- apply(sapply(sim.rich.cov, function(x)apply(x$mean$Z[,1:ns],2,pTot)),2,sum)
-# Z <- apply(sapply(sim.rich.cov, function(x)apply(x$mean$Z,2,pTot)),2,sum)
+# Z <- apply(sapply(sim.rich.cov, function(x)apply(x$mean$Z[,1:ns],2,pTot)),2,sum)
+Z <- apply(sapply(sim.rich.cov, function(x)apply(x$mean$Z,2,pTot)),2,sum)
 
 
 R[,"taxChance"] <- taxChance
 R[,"mu.p"] <- mu.p
 R[,"Z"] <- Z
+R[,"year"] <- 1:grid.t
+R[,"rep"] <- rep(1:n.obs.reps, each=grid.t)
 
-# dev.new(width=3.5, height=5)
-pdf("~/Desktop/richnessAssessment1.pdf", width=3.5, height=5)
+dev.new(width=3.5, height=5)
+# pdf("~/Desktop/richnessAssessment1.pdf", width=3.5, height=5)
 par(mfrow=c(3,2), mar=c(2.1,2.0,0.1,0.1), cex=1, ps=9, mgp=c(1.15, 0.2, 0), tcl=-0.15, oma=c(0,0,1,0))
 boxplot(rich.true~taxChance, data=R, ylab="Realized Richness")
 mtext("True ", side=3, line=0.1, font=2)
@@ -83,25 +85,70 @@ plot(0,0, xaxt="n",yaxt="n", ylab="Richness Asymptote", xlab="", pch="?")
 boxplot(rich.est~taxChance, data=R, ylab="", xlab="")
 # mtext(paste("Number Simulated Species =",ns), side=3, line=0, outer=TRUE, font=2)
 mtext("Fraction Capable of Being ID'd", side=1, line=-1, outer=TRUE)
-dev.off()
+# dev.off()
 
 
-all.same <- function(x){
-    abs(max(x) - min(x)) < 8.881784e-16 # number is (.Machine$double.eps)*4 on my rMBP
+# all.same <- function(x){
+#     abs(max(x) - min(x)) < 8.881784e-16 # number is (.Machine$double.eps)*4 on my rMBP
+# }
+#
+# pTot <- function(p, n=1){
+#     ln <- length(n)
+#     if(ln>1 | !all.same(p)){
+#         # stopifnot(ln == length(p))
+#         pn <- 1-((1-p)^n)
+#     }else{
+#         pn <- p
+#     }
+#
+#     1-prod(1 - pn)
+#
+# }
+
+# ===============
+# = Time Series =
+# ===============
+R.mu <- function(name){
+	aggregate(structure(list(R[,name]),.Names=name),by=list(year=R[,"year"]),mean)
+}
+R.ylim <- function(name){
+	range(R[,name])
 }
 
-pTot <- function(p, n=1){
-    ln <- length(n)
-    if(ln>1 | !all.same(p)){
-        # stopifnot(ln == length(p))
-        pn <- 1-((1-p)^n)
-    }else{
-        pn <- p
-    }
 
-    1-prod(1 - pn)
+dev.new(width=3.5, height=5)
+# pdf("~/Desktop/richnessAssessment1.pdf", width=3.5, height=5)
+par(mfrow=c(3,2), mar=c(2.1,2.0,0.1,0.1), cex=1, ps=9, mgp=c(1.15, 0.2, 0), tcl=-0.15, oma=c(0,0,1,0))
 
-}
+# rich.true and Z
+rt.z.ylim <- range(c(R.ylim("rich.true"),R.ylim("Z")))
+plot(R[R[,"rep"]==1,c("year","rich.true")], type="l", lwd=2, col="blue", ylim=rt.z.ylim)
+
+plot(R.mu("Z"), type="n", ylim=rt.z.ylim)
+for(i in 2:n.obs.reps){lines(R[R[,"rep"]==i,c("year","Z")], col="gray50")}
+lines(R.mu("Z"), type="l", lwd=2, col="blue")
+
+# rich.obs and mu.p
+ro.mup.ylim <- range(c(R.ylim("rich.obs"),R.ylim("mu.p")))
+plot(R.mu("rich.obs"), type="n", ylim=ro.mup.ylim)
+for(i in 2:n.obs.reps){lines(R[R[,"rep"]==i,c("year","rich.obs")], col="gray50")}
+lines(R.mu("rich.obs"), type="l", lwd=2, col="blue")
+
+plot(R.mu("mu.p"), type="n", ylim=ro.mup.ylim)
+for(i in 2:n.obs.reps){lines(R[R[,"rep"]==i,c("year","mu.p")], col="gray50")}
+lines(R.mu("mu.p"), type="l", lwd=2, col="blue")
+
+
+
+plot(R[R[,"rep"]==1,c("year","rich.est")], type="l")
+
+plot(R[R[,"rep"]==1,c("year","mu.p")], type="l")
+
+plot(R[R[,"rep"]==1,c("year","Z")], type="l")
+
+
+
+
 
 
 # ============================================
