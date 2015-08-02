@@ -53,7 +53,7 @@ if(Sys.info()["sysname"]=="Windows"){
 	registerDoParallel(cores=nC)
 }else if(Sys.info()["sysname"]=="Linux"){
 	# registerDoParallel(cores=min(c(25,floor(detectCores()*0.75))))
-	registerDoParallel(floor(detectCores()*0.50))
+	registerDoParallel(floor(detectCores()*0.80))
 	# registerDoParallel(floor(detectCores()*0.90))
 }else{
 	registerDoParallel()
@@ -102,7 +102,8 @@ t.noID <- aperm(simplify2array(lapply(t.lvls, roll.recycle, grid.t, n.obs.reps))
 nChains <- 3
 nIter <- 4E3
 n0s <- 100
-nThin <- 60 # max(1, floor((nIter - floor(nIter/2)) / 1000))
+nSamples <- 75
+nThin <- ((nIter/2)*nChains)/nSamples #40 # max(1, floor((nIter - floor(nIter/2)) / 1000))
 
 
 # =================================
@@ -178,8 +179,19 @@ sim.rich.cov <- foreach(i=(1:length(big.simDat))) %dopar%{ # run all other subse
 # ===============
 # = Save Output =
 # ===============
-save(sim.rich.cov, file="./trawl/Results/Simulation/sim.rich.cov.RData")
-save.image(file="./trawl/Results/Simulation/sim.basic.RData")
+saveFile_a <- "./trawl/Results/Simulation/sim.rich.cov.RData"
+saveFile_b <- "./trawl/Results/Simulation/sim.basic.RData"
+
+renameNow <- function(x){
+	stopifnot(grepl("(\\.[^.]+$)",x))
+	datetime <- format.Date(Sys.time(), format="%Y-%d-%m_%H-%M-%S-%Z")
+	gsub("(\\.[^.]+$)",paste0("_",datetime,"\\1"),x)
+}
+
+save(sim.rich.cov, file=saveFile_a)
+file.copy(from=saveFile_a, to=saveToday(saveFile_a), copy.date=TRUE)
+save.image(file=saveFile_b)
+file.copy(from=saveFile_b, to=saveToday(saveFile_b), copy.date=TRUE)
 
 
 # =================================
