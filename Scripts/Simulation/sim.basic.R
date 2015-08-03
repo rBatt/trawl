@@ -181,6 +181,7 @@ sim.rich.cov <- foreach(i=(1:length(big.simDat))) %dopar%{ # run all other subse
 # ===============
 saveFile_a <- "./trawl/Results/Simulation/sim.rich.cov.RData"
 saveFile_b <- "./trawl/Results/Simulation/sim.basic.RData"
+saveFile_c <- "./trawl/Results/Simulation/sim.basic.small.RData"
 
 renameNow <- function(x){
 	stopifnot(grepl("(\\.[^.]+$)",x))
@@ -189,9 +190,14 @@ renameNow <- function(x){
 }
 
 save(sim.rich.cov, file=saveFile_a)
-file.copy(from=saveFile_a, to=saveToday(saveFile_a), copy.date=TRUE)
+file.copy(from=saveFile_a, to=renameNow(saveFile_a), copy.date=TRUE)
+
 save.image(file=saveFile_b)
-file.copy(from=saveFile_b, to=saveToday(saveFile_b), copy.date=TRUE)
+file.copy(from=saveFile_b, to=renameNow(saveFile_b), copy.date=TRUE)
+
+sim.rich.cov <- lapply(sim.rich.cov, function(x)x$mean)
+save.image(file=saveFile_c)
+file.copy(from=saveFile_c, to=renameNow(saveFile_c), copy.date=TRUE)
 
 
 # =================================
