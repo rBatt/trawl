@@ -1,5 +1,8 @@
 
 
+all.same <- function(x){
+    abs(max(x) - min(x)) < 8.881784e-16 # number is (.Machine$double.eps)*4 on my rMBP
+}
 
 rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIter=2E3, nThin=NULL, save.out.dir, save.fit.cov.dir, Save=TRUE){
 	
@@ -84,7 +87,8 @@ rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIte
 		modelFile <- "msom.cov.txt"
 		
 		# Parameters to Trace
-		sp.params <- c("N", "omega", "Nsite", "Z", "u.a0", "v.a0", "a1", "a2", "a3", "a4")
+		# sp.params <- c("N", "omega", "Nsite", "Z", "u.a0", "v.a0", "a1", "a2", "a3", "a4")
+		sp.params <- c("N", "omega", "Nsite", "Z", "w", "u.a0", "v.a0", "a1", "a2", "a3", "a4")
 		
 		# Data
 		sp.data <- list(
@@ -99,22 +103,43 @@ rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIte
 			depth.prec=cov.precs[[2]]
 		)
 	}else{
-		# Model File
-		modelFile <- "msom.cov.noTemp.txt"
+		if(all.same(cov.precs[[2]])){
+			# Model File
+			modelFile <- "msom.1cov.txt"
 		
-		# Parameters to Trace
-		sp.params <- c("N", "omega", "Nsite", "Z", "u.a0", "v.a0", "a3", "a4")
+			# Parameters to Trace
+			# sp.params <- c("N", "omega", "Nsite", "Z", "u.a0", "v.a0", "a3", "a4")
+			sp.params <- c("N", "omega", "Nsite", "Z", "w", "p", "psi", "u.a0", "v.a0", "a3", "a4")
 		
-		#Data
-		sp.data <- list(
-			n=nSpp, 
-			nzeroes=nzeroes, 
-			J=nStrat, 
-			K=nK, 
-			X=Xaug1,
-			depth.mu=covs[[2]], 
-			depth.prec=cov.precs[[2]]
-		)
+			#Data
+			sp.data <- list(
+				n=nSpp, 
+				nzeroes=nzeroes, 
+				J=nStrat, 
+				K=nK, 
+				X=Xaug1,
+				depth=covs[[2]]
+			)
+		}else{
+			# Model File
+			modelFile <- "msom.cov.noTemp.txt"
+		
+			# Parameters to Trace
+			# sp.params <- c("N", "omega", "Nsite", "Z", "u.a0", "v.a0", "a3", "a4")
+			sp.params <- c("N", "omega", "Nsite", "Z", "w", "p", "psi", "u.a0", "v.a0", "a3", "a4")
+		
+			#Data
+			sp.data <- list(
+				n=nSpp, 
+				nzeroes=nzeroes, 
+				J=nStrat, 
+				K=nK, 
+				X=Xaug1,
+				depth.mu=covs[[2]], 
+				depth.prec=cov.precs[[2]]
+			)
+		}
+		
 	}
 	
 
@@ -143,7 +168,8 @@ rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIte
 	# 	plot(t.grad, resp)
 	# }
 	
-	out <- list(mean=fit.cov$BUGSoutput$mean, median=fit.cov$BUGSoutput$median, sd=fit.cov$BUGSoutput$sd)
+	# out <- list(mean=fit.cov$BUGSoutput$mean, median=fit.cov$BUGSoutput$median, sd=fit.cov$BUGSoutput$sd)
+	out <- list(mean=fit.cov$BUGSoutput$mean, BUGSoutput=fit.cov$BUGSoutput)
 	
 	# out <- list(blah=rnorm(5))
 	#
