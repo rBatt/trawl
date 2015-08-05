@@ -87,14 +87,57 @@ base.chance <- plogis(rnorm(ns)) #rbeta(ns,2,2) #runif(n=ns, 0.2, 0.8) # baselin
 # Create chance to be identified if caught
 # Can also be used to represent a generic
 #  time-varying chance of being detected
-chance1 <- plogis(rnorm(ns, -2, 2))
-chance2 <- plogis(rnorm(ns, -1, 2))
-chance3 <- plogis(rnorm(ns, 0, 2))
-v.rep <- function(...){rep(c(...),each=max(floor(grid.t/3),1))}
-t.lvls <- unlist(apply(mapply(v.rep, chance1, chance2, chance3), 2, list),F,F)
-t.noID <- aperm(simplify2array(lapply(t.lvls, roll.recycle, grid.t, n.obs.reps)), c(1, 3, 2))
-# for(i in c(1,5,9)){hist(t.lvls[i,,1])}
+obs.chance <- function(dim2=ns, dim1=grid.t, dim3=n.obs.reps, rand.gen=rnorm, chances, ...){
+	# If chances is supplied, then each species will have the same chance in each year, and each replicate
+	# species may differ tho
+	
+	rand.gen <- match.fun(rand.gen)
+	dots <- list(...)
+	# stopifnot(all.same(sapply(dots, length)))
+	
+	if(missing(chances)){
+		
+		if(length(dots)>0){
+			chances <- matrix(mapply(rand.gen, MoreArgs=list(n=dim2), ...))
+		}else{
+			chances <- matrix(rand.gen(n=dim2,...))
+		}
+		
+		v.rep <- function(...){rep(c(...),each=max(floor(dim1/ncol(chances)),1))}
+		
+		t.lvls <- unlist(apply(chances, 1, function(x)list(v.rep(x))),F,F)
+		# t.noID <- aperm(simplify2array(lapply(t.lvls, roll.recycle, dim3, dim1)), c(2, 3, 1))
+		# t.noID0 <- lapply(t.lvls, roll.recycle, dim3, dim1)
+		# t.noID <- aperm(array(simplify2array(t.noID0), dim=c(dim3,dim1,dim2)), c(2, 3, 1))
+		# t.noID
+		
+	}else{
+		stopifnot(dim2%%length(chances)==0)
+		chances <- rep(chances, each=dim2%/%length(chances))
+		
+		t.lvls <- lapply(chances, c)
+		# t.noID <- aperm(simplify2array(lapply(t.lvls, roll.recycle, dim1, dim3)), c(1, 3, 2))
+		# t.noID0 <- lapply(t.lvls, roll.recycle, dim3, dim1)
+		# t.noID <- aperm(array(simplify2array(t.noID0), dim=c(dim3,dim1,dim2)), c(2, 3, 1))
+		# t.noID
+	}
+	
+	t.noID0 <- lapply(t.lvls, roll.recycle, dim3, dim1)
+	t.noID <- aperm(array(simplify2array(t.noID0), dim=c(dim3,dim1,dim2)), c(2, 3, 1))
+	t.noID	
+}
 
+# obs.chance 
+# dim2 is number of species; chances/ rng's always differ across dim2 (unless chances supplied with 1 unique)
+# dim1 is time steps; chances will only differ across dim1 if length of arguments in ... are > 1
+# dim3 is replicates; chances will be same across dim3, but dim1 shift by 1 index between each dim3
+# rand.gen is a function for random number generation; its first argument must be \code{n}. Used to generate chances when chances is not specified.
+# chances are predetermined probabilities that can optionally be provided for each species. length(chances) must be a multiple of dim2. If chances is supplied, rand.gen will not be used.
+# ... arguments to be passed to rand.gen
+
+# examples
+
+t.noID <- plogis(obs.chance(mean=5))
 
 # ================
 # = MSOM Options =
