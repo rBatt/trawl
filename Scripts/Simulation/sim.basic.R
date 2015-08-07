@@ -98,7 +98,7 @@ obs.chance <- function(dim2=ns, dim1=grid.t, dim3=n.obs.reps, rand.gen=rnorm, ch
 	if(missing(chances)){
 		
 		if(length(dots)>0){
-			chances <- matrix(mapply(rand.gen, MoreArgs=list(n=dim2), ...))
+			chances <- matrix(mapply(rand.gen, MoreArgs=list(n=dim2), ...), nrow=dim2)
 		}else{
 			chances <- matrix(rand.gen(n=dim2,...))
 		}
@@ -128,6 +128,13 @@ obs.chance <- function(dim2=ns, dim1=grid.t, dim3=n.obs.reps, rand.gen=rnorm, ch
 }
 
 # obs.chance 
+
+# the main use of the function will be when chances is not supplied, 
+# and the function performs the random number generation
+# In a given year, all species will be drawn from the same distribution
+# That distribution can change among years by supplying vectors to ... . Between replicates, 
+# the order of which years correspond to which distribution changes
+
 # dim2 is number of species; chances/ rng's always differ across dim2 (unless chances supplied with 1 unique)
 # dim1 is time steps; chances will only differ across dim1 if length of arguments in ... are > 1
 # dim3 is replicates; chances will be same across dim3, but dim1 shift by 1 index between each dim3
@@ -135,9 +142,16 @@ obs.chance <- function(dim2=ns, dim1=grid.t, dim3=n.obs.reps, rand.gen=rnorm, ch
 # chances are predetermined probabilities that can optionally be provided for each species. length(chances) must be a multiple of dim2. If chances is supplied, rand.gen will not be used.
 # ... arguments to be passed to rand.gen
 
-# examples
+# ===========================
+# = Examples for obs.chance =
+# ===========================
 
-t.noID <- plogis(obs.chance(mean=5))
+# species (dim2) are drawn from same distribution, but each is different
+# no changes between years (dim1), thus no changes between replicates(dim3)
+# plogis(obs.chance(dim2=6, dim3=2, dim1=7))
+
+t.noID <- plogis(obs.chance(dim2=ns, dim1=grid.t, dim3=n.obs.reps, mean=-1))
+
 
 # ================
 # = MSOM Options =
