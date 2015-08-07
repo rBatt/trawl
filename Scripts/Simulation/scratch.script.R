@@ -25,3 +25,22 @@ hist(apply(vals.mediumUnif, 2, beta.var), xlim=c(0,0.1), add=TRUE, col=adjustcol
 
 vals.wideUnif <- replicate(5E2, runif(n=2, min=1, max=20))
 hist(apply(vals.wideUnif, 2, beta.var), xlim=c(0,0.1), add=TRUE, col=adjustcolor("blue",0.5))
+
+
+# ================================================
+# = Logistic Regression & dsample() Sanity Check =
+# ================================================
+# From this I concluded it is a good idea to use the relative=TRUE argument
+x <- seq(-4, 2, by=0.1)
+prob <- dsample(S.dens.X[[8]], x, relative=TRUE)
+n <- length(x)
+y <- rbinom(n=n, size=1, prob=prob)
+
+(mod <- (glm(y~x+I(x^2), family="binomial")))
+(summary(mod))
+
+pred <- plogis(mod$coef[1]+mod$coef[2]*x+mod$coef[3]*x^2) # manual calculation of prob
+
+plot(x,plogis(predict(mod))) # model prediction
+lines(x, pred, col="red") # manually calculated predictions
+lines(x, prob, col="blue") # "true" values
