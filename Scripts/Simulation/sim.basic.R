@@ -260,7 +260,7 @@ file.copy(from=saveFile_c, to=renameNow(saveFile_c), copy.date=TRUE)
 # =================================
 # = Run this script on amphiprion =
 # =================================
-# Make sure the 
+# # Make sure the
 # library(rbLib)
 # oldwd <- getwd()
 # setwd("~")
@@ -274,7 +274,10 @@ file.copy(from=saveFile_c, to=renameNow(saveFile_c), copy.date=TRUE)
 # path <- "./Documents/School&Work/pinskyPost/trawl/Scripts/Simulation/"
 # scriptName <- "sim.basic.R"
 # remoteName <- "ryanb@amphiprion.deenr.rutgers.edu"
-# prp(path, scriptName, remoteName, verbose=TRUE)
+# push(path, remoteName, fileName=scriptName)
+# run(scriptName, path, remoteName)
+# pull(path, remoteName)
+# # prp(path, scriptName, remoteName, verbose=TRUE)
 #
 # # Pull whole trawl
 # pull("./Documents/School&Work/pinskyPost/trawl/", remoteName)
