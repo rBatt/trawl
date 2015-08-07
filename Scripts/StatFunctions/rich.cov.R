@@ -169,7 +169,8 @@ rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIte
 	# }
 	
 	# out <- list(mean=fit.cov$BUGSoutput$mean, median=fit.cov$BUGSoutput$median, sd=fit.cov$BUGSoutput$sd)
-	out <- list(mean=fit.cov$BUGSoutput$mean, BUGSoutput=fit.cov$BUGSoutput)
+	# out <- list(mean=fit.cov$BUGSoutput$mean, BUGSoutput=fit.cov$BUGSoutput)
+	out <- list(mean=fit.cov$BUGSoutput$mean)
 	
 	# out <- list(blah=rnorm(5))
 	#
