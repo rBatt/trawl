@@ -1,6 +1,6 @@
 
 
-sim.spp.proc <- function(grid.X, ns=200, niche.bias){
+sim.spp.proc <- function(grid.X, ns=200, niche.bias, spatial=TRUE){
 	
 	# =================
 	# = Niche Options =
@@ -107,86 +107,94 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias){
 	# Create indices to convert between matrix() and raster() conventions for naming/indexing cells
 	r2m <- order(c(r2m.cell(1:Nv, nrow=grid.h, ncol=grid.w))) # put this in brackets after a vector of cells ordered by the raster convention to put them in the order of the matrix convention
 	m2r <- order(r2m) # use this to reverse the above process
-
-	# Begin looping through time steps to simulate dynamics
-	for(i in 2:grid.t){ # through time
-
-		# Suitability of Persistance (p.persist)
-		t.X <- subset(grid.X, i)
-		c.t <- colonize(values(t.X), S.dens.X, spp.bio.mu)
-		suit.pers[,,i] <- c.t[["suit.pers"]]
-
-		for(s in 2:ns){ # through species
 	
-			# =========================
-			# = Define Suitable Cells =
-			# =========================
-			spp.pres.t1 <- spp.pres[,s,i-1]
-			pers.outcome <- c.t[["spp.pres"]][,s]
-			# spp.pres.t.0 <- pers.outcome*spp.pres.t1
-
-
-			# ============================
-			# = Create Transition Matrix =
-			# ============================
-			Trans <- A # Create Transition Matrix
-
-			# Logic for dispersal, movement, and self-return
-			Disperse.i <- (!is.na(spp.pres.t1) & !is.na(pers.outcome))[r2m] # present previously and currently
-			Move.i <- (!is.na(spp.pres.t1) & is.na(pers.outcome))[r2m] # present previously but not currently
-			AR1.i <- Disperse.i # same as for dispersal, but giving a new name just for clarity
-
-			# Create vectors for the edge proportions
-			D <- Disperse.i*D.frac
-			M <- Move.i*M.frac
-			AR1 <- AR1.i*AR1.coef
-
-			# Put the edges for when i!=j into matrix form, and weight them by the degree of j
-			W.v <- (D+M) * (1/colSums(A)) # vector of of the weighted movements and dispersals
-			W <- matrix(W.v, nrow=Nv, ncol=Nv, byrow=TRUE) # Note: this `byrow=TRUE` should be this way regardless of the matrix/raster notation of D M etc.
-			W[is.na(pers.outcome)[r2m],] <- 0 # sum(is.na(pers.outcome)[r2m] & AR1==0.8) shows that this only needs to be done for the W, not for the AR1 on the diagonal.
-
-			# Update Transition Matrix
-			Trans <- Trans*W # Update Transition matrix to include edges between vertices (no self loops yet)
-			diag(Trans) <- AR1 # Update Transition matrix to include self loops (essentially autocorrelation coefficient)
-	
-	
-			# ====================================
-			# = Transition to the Next Time Step =
-			# ====================================
-			G.t1 <- spp.bio[r2m,s,i-1]
-			G.na <- is.na(G.t1)
-			G.t1[G.na] <- 0
-	
-			G <- Trans%*%G.t1
-			G[G==0] <- NA # TODO might want to find a more reliable way of doing this; I could use pers.outcome, but this isn't always reliable because sometimes there are cells that are suitable but are isolated and did not previously have anything.
+	if(grid.t>1){
 		
-			# ==================================
-			# = Colonize if Previously Extinct =
-			# ==================================
-			if(all(G.na)){ # If completely absent last time step, give it a chance to colonize
-				G[] <- c.t[["spp.bio"]][r2m,s]
+		# Begin looping through time steps to simulate dynamics
+		for(i in 2:grid.t){ # through time
+
+			# Suitability of Persistance (p.persist)
+			t.X <- subset(grid.X, i)
+			c.t <- colonize(values(t.X), S.dens.X, spp.bio.mu)
+			suit.pers[,,i] <- c.t[["suit.pers"]]
+
+			for(s in 2:ns){ # through species
+	
+				# =========================
+				# = Define Suitable Cells =
+				# =========================
+				spp.pres.t1 <- spp.pres[,s,i-1]
+				pers.outcome <- c.t[["spp.pres"]][,s]
+				# spp.pres.t.0 <- pers.outcome*spp.pres.t1
+
+				if(dynamic){
+					# ============================
+					# = Create Transition Matrix =
+					# ============================
+					Trans <- A # Create Transition Matrix
+
+					# Logic for dispersal, movement, and self-return
+					Disperse.i <- (!is.na(spp.pres.t1) & !is.na(pers.outcome))[r2m] # present previously and currently
+					Move.i <- (!is.na(spp.pres.t1) & is.na(pers.outcome))[r2m] # present previously but not currently
+					AR1.i <- Disperse.i # same as for dispersal, but giving a new name just for clarity
+
+					# Create vectors for the edge proportions
+					D <- Disperse.i*D.frac
+					M <- Move.i*M.frac
+					AR1 <- AR1.i*AR1.coef
+
+					# Put the edges for when i!=j into matrix form, and weight them by the degree of j
+					W.v <- (D+M) * (1/colSums(A)) # vector of of the weighted movements and dispersals
+					W <- matrix(W.v, nrow=Nv, ncol=Nv, byrow=TRUE) # Note: this `byrow=TRUE` should be this way regardless of the matrix/raster notation of D M etc.
+					W[is.na(pers.outcome)[r2m],] <- 0 # sum(is.na(pers.outcome)[r2m] & AR1==0.8) shows that this only needs to be done for the W, not for the AR1 on the diagonal.
+
+					# Update Transition Matrix
+					Trans <- Trans*W # Update Transition matrix to include edges between vertices (no self loops yet)
+					diag(Trans) <- AR1 # Update Transition matrix to include self loops (essentially autocorrelation coefficient)
+	
+	
+					# ====================================
+					# = Transition to the Next Time Step =
+					# ====================================
+					G.t1 <- spp.bio[r2m,s,i-1]
+					G.na <- is.na(G.t1)
+					G.t1[G.na] <- 0
+	
+					G <- Trans%*%G.t1
+					G[G==0] <- NA # TODO might want to find a more reliable way of doing this; I could use pers.outcome, but this isn't always reliable because sometimes there are cells that are suitable but are isolated and did not previously have anything.
+		
+					# ==================================
+					# = Colonize if Previously Extinct =
+					# ==================================
+					if(all(G.na)){ # If completely absent last time step, give it a chance to colonize
+						G[] <- c.t[["spp.bio"]][r2m,s]
+					}
+	
+					# is.na(pers.outcome)[r2m] & G!=0
+					# !is.na(pers.outcome)[r2m] & G==0
+					# all((rowSums(Trans)==0) == (c(G)==0)) # maybe could use the rowSums of the transition matrix instead of the G==0
+		
+		
+					# ===============
+					# = Random Walk =
+					# ===============
+					G <- G + rnorm(n=length(G), mean=0, sd=0.1)
+				
+				}else{
+					G <- matrix(c.t[["spp.bio"]][r2m,s], nrow=Nv)
+				}
+		
+				# ====================
+				# = Fill in Matrices =
+				# ====================
+				spp.pres[r2m,s,i][!is.na(G)] <- 1
+				spp.bio[r2m,s,i] <- G
+	
 			}
-	
-			# is.na(pers.outcome)[r2m] & G!=0
-			# !is.na(pers.outcome)[r2m] & G==0
-			# all((rowSums(Trans)==0) == (c(G)==0)) # maybe could use the rowSums of the transition matrix instead of the G==0
-		
-		
-			# ===============
-			# = Random Walk =
-			# ===============
-			G <- G + rnorm(n=length(G), mean=0, sd=0.1)
-		
-		
-			# ====================
-			# = Fill in Matrices =
-			# ====================
-			spp.pres[r2m,s,i][!is.na(G)] <- 1
-			spp.bio[r2m,s,i] <- G
-	
 		}
 	}
+	
+	
 	
 	out <- structure(spp.pres, class=c("spp", "array"))
 	
