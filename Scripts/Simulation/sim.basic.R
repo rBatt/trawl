@@ -64,8 +64,8 @@ if(Sys.info()["sysname"]=="Windows"){
 # = Grid Options =
 # ================
 # Grid Size
-grid.w <- 6 # Width
-grid.h <- 11 # Height
+grid.w <- 5 # Width # 6
+grid.h <- 7 # Height # 11
 grid.t <- 12 # Time
 
 
@@ -78,7 +78,7 @@ ns <- 100 # Number of Species
 # ======================
 # = Simulation Options =
 # ======================
-n.obs.reps <- 10 # number of time to observe the same true process (each observation is analyzed separately)
+n.obs.reps <- 5 # number of time to observe the same true process (each observation is analyzed separately)
 n.ss <- 9 # number of substrata (for observation)
 n.ss.mu <- max(trunc((n.ss*grid.w*grid.h)/3*2), grid.w*grid.h) # total substrata observed
 n.noID <- ns#/2 # number of species susceptible to time-varying detectability (e.g., ID chance)
@@ -170,7 +170,7 @@ nThin <- ((nIter/2)*nChains)/nSamples #40 # max(1, floor((nIter - floor(nIter/2)
 env <- sim.env(grid.w=grid.w, grid.h=grid.h, grid.t=grid.t, X.slope=0.75)
 
 # Simulate Species
-out <- sim.spp.proc(env, ns=ns, niche.bias=c(0.7,0.7))
+out <- sim.spp.proc(env, ns=ns)
 
 # name output attributes for easy access
 spp.bio <- attr(out, "spp.bio")
