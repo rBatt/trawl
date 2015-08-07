@@ -1,6 +1,6 @@
 
 
-sim.spp.proc <- function(grid.X, ns=200, niche.bias, spatial=TRUE){
+sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 	
 	# =================
 	# = Niche Options =
@@ -47,18 +47,30 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, spatial=TRUE){
 	# Note that in other bricks the different layers are different time steps, so be careful of that. It's done this way b/c time is going to be the top level of the process, so no more than 2 time steps need to be accessed at once, whereas 2 dimensions of space and all species might need to be accessed simultaneously.
 
 	# Give the Species Temperature Preferences
-	rX <- function(n, alpha, beta, min, max){
-		del <- max - min
-		rbeta(n, alpha, beta)*del + min # random beta distribution, rescaled
-	}
+	# rX <- function(n, alpha, beta, min, max){
+	# 	del <- max - min
+	# 	rbeta(n, alpha, beta)*del + min # random beta distribution, rescaled
+	# }
 	
-	mm <- replicate(ns, sort(rX(n=2, niche.bias[1], niche.bias[2], min=min.X, max=max.X)))
+	# mm <- replicate(ns, sort(rX(n=2, niche.bias[1], niche.bias[2], min=min.X, max=max.X)))
 	# mm <- replicate(ns, sort(runif(n=2, min=min.X, max=max.X))) # give each species its own min/max X tolerance
 	# ab <- replicate(ns, runif(n=2, min=1, max=5)) # alpha beta parameters determine the "shape" of the beta distribution; increasing the average values of these parameters narrows the niche width of the species, and will also create more skew. See scratch script and equation for variance of beta distribution.
-	ab <- replicate(ns, rlnorm(2, 0, 0.5))
+	# deg.sep <- 2 # how many degrees of separation do we want for a species' min and max possible temps?
+	# added.sep <- pmax(2-(mm[2,]-mm[1,]),0) # how many
+	# ab <- replicate(ns, rlnorm(2, 0, 0.5))
+	
+	# simulate in a way that is more directly comparable to analysis
+	# of course, this is what I was trying to avoid, but 
+	# at least if I do this I'll know what the results mean
+	mus <- runif(ns, min.X, max.X)
+	sds <- rgamma(ns, 3, 2)
+	# rX2 <- function(mean, sd){rnorm(n=n, mean=mean, sd=sd)}
+	
+	
 
 	# Use the rescaled beta distribution to give each species a fake history of observed temperatures
-	S.obs.X <- mapply(rX, alpha=ab[1,], beta=ab[2,], min=mm[1,], max=mm[2,], MoreArgs=list(n=500))
+	# S.obs.X <- mapply(rX, alpha=ab[1,], beta=ab[2,], min=mm[1,], max=mm[2,], MoreArgs=list(n=500))
+	S.obs.X <- mapply(rnorm, mean=mus, sd=sds, MoreArgs=list(n=500))
 
 	# Use that fake history of observed temperatures to generate an empirical density (like histogram)
 	S.dens.X <- apply(S.obs.X, 2, density, from=X.range[1], to=X.range[2], adjust=1)
