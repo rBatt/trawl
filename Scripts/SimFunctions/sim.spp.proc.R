@@ -84,7 +84,7 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, spatial=TRUE){
 	# given that probability, we can flip a count to decide 1 (present) or 0 (absent)
 	# This process is repeated for each grid cell in the first year, and each species
 	# The result is an initial distribution of species
-	c0 <- colonize(values(subset(grid.X, 1)), S.dens.X, spp.bio.mu)
+	c0 <- colonize(values(subset(grid.X, 1)), S.dens.X, spp.bio.mu, relative=TRUE)
 
 	# Store some values from the initial colonization
 	# These array were defined above.
@@ -115,7 +115,7 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, spatial=TRUE){
 
 			# Suitability of Persistance (p.persist)
 			t.X <- subset(grid.X, i)
-			c.t <- colonize(values(t.X), S.dens.X, spp.bio.mu)
+			c.t <- colonize(values(t.X), S.dens.X, spp.bio.mu, relative=TRUE)
 			suit.pers[,,i] <- c.t[["suit.pers"]]
 
 			for(s in 2:ns){ # through species
