@@ -75,7 +75,7 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 	# Use that fake history of observed temperatures to generate an empirical density (like histogram)
 	S.dens.X <- apply(S.obs.X, 2, density, from=X.range[1], to=X.range[2], adjust=1)
 
-
+	cov.params <- t(sapply(S.dens.X, get.cov.params))
 	# =====================================
 	# = Initial Secies Population of Grid =
 	# =====================================
@@ -96,7 +96,7 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 	# given that probability, we can flip a count to decide 1 (present) or 0 (absent)
 	# This process is repeated for each grid cell in the first year, and each species
 	# The result is an initial distribution of species
-	c0 <- colonize(values(subset(grid.X, 1)), S.dens.X, spp.bio.mu, relative=TRUE)
+	c0 <- colonize(values(subset(grid.X, 1)), S.dens.X, spp.bio.mu)
 
 	# Store some values from the initial colonization
 	# These array were defined above.
@@ -127,7 +127,7 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 
 			# Suitability of Persistance (p.persist)
 			t.X <- subset(grid.X, i)
-			c.t <- colonize(values(t.X), S.dens.X, spp.bio.mu, relative=TRUE)
+			c.t <- colonize(values(t.X), S.dens.X, spp.bio.mu)
 			suit.pers[,,i] <- c.t[["suit.pers"]]
 
 			for(s in 2:ns){ # through species
@@ -219,7 +219,7 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 	
 	attr(out, "grid.X") <- grid.X
 	attr(out, "spp.densX") <- S.dens.X
-	attr(out, "proc.params") <- list(mm=mm, ab=ab, sd.occupiedX=apply(S.obs.X,2,sd))
+	attr(out, "proc.params") <- list(mm=mm, ab=ab, sd.occupiedX=apply(S.obs.X,2,sd),cov.params=cov.params)
 	
 	d <- c(dim(grid.X), ns)
 	names(d) <- c("grid.h","grid.w","grid.t", "ns")
