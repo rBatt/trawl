@@ -219,7 +219,7 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 	
 	attr(out, "grid.X") <- grid.X
 	attr(out, "spp.densX") <- S.dens.X
-	attr(out, "proc.params") <- list(mm=mm, ab=ab, sd.occupiedX=apply(S.obs.X,2,sd),cov.params=cov.params)
+	attr(out, "proc.params") <- list(sd.occupiedX=apply(S.obs.X,2,sd),cov.params=cov.params)
 	
 	d <- c(dim(grid.X), ns)
 	names(d) <- c("grid.h","grid.w","grid.t", "ns")
