@@ -25,7 +25,7 @@ invisible(sapply(paste(stat.location, list.files(stat.location), sep="/"), sourc
 # ==================================
 # = Load Full Image of sim.basic.R =
 # ==================================
-load("./trawl/Results/Richness/sim.basic.RData")
+load("./trawl/Results/Simulation/sim.basic.RData")
 
 
 # ==========
