@@ -188,7 +188,7 @@ S <- getS(out)
 # The loop is for re-observing the same true process multiple times
 for(i in 1:n.obs.reps){
 	if(i==1){
-		out.obs <- obs.spp(out, n.ss, n.ss.mu, n.noID, base.chance, t.noID[,,i])
+		out.obs <- obs.spp(out, n.ss, n.ss.mu, n.noID, base.chance, t.noID[,,i], base.chance=rep(1,ns))
 		formatted <- spp2msom(out.obs)
 		new.simDat <- formatted$simDat 
 		simCov <- formatted$simCov 
@@ -260,26 +260,27 @@ file.copy(from=saveFile_c, to=renameNow(saveFile_c), copy.date=TRUE)
 # =================================
 # = Run this script on amphiprion =
 # =================================
-# # Make sure the
-# library(rbLib)
-# oldwd <- getwd()
-# setwd("~")
-#
-# # Mirror
-# from <- "Documents/School&Work/pinskyPost/trawl/"
-# to <- "ryanb@amphiprion.deenr.rutgers.edu:'Documents/School&Work/pinskyPost/trawl/'"
-# mirror(from, to)
-#
-# # Push, Run, Pull
-# path <- "./Documents/School&Work/pinskyPost/trawl/Scripts/Simulation/"
-# scriptName <- "sim.basic.R"
-# remoteName <- "ryanb@amphiprion.deenr.rutgers.edu"
-# push(path, remoteName, fileName=scriptName)
-# run(scriptName, path, remoteName)
-# pull(path, remoteName)
-# # prp(path, scriptName, remoteName, verbose=TRUE)
-#
-# # Pull whole trawl
-# pull("./Documents/School&Work/pinskyPost/trawl/", remoteName)
-#
-# setwd(oldwd)
+# Make sure the
+library(rbLib)
+oldwd <- getwd()
+setwd("~")
+
+# Mirror
+from <- "Documents/School&Work/pinskyPost/trawl/"
+to <- "ryanb@amphiprion.deenr.rutgers.edu:'Documents/School&Work/pinskyPost/trawl/'"
+mirror(from, to)
+
+# Push, Run, Pull
+path <- "./Documents/School&Work/pinskyPost/trawl/Scripts/Simulation/"
+scriptName <- "sim.basic.R"
+remoteName <- "ryanb@amphiprion.deenr.rutgers.edu"
+push(path, remoteName, fileName=scriptName)
+run(scriptName, path, remoteName)
+pull(path, remoteName)
+# prp(path, scriptName, remoteName, verbose=TRUE)
+
+# Pull whole trawl
+pull("./Documents/School&Work/pinskyPost/trawl/", remoteName)
+
+setwd(oldwd)
+
