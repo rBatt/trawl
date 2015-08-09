@@ -75,7 +75,7 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 	# Use that fake history of observed temperatures to generate an empirical density (like histogram)
 	S.dens.X <- apply(S.obs.X, 2, density, from=X.range[1], to=X.range[2], adjust=1)
 
-	cov.params <- t(sapply(S.dens.X, get.cov.params))
+	# cov.params <- t(sapply(S.dens.X, get.cov.params))
 	# =====================================
 	# = Initial Secies Population of Grid =
 	# =====================================
@@ -219,7 +219,7 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 	
 	attr(out, "grid.X") <- grid.X
 	attr(out, "spp.densX") <- S.dens.X
-	attr(out, "proc.params") <- list(sd.occupiedX=apply(S.obs.X,2,sd),cov.params=cov.params)
+	attr(out, "proc.params") <- list(sd.occupiedX=apply(S.obs.X,2,sd),cov.params=data.frame(mus=mus,sds=sds))
 	
 	d <- c(dim(grid.X), ns)
 	names(d) <- c("grid.h","grid.w","grid.t", "ns")
