@@ -39,7 +39,7 @@ model{
 		#Create a loop to estimate the Z matrix (true occurrence for species i 
 		#at point j.      
 		for (j in 1:J) {
-			logit(psi[j,i]) <- u.a0[i] + a3[i]*depth[j] + a4[i]*depth[j]^2
+			logit(psi[j,i]) <- u.a0[i] + a3[i]*cov1[j] + a4[i]*cov1[j]^2
 
 			mu.psi[j,i] <- psi[j,i]*w[i]
 			Z[j,i] ~ dbern(mu.psi[j,i])

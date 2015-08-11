@@ -118,7 +118,7 @@ rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIte
 				J=nStrat, 
 				K=nK, 
 				X=Xaug1,
-				depth=covs[[2]]
+				cov1=covs[[2]]
 			)
 		}else{
 			# Model File
