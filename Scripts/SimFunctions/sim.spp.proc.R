@@ -218,8 +218,24 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 	attr(out, "spp.bio") <- spp.bio
 	
 	attr(out, "grid.X") <- grid.X
-	attr(out, "spp.densX") <- S.dens.X
-	attr(out, "proc.params") <- list(sd.occupiedX=apply(S.obs.X,2,sd),cov.params=data.frame(mus=mus,sds=sds))
+	# attr(out, "spp.densX") <- S.dens.X
+	# attr(out, "proc.params") <- list(sd.occupiedX=apply(S.obs.X,2,sd),cov.params=data.frame(mus=mus,sds=sds))
+	
+	# Add True Psi Parameter Value as Attribute
+	list.grid.X <- unlist(apply(values(grid.X), 2, list),F,F)
+	psi0 <- mapply(
+		function(mu0, sd0, X){
+			sapply(X, function(x){dnorm(x, mu0, sd0)})
+		}, 
+		mu0=mus, sd0=sds, MoreArgs=list(X=list.grid.X), SIMPLIFY=F
+	)
+	psi <- aperm(simplify2array(psi0), c(1,3,2))
+	attr(out, "psi") <- psi
+	
+	# Add True Z as Attribute
+	
+	
+	
 	
 	d <- c(dim(grid.X), ns)
 	names(d) <- c("grid.h","grid.w","grid.t", "ns")
