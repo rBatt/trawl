@@ -233,7 +233,10 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 	attr(out, "psi") <- psi
 	
 	# Add True Z as Attribute
-	
+	Z <- spp.pres[m2r,,]
+	Z[is.na(Z)] <- 0
+	# plot(colSums(apply(Z,2:3,max)), type="l") # e.g., plot total richness over time
+	attr(out, "Z") <- Z
 	
 	
 	
