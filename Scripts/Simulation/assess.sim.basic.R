@@ -273,20 +273,6 @@ for(i in 2:(n.obs.reps*grid.t)){
 Nsite.true <- apply(attributes(big.out.obs[[1]])$spp.bio, c(1,3), function(x)sum(!is.na(x)))
 Nsite.true <- aperm(array(Nsite.true, dim=c(grid.w,grid.h,grid.t)), c(2,1,3))
 
-# Compare correlation between 2 estimates of site-specific richness and true s-s R
-# Nsite.msom is inprod(Z[j,1:(n+nzeroes)],w[1:(n+nzeroes)]), so includes augmented species
-# Nsite.msom2 is based directly on Z matrix, but does not include species introduced by augmenting
-# comp <- matrix(NA, ncol=2, nrow=n.obs.reps, dimnames=list(NULL,c("Nsite (includes augmented)","Non-augmented portion of Z")))
-# for(i in 1:n.obs.reps){
-# 	comp[i,1] <- cor(Nsite.true, Nsite.msom[,,,i])
-# 	comp[i,2] <- cor(Nsite.true, Nsite.msom2[,,,i])
-# }
-# png("./trawl/Figures/Simulation/augmentForRich_test.png", res=72, width=7, height=7, units="in")
-# plot(comp, main="Correlation Coefficient between\nTrue Site-Speicic Richness & MSOM Estimate", sub="Each dot is replicate time series", font.sub=3, cex.sub=0.75)
-# abline(a=0, b=1)
-# dev.off()
-# not including augmented species consistently produces better correlations!
-
 # Observed Space-Time Richness
 # More complicated b/c first have to aggregate to remove substrata (take max for each spp-year-strat)
 # Then have to sum over spp (same as for True)
@@ -312,21 +298,14 @@ get.Nsite <- function(x, ns, format=TRUE){
 	}
 	return(xo)
 }
-# Nsite.msom0 <- lapply(sim.rich.cov, function(x)matrix(x$mean$Nsite,nrow=grid.h,byrow=TRUE))
-# Nsite.msom <- array(unlist(Nsite.msom0), dim=c(grid.h,grid.w,grid.t,n.obs.reps))
-Nsite.msom02 <- lapply(sim.rich.cov, get.Nsite)
-Nsite.msom2 <- array(unlist(Nsite.msom02), dim=c(grid.h,grid.w,grid.t,n.obs.reps))
+
+Nsite.msom0 <- lapply(sim.rich.cov, get.Nsite)
+Nsite.msom <- array(unlist(Nsite.msom02), dim=c(grid.h,grid.w,grid.t,n.obs.reps))
 Nsite.msom.mu <- apply(Nsite.msom, 1:3, mean)
 
 
-# testing using first ns columns of Z instead of Nsite for MSOM
-Nsite2 <- apply(sim.rich.cov[[1]]$mean$Z[,1:100], 1, sum)
-plot(sim.rich.cov[[1]]$mean$Nsite, Nsite2); abline(a=0, b=1) # very similar; Nsite2 slightly lower
 
-
-
-
-
+# Graphs comparing True, Observed, and Estimated Site-&-Year-Specific Richness
 my.image <- function(x, smplt=c(0.85,0.88, 0.2,0.8), bgplt=c(0.05,0.82,0.15,0.95), xaxt="n", yaxt="n", ...){
 	image.plot(t(x), smallplot=smplt, bigplot=bgplt, axis.args=axargs, xaxt=xaxt, yaxt=yaxt, ...)
 }
@@ -387,8 +366,8 @@ for(j in 1:2){
 }
 
 
-dev.new(width=11, height=2.5)
-# png("./trawl/Figures/Simulation/Nsite.compare.scatter.png",width=11,height=2.5,units="in",res=150)
+# dev.new(width=11, height=2.5)
+png("./trawl/Figures/Simulation/Nsite.compare.scatter.png",width=11,height=2.5,units="in",res=150)
 par(mfcol=c(2,grid.t), mar=c(0.5,0.5,0.15,0), ps=6, mgp=c(1,0.0,0), tcl=-0.15, cex=1, oma=c(1,0.65,0.25,0))
 ylim <- range(c(Nsite.true,Nsite.obs.mu,Nsite.msom.mu))
 col <- adjustcolor("black",alpha.f=0.25)
@@ -408,4 +387,4 @@ for(i in 1:grid.t){
 	
 }
 mtext("True", side=1, line=0, outer=TRUE, font=2, cex=1)
-# dev.off()
+dev.off()
