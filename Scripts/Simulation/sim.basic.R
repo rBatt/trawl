@@ -188,7 +188,7 @@ S <- getS(out)
 # The loop is for re-observing the same true process multiple times
 for(i in 1:n.obs.reps){
 	if(i==1){
-		out.obs <- obs.spp(out, n.ss, n.ss.mu, n.noID, base.chance, t.noID[,,i], base.chance=rep(1,ns))
+		out.obs <- obs.spp(out, n.ss, n.ss.mu, n.noID, base.chance=rep(1,ns), t.noID[,,i])
 		formatted <- spp2msom(out.obs)
 		new.simDat <- formatted$simDat 
 		simCov <- formatted$simCov 
