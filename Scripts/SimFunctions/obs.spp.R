@@ -82,7 +82,7 @@ obs.spp <- function(x, n.ss=9, n.ss.mu, n.noID, base.chance, t.noID){
 		if(length(base.chance)!=ns | any(base.chance<0) | any(base.chance>1)){
 			warning("Discarding supplied base.chance, using default. Number of chances needs to equal number of species, and all chances between 0 and 1.")
 		}
-		base.chance <- runif(ns, 0.2, 0.8) # baseline detectability; specific to species, not to place or time
+		base.chance <- plogis(rnorm(ns))#runif(ns, 0.2, 0.8) # baseline detectability; specific to species, not to place or time
 	}
 	
 	# Taxonomic detectability
@@ -145,19 +145,19 @@ obs.spp <- function(x, n.ss=9, n.ss.mu, n.noID, base.chance, t.noID){
 	# = Prepare Output =
 	# ==================
 	# Values needed for printing method
-	xva <- simplify2array(lapply(obs, values))
-	tr <- sum(apply(xva, c(2), function(x)any(!is.na(x)&x==1)))
+	Z.obs <- simplify2array(lapply(obs, values))
+	tr <- sum(apply(Z.obs, c(2), function(x)any(!is.na(x)&x==1)))
 	rich.true <- colSums(apply(x, c(2,3), function(x)any(!is.na(x))))
-	rich.obs <- colSums(apply(xva, c(2,3), function(x)any(!is.na(x)&x==1)))
+	rich.obs <- colSums(apply(Z.obs, c(2,3), function(x)any(!is.na(x)&x==1)))
 	s <- summary(rich.obs)
-	s2 <- summary(c(apply(xva, c(1,3), function(x)sum(!is.na(x)&x==1))))
+	s2 <- summary(c(apply(Z.obs, c(1,3), function(x)sum(!is.na(x)&x==1))))
 	
 	detect.smry <- sapply(detect.chance, function(x)apply(x, 2, mean))
 	
 	
 	# Assign attributes
 	attr(x, "obs") <- obs
-	attr(x, "obs.arr") <- xva
+	attr(x, "Z.obs") <- Z.obs
 	attr(x, "n.haul") <- n.haul
 	attr(x, "obs.params") <- list(base.chance=base.chance, tax.chance=tax.chance, detect.chance=detect.chance, detect.smry=detect.smry)
 	attr(x, "prnt.obs") <- list(tr=tr, s=s, s2=s2)
