@@ -73,6 +73,10 @@ obs.spp <- function(x, n.ss=9, n.ss.mu, n.noID, base.chance, t.noID){
 	# plot(sub.stratum)
 	# image((obs.ss), add=TRUE, col=adjustcolor("black", 0.25), axes=FALSE, xlab="", ylab="")
 	
+	ss.key <- sampleStratified(sub.stratum, n.ss)[,1]
+	visit.chance <- values(obs.ss)
+	visit.chance[is.na(visit.chance)] <- 0
+	visit.chance <- aperm(array(visit.chance[ss.key], dim=c(n.ss, grid.w*grid.h)), 2:1)
 	
 	# =================
 	# = Detectability =
@@ -115,8 +119,8 @@ obs.spp <- function(x, n.ss=9, n.ss.mu, n.noID, base.chance, t.noID){
 	
 	# Reformat chance of observation (which is just detectability)
 	detect.chance0 <- aperm(array(c(detectability), dim=c(dims["ns"], dims["grid.t"], ncell(grid.X))),c(3,1,2)) # reformat
-	detect.chance <- apply(detect.chance0, c(2,3), rep, each=n.ss) # expand (rep) based on number of substrata
-	detect.chance <- unlist(apply(detect.chance, 3, list),F,F) # reformat
+	p0 <- apply(detect.chance0, c(2,3), rep, each=n.ss) # expand (rep) based on number of substrata; use this later to calculate p, the probability of detection (to conform with msom)
+	detect.chance <- unlist(apply(p0, 3, list),F,F) # reformat
 	
 	# Function to flip a coin based on chance of observation (for this data format)
 	rb2 <- function(x){
@@ -152,14 +156,22 @@ obs.spp <- function(x, n.ss=9, n.ss.mu, n.noID, base.chance, t.noID){
 	s <- summary(rich.obs)
 	s2 <- summary(c(apply(Z.obs, c(1,3), function(x)sum(!is.na(x)&x==1))))
 	
-	detect.smry <- sapply(detect.chance, function(x)apply(x, 2, mean))
+	# detect.smry <- sapply(detect.chance, function(x)apply(x, 2, mean))
+	
+	
+	# Finish calculating p, probability of detection
+	p <- array(NA, dim=c(n.ss, grid.h*grid.w, ns, grid.t))
+	p[] <- p0
+	p <- aperm(p, c(2,1,3,4))
+	p[] <- c(p) * c(visit.chance)
 	
 	
 	# Assign attributes
 	attr(x, "obs") <- obs
 	attr(x, "Z.obs") <- Z.obs
+	attr(x, "p") <- p
 	attr(x, "n.haul") <- n.haul
-	attr(x, "obs.params") <- list(base.chance=base.chance, tax.chance=tax.chance, detect.chance=detect.chance, detect.smry=detect.smry)
+	attr(x, "obs.params") <- list(base.chance=base.chance, tax.chance=tax.chance)
 	attr(x, "prnt.obs") <- list(tr=tr, s=s, s2=s2)
 	attr(x, "richness") <- data.frame(rich.true=rich.true, rich.obs=rich.obs)
 	
