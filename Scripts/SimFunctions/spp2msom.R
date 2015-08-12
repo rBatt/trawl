@@ -1,6 +1,6 @@
 
 spp2msom <- function(sim.obs){
-	n.substrat <- 9
+	n.substrat <- 9 # TODO needs to be changed not not magic number
 	n.strat <- nrow(sim.obs)
 	ns <- attr(sim.obs, "dims")["ns"]
 	grid.t <- attr(sim.obs, "dims")["grid.t"]
@@ -12,7 +12,7 @@ spp2msom <- function(sim.obs){
 	keyK.rast <- values(disaggregate(keyK.rast0, fact=sqrt(n.substrat), method=""))
 
 	# Sort (rows of obs.arr) by stratum ID; in way that is convenient for filling output array
-	obs.arr.sort <- attr(sim.obs, "obs.arr")[order(keyK.rast),,]
+	obs.arr.sort <- attr(sim.obs, "Z.obs")[order(keyK.rast),,]
 
 # 2) Exploit reorganization of obs.arr to fill output array
 	# Create output array (which is input array for MSOM analysis)
