@@ -13,24 +13,25 @@ sim.env <- function(grid.w=5, grid.h=7, grid.t=12, X.slope=0.75){
 	
 	
 	# ========================================
-	# = Create Temperature Grid/ Time Series =
+	# = Create Environment Grid/ Time Series =
 	# ========================================
-	# Generate Grid Temperature
-	X.h <- seq(from=-grid.h^2*X.slope/grid.t, by=grid.h*X.slope/grid.t, length.out=grid.h)
-	# X.h <- seq(-10, 0, length.out=grid.h)
+	# Create latitudinal (grid.h) gradient in environmental variable for 1st year (1 longitude) 
+	X.h <- seq(from=-(grid.t-1)*X.slope, by=(grid.t*X.slope)/grid.h, length.out=grid.h)
+	
+	# Create env values at all longitudes by adding noise to default lat gradient
 	X <- c()
 	for(i in 1:grid.w){
-		X <- c(X, X.h+rnorm(grid.h))
+		X <- c(X, X.h+rnorm(grid.h, sd=0.1))
 	}
 
-	# Insert first year of temperature grid
+	# Insert first year of environment grid
 	grid.X.1 <- gen.grid(X, dims=c(grid.h, grid.w, 1), xmn=0, ymn=0, xmx=grid.w, ymx=grid.h)
 
-	# Create time series of temperature grid
+	# Create time series of environment grid
 	grid.X <- grid.blank
 	grid.X <- setValues(grid.X, values(grid.X.1), layer=1)
 
-	rg <- function(){ # function to add noise to the temperature process
+	rg <- function(){ # function to add noise to the environment process
 		rnorm(n=Nv, sd=0.1)
 	}
 	for(i in 2:grid.t){ # loop through years adding noise
