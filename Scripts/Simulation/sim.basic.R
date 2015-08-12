@@ -66,7 +66,7 @@ if(Sys.info()["sysname"]=="Windows"){
 # Grid Size
 grid.w <- 5 # Width # 6
 grid.h <- 7 # Height # 11
-grid.t <- 12 # Time
+grid.t <- 6 # Time
 
 
 # ===================
@@ -78,7 +78,7 @@ ns <- 100 # Number of Species
 # ======================
 # = Simulation Options =
 # ======================
-n.obs.reps <- 5 # number of time to observe the same true process (each observation is analyzed separately)
+n.obs.reps <- 10 # number of time to observe the same true process (each observation is analyzed separately)
 n.ss <- 9 # number of substrata (for observation)
 n.ss.mu <- max(trunc((n.ss*grid.w*grid.h)/3*2), grid.w*grid.h) # total substrata observed
 n.noID <- ns#/2 # number of species susceptible to time-varying detectability (e.g., ID chance)
@@ -150,16 +150,16 @@ obs.chance <- function(dim2=ns, dim1=grid.t, dim3=n.obs.reps, rand.gen=rnorm, ch
 # no changes between years (dim1), thus no changes between replicates(dim3)
 # plogis(obs.chance(dim2=6, dim3=2, dim1=7))
 
-t.noID <- plogis(obs.chance(dim2=ns, dim1=grid.t, dim3=n.obs.reps, mean=-1))
+t.noID <- plogis(obs.chance(dim2=ns, dim1=grid.t, dim3=n.obs.reps, mean=c(-2,-1), sd=2))
 
 
 # ================
 # = MSOM Options =
 # ================
 nChains <- 3
-nIter <- 4E3
-n0s <- 100
-nSamples <- 75
+nIter <- 1E4
+n0s <- 50
+nSamples <- 200
 nThin <- ((nIter/2)*nChains)/nSamples #40 # max(1, floor((nIter - floor(nIter/2)) / 1000))
 
 
