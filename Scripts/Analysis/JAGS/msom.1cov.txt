@@ -57,16 +57,16 @@ model{
 
 	#Sum all species observed (n) and unobserved species (n0) to find the 
 	#total estimated richness
-	n0 <- sum(w[(n+1):(n+nzeroes)])
-	N <- n + n0
+	# n0 <- sum(w[(n+1):(n+nzeroes)])
+	# N <- n + n0
 
 
 	#Create a loop to determine point level richness estimates for the 
 	#whole community and for subsets or assemblages of interest.
-	for(j in 1:J){
-		Nsite[j]<- inprod(Z[j,1:(n+nzeroes)],w[1:(n+nzeroes)])
-	# 	# Nground[j]<- inprod(Z[j,1:n],ground[1:n])
-	# 	# Nmid[j]<- inprod(Z[j,1:n],mid[1:n])
-	}
+	# for(j in 1:J){
+	# 	Nsite[j]<- inprod(Z[j,1:(n+nzeroes)],w[1:(n+nzeroes)])
+	# # 	# Nground[j]<- inprod(Z[j,1:n],ground[1:n])
+	# # 	# Nmid[j]<- inprod(Z[j,1:n],mid[1:n])
+	# }
 
 }

@@ -109,7 +109,7 @@ rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIte
 		
 			# Parameters to Trace
 			# sp.params <- c("N", "omega", "Nsite", "Z", "u.a0", "v.a0", "a3", "a4")
-			sp.params <- c("N", "omega", "Nsite", "Z", "w", "p", "psi", "u.a0", "v.a0", "a3", "a4")
+			sp.params <- c("omega", "Z", "w", "p", "psi", "u.a0", "v.a0", "a3", "a4")
 		
 			#Data
 			sp.data <- list(
