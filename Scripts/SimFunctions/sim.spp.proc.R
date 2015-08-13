@@ -225,7 +225,7 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 	list.grid.X <- unlist(apply(values(grid.X), 2, list),F,F)
 	psi0 <- mapply(
 		function(mu0, sd0, X){
-			sapply(X, function(x){o <- dnorm(x, mu0, sd0); o <- o/max(o); o})
+			sapply(X, function(x){dnorm(x, mu0, sd0)/dnorm(mu0, mu0, sd0)})
 		}, 
 		mu0=mus, sd0=sds, MoreArgs=list(X=list.grid.X), SIMPLIFY=F
 	)
