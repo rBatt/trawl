@@ -83,3 +83,41 @@ get.cov.params <- function(d){
 }
 # blah <- t(sapply(S.dens.X, get.cov.params))
 # apply(blah, 1, function(x)plogis(sum(x[1]+x[5]*x[2]+x[5]^2*x[3])))
+
+
+
+
+
+
+
+
+comp.psi.method <- function(n.ref, samp.label){
+	ref <- rnorm(n.ref)
+	quants <- seq(-3, 3, by=0.1)
+	psi.dnorm <- dnorm(quants)
+	psi.dnorm <- psi.dnorm/dnorm(0) #max(psi.dnorm)
+	psi.dsample <- dsample(ref, quants, relative=T)
+	# plot(psi.dnorm, psi.dsample)
+	# cor(psi.dnorm, psi.dsample)
+	
+	plot(quants,psi.dnorm, cex=0.5, ylab="",xlab="",ylim=c(0,1))
+	lines(quants,psi.dsample, col="blue")
+	
+	if(samp.label){
+		mtext(paste0("n=",n.ref), side=3, line=-0.1, adj=0.05, font=2)
+	}else{
+	}
+	
+}
+
+# nsamps <- rep(seq(50,100,by=2), each=40)
+# comps <- mapply(comp.psi.method, nsamps)
+# plot(nsamps, comps)
+# boxplot(comps~nsamps)
+
+dev.new(height=7, width=8)
+par(mfrow=c(5,5), mar=c(1.5,1.5,0.5,0.1), mgp=c(0.5,0.1,0), tcl=-0.1, ps=6, cex=1)
+nsamps <- rep(c(10,40,80,200,1E3), each=5)
+samp.label <- !duplicated(nsamps)
+
+invisible(mapply(comp.psi.method, nsamps, samp.label))
