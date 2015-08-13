@@ -5,10 +5,9 @@
 
 # @' n.ss number of substrata that exist in each stratum (default 9)
 # @' n.ss.mu number of substrata to sample over the whole region (default \code{max(trunc((n.strat*n.ss)/3), n.strat)})
-# @' n.noID number of taxa that will not be ID'd (0% detectability) in the first half of the time series
 # @' base.chance numeric vector with length equal number species indicating each species' detectability (0-1)
 
-obs.spp <- function(x, n.ss=9, n.ss.mu, n.noID, base.chance, t.noID){
+obs.spp <- function(x, n.ss=9, n.ss.mu, base.chance, t.noID){
 	
 	stopifnot(any("spp" == class(x)))
 	
@@ -89,18 +88,6 @@ obs.spp <- function(x, n.ss=9, n.ss.mu, n.noID, base.chance, t.noID){
 		base.chance <- plogis(rnorm(ns))#runif(ns, 0.2, 0.8) # baseline detectability; specific to species, not to place or time
 	}
 	
-	# Taxonomic detectability
-	# if(missing(n.noID)){
-	# 	n.noID <- dims["ns"]#/2 # number of species that won't be ID'd in first part of time series (say half)
-	# }
-	# if(missing(t.noID) | length(t.noID)!=dims["grid.t"]){
-# 		if(length(t.noID)!=dims["grid.t"]){
-# 			warning("t.noID needs to have 1 integer value per year, but had incorrect length; setting t.noID to default.")
-# 		}
-# 		r1 <- floor(grid.t/2)
-# 		r2 <- ceiling(grid.t/2)
-# 		t.noID <- c(rep(0, r1), rep(1, r2))
-# 	}
 	tax.chance <- matrix(1, nrow=dims["grid.t"], ncol=dims["ns"]) # start but giving each species 100% chance of being ID'd
 	if(missing(t.noID) | !all.equal(dim(tax.chance),dim(t.noID))){
 		t.noID <- 1

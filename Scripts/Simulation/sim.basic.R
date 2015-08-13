@@ -81,7 +81,6 @@ ns <- 100 # Number of Species
 n.obs.reps <- 10 # number of time to observe the same true process (each observation is analyzed separately)
 n.ss <- 9 # number of substrata (for observation)
 n.ss.mu <- max(trunc((n.ss*grid.w*grid.h)/3*2), grid.w*grid.h) # total substrata observed
-n.noID <- ns#/2 # number of species susceptible to time-varying detectability (e.g., ID chance)
 base.chance <- plogis(rnorm(ns)) #rbeta(ns,2,2) #runif(n=ns, 0.2, 0.8) # baseline detectability (before ID chance)
 
 # Create chance to be identified if caught
@@ -188,7 +187,7 @@ S <- getS(out)
 # The loop is for re-observing the same true process multiple times
 for(i in 1:n.obs.reps){
 	if(i==1){
-		out.obs <- obs.spp(out, n.ss, n.ss.mu, n.noID, base.chance=rep(1,ns), t.noID[,,i])
+		out.obs <- obs.spp(out, n.ss, n.ss.mu, base.chance=rep(1,ns), t.noID[,,i])
 		formatted <- spp2msom(out.obs)
 		new.simDat <- formatted$simDat 
 		simCov <- formatted$simCov 
@@ -202,7 +201,7 @@ for(i in 1:n.obs.reps){
 		names(new.simDat) <- paste(names(new.simDat),i, sep=".")
 		big.simDat <- new.simDat
 	}else{
-		big.out.obs[[i]] <- obs.spp(out, n.ss, n.ss.mu, n.noID, base.chance, t.noID[,,i])
+		big.out.obs[[i]] <- obs.spp(out, n.ss, n.ss.mu, base.chance, t.noID[,,i])
 		new.simDat <- spp2msom(big.out.obs[[i]])$simDat
 		names(new.simDat) <- paste(names(new.simDat),i, sep=".")
 		big.simDat <- c(big.simDat, new.simDat)
