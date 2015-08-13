@@ -63,7 +63,7 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 	# of course, this is what I was trying to avoid, but 
 	# at least if I do this I'll know what the results mean
 	mus <- runif(ns, min.X, max.X)
-	sds <- rgamma(ns, 3, 2)
+	sds <- sqrt(rgamma(ns, 3, 2))
 	# rX2 <- function(mean, sd){rnorm(n=n, mean=mean, sd=sd)}
 	
 	
