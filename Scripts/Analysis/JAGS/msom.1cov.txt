@@ -62,9 +62,9 @@ model{
 	for(i in 1:1:(n+nzeroes)){
 		for(j in 1:J){
 			for(k in K[j]:mK){
-				p[j,k,i] <- -99
-				mu.p[j,k,i] <- -99
-				X[j,k,i] <- -99
+				p[j,k,i] <- 0
+				mu.p[j,k,i] <- 0
+				# X[j,k,i] <- 0
 				
 			}
 		}
