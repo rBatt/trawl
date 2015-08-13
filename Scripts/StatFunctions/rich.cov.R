@@ -31,7 +31,7 @@ rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIte
 	nStrat <- dim(data)[1] # number of strata (J)
 	nK <- apply(data[,,1], 1, function(x)sum(!is.na(x))) # needs to be a vector to avoid jags seeing an NA (K)
 	nSpp <- as.numeric(dim(data)[3]) # count the number of species in that choice (n)
-
+	maxK <- dim(data)[2]
 
 	# ====================
 	# = Add 0's to array =
@@ -95,7 +95,8 @@ rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIte
 			n=nSpp, 
 			nzeroes=nzeroes, 
 			J=nStrat, 
-			K=nK, 
+			K=nK,
+			maxK=maxK,
 			X=Xaug1, 
 			temp.mu=covs[[1]], 
 			temp.prec=cov.precs[[1]], 
@@ -116,7 +117,8 @@ rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIte
 				n=nSpp, 
 				nzeroes=nzeroes, 
 				J=nStrat, 
-				K=nK, 
+				K=nK,
+				maxK=maxK,
 				X=Xaug1,
 				cov1=covs[[2]]
 			)
@@ -133,7 +135,8 @@ rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIte
 				n=nSpp, 
 				nzeroes=nzeroes, 
 				J=nStrat, 
-				K=nK, 
+				K=nK,
+				maxK=maxK,
 				X=Xaug1,
 				depth.mu=covs[[2]], 
 				depth.prec=cov.precs[[2]]
