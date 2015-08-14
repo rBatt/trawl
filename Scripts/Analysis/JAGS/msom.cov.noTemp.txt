@@ -94,7 +94,7 @@ model{
 	# Add 0's (or w/e value) for substrata that weren't visited
 	# Allows these other variables to be monitored, if so desired
 	# http://sourceforge.net/p/mcmc-jags/discussion/610037/thread/ac5faa5d/
-	for(i in 1:1:(n+nzeroes)){
+	for(i in 1:(n+nzeroes)){
 		for(j in 1:J){
 			for(k in K[j]:maxK){
 				p[j,k,i] <- 0
