@@ -47,6 +47,7 @@ model{
 			#Create a loop to estimate detection for species i at point k during 
 			#sampling period k.      
 			for (k in 1:K[j]) {  
+			# for(k in k.OK[j,1:nK[j]]){
 				logit(p[j,k,i]) <- v.a0[i]
 				mu.p[j,k,i] <- p[j,k,i]*Z[j,i]
 				X[j,k,i] ~ dbern(mu.p[j,k,i])
@@ -58,16 +59,25 @@ model{
 	# Add 0's (or w/e value) for substrata that weren't visited
 	# Allows these other variables to be monitored, if so desired
 	# http://sourceforge.net/p/mcmc-jags/discussion/610037/thread/ac5faa5d/
-	for(i in 1:(n+nzeroes)){
-		for(j in 1:J){
-			for(k in K[j]:maxK){
-				p[j,k,i] <- 0
-				# mu.p[j,k,i] <- 0
-				# X[j,k,i] <- 0
-				
-			}
-		}
-	}
+	# really freaking hard to do without using if(){}. Could do it if never had full k sampled,
+	# or if I was willing to addon a bonus K that was always empty (:p)
+	# I'd have to index 1 past the current nK, which if nK == n.ss, then I'd go out of bounds,
+	# which would defeat the purpose (JAGS would pad out the dimensions, and unless all j had full k [which would obviate the need to go through all this trouble], I'd be back where i started)
+	# IDK, maybe there's a way to do this by specifying inital values
+	# for(j in 1:J){
+# 		J2[j] <- K[j] < maxK
+# 	}
+# 	J3 <- (1:J)[J2]
+# 	for(i in 1:(n+nzeroes)){
+# 		for(j in J3){
+# 			for(k in K[j]:maxK){
+# 				p[j,k,i] <- 0
+# 				# mu.p[j,k,i] <- 0
+# 				# X[j,k,i] <- 0
+#
+# 			}
+# 		}
+# 	}
 	
 
 

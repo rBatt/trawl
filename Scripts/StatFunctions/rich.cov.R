@@ -62,6 +62,7 @@ rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIte
 			w=c(rep(1, nSpp), rbinom(nzeroes, size=1, prob=omegaGuess)),
 	        u.a0=rnorm(nSpp+nzeroes), 
 			v.a0=rnorm(nSpp+nzeroes),
+			p=array(plogis(-1E1), dim=c(dim(data)[1],maxK,nSpp+nzeroes)),
 			# specify initial for bernoulli outcome; see: http://mbjoseph.github.io/blog/2013/02/24/com_occ/
 			Z = apply(Xaug1, c(1,3), max, na.rm=TRUE)
 		)	
@@ -74,8 +75,17 @@ rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIte
 	}
 
 
-	
-
+	# Ensure that NA's are at the end of the
+	# columnar index before passing into JAGS model
+	# so that looping through 1:nK[j] never indexes an NA
+	# unfortuneately this means that I'll be jumbling the substrata.
+	# But that's something I'll just have to correct on the other end, I suppose
+	# (I can recalculate k.OK directly from the input data, so I'm not even
+	# going to bother returning it from this function)
+	k.OK <- t(apply(data[,,1],1,function(x)c(which(is.finite(x)),which(is.na(x)))))
+	for(j in 1:dim(data)[1]){
+			data[j,,] <- data[j,k.OK[j,],]
+	}
 	
 
 	# ===================================================
@@ -97,6 +107,7 @@ rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIte
 			J=nStrat, 
 			K=nK,
 			maxK=maxK,
+			# k.OK=k.OK,
 			X=Xaug1, 
 			temp.mu=covs[[1]], 
 			temp.prec=cov.precs[[1]], 
@@ -119,6 +130,7 @@ rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIte
 				J=nStrat, 
 				K=nK,
 				maxK=maxK,
+				# k.OK=k.OK,
 				X=Xaug1,
 				cov1=covs[[2]]
 			)
@@ -137,6 +149,7 @@ rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIte
 				J=nStrat, 
 				K=nK,
 				maxK=maxK,
+				# k.OK=k.OK,
 				X=Xaug1,
 				depth.mu=covs[[2]], 
 				depth.prec=cov.precs[[2]]
