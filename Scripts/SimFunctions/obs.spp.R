@@ -136,14 +136,13 @@ obs.spp <- function(x, n.ss=9, n.ss.mu, base.chance, t.noID){
 	# = Prepare Output =
 	# ==================
 	# Values needed for printing method
-	Z.obs <- simplify2array(lapply(obs, values))
-	tr <- sum(apply(Z.obs, c(2), function(x)any(!is.na(x)&x==1)))
+	Z.obs0 <- simplify2array(lapply(obs, values))
+	tr <- sum(apply(Z.obs0, c(2), function(x)any(!is.na(x)&x==1)))
 	rich.true <- colSums(apply(x, c(2,3), function(x)any(!is.na(x))))
-	rich.obs <- colSums(apply(Z.obs, c(2,3), function(x)any(!is.na(x)&x==1)))
+	rich.obs <- colSums(apply(Z.obs0, c(2,3), function(x)any(!is.na(x)&x==1)))
 	s <- summary(rich.obs)
-	s2 <- summary(c(apply(Z.obs, c(1,3), function(x)sum(!is.na(x)&x==1))))
+	s2 <- summary(c(apply(Z.obs0, c(1,3), function(x)sum(!is.na(x)&x==1)))) # is per-substratum, not per stratum
 	
-	# detect.smry <- sapply(detect.chance, function(x)apply(x, 2, mean))
 	
 	
 	# Finish calculating p, probability of detection
@@ -151,6 +150,16 @@ obs.spp <- function(x, n.ss=9, n.ss.mu, base.chance, t.noID){
 	p[] <- p0
 	p <- aperm(p, c(2,1,3,4))
 	p[] <- c(p) * c(visit.chance)
+	
+	# Finish calculating Z.obs, presence/ absence at each j,s,t (no substrat [k])
+	# > str(visit.chance) # structure before the last step which overwrites
+	#  num [1:315] 0 0 1 1 1 1 1 0 1 1 ...
+	# > str(visit.chance) # structure after last step
+	#  num [1:35, 1:9] 0 1 1 1 1 1 1 1 1 0 ...
+	split2jk <- function(x){
+		array(orderD1(Z.obs0, ss.key), dim=c(n.ss, grid.w*grid.h,ns,grid.t))
+	} 
+	Z.obs <- apply(split2jk(Z.obs0),2:4,max, na.rm=T)
 	
 	
 	# Assign attributes
