@@ -160,7 +160,7 @@ obs.spp <- function(x, n.ss=9, n.ss.mu, base.chance, t.noID){
 		array(orderD1(Z.obs0, ss.key), dim=c(n.ss, grid.w*grid.h,ns,grid.t))
 	} 
 	X.obs <- aperm(split2jk(Z.obs0),c(2,1,3,4))
-	Z.obs <- apply(X.obs,2:4,max, na.rm=T)
+	Z.obs <- apply(X.obs,c(1,3,4),max, na.rm=T)
 	
 	
 	# Assign attributes
