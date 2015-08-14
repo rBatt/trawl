@@ -8,21 +8,24 @@ spp2msom <- function(sim.obs){
 	# Indicate which rows belong to which strata
 	stratID0 <- 1:n.strat # stratum ID's (order would fill a matrix b)
 	stratID <- c(matrix(stratID0, nrow=attr(sim.obs, "dims")[1], byrow=TRUE)) # reorders to raster convention
-	keyK.rast0 <- gen.grid(stratID, c(attr(sim.obs, "dims")[1:2],1), byrow=F) # create a grid
-	keyK.rast <- values(disaggregate(keyK.rast0, fact=sqrt(n.substrat), method=""))
+	# keyK.rast0 <- gen.grid(stratID, c(attr(sim.obs, "dims")[1:2],1), byrow=F) # create a grid
+	# keyK.rast <- values(disaggregate(keyK.rast0, fact=sqrt(n.substrat), method=""))
 
 	# Sort (rows of obs.arr) by stratum ID; in way that is convenient for filling output array
-	obs.arr.sort <- attr(sim.obs, "Z.obs")[order(keyK.rast),,]
+	# obs.arr.sort <- attr(sim.obs, "Z.obs")[order(keyK.rast),,]
 
 # 2) Exploit reorganization of obs.arr to fill output array
 	# Create output array (which is input array for MSOM analysis)
 	# Dimension 1 of sorted obs.arr (location) fills dims 1&2 out output array (stratum, K)
 	# Dimension 2 of sorted obs.arr (spp) fills dim 3 of output array (spp)
 	# Dimension 3 of sorted obs.arr (year) corresponds to each element of list of output arrays
-	fill.dims <- c(n.substrat, n.strat, ns) # can't fill byrow=T, so flip row/col and aperm() later
-	a.o0 <- function(x){list(array(c(x), dim=fill.dims))} # function to fill/make arrays
-	output.array0 <- unlist(apply(obs.arr.sort, 3, a.o0), F, F) # split 1st dim into 2, and make 3rd dim a list
-	output.array <- lapply(output.array0, aperm, c(2,1,3)) # rearrange dim to row=stratum & col=K (unflip)
+	# fill.dims <- c(n.substrat, n.strat, ns) # can't fill byrow=T, so flip row/col and aperm() later
+	# a.o0 <- function(x){list(array(c(x), dim=fill.dims))} # function to fill/make arrays
+	# output.array0 <- unlist(apply(obs.arr.sort, 3, a.o0), F, F) # split 1st dim into 2, and make 3rd dim a list
+	# output.array <- lapply(output.array0, aperm, c(2,1,3)) # rearrange dim to row=stratum & col=K (unflip)
+	
+	output.array <- unlist(apply(attr(sim.obs,"X.obs"), 4, function(x)list(x)),F,F)
+
 
 	# Checking
 	# plot(subset(attr(sim.obs, "obs")[[12]], 10)) # plot critter 10 in year 12

@@ -247,6 +247,7 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 	attr(out, "prnt") <- list(tr=tr, s=s, s2=s2)
 	
 	attr(out, "obs") <- NA
+	attr(out, "X.obs") <- NA
 	attr(out, "Z.obs") <- NA
 	attr(out, "p") <- NA
 	attr(out, "n.haul") <- NA
