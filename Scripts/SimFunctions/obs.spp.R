@@ -159,11 +159,13 @@ obs.spp <- function(x, n.ss=9, n.ss.mu, base.chance, t.noID){
 	split2jk <- function(x){
 		array(orderD1(Z.obs0, ss.key), dim=c(n.ss, grid.w*grid.h,ns,grid.t))
 	} 
-	Z.obs <- apply(split2jk(Z.obs0),2:4,max, na.rm=T)
+	X.obs <- aperm(split2jk(Z.obs0),c(2,1,3,4))
+	Z.obs <- apply(X.obs,2:4,max, na.rm=T)
 	
 	
 	# Assign attributes
 	attr(x, "obs") <- obs
+	attr(x, "X.obs") <- X.obs
 	attr(x, "Z.obs") <- Z.obs
 	attr(x, "p") <- p
 	attr(x, "n.haul") <- n.haul
