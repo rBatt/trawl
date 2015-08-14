@@ -35,8 +35,8 @@ if(Sys.info()["sysname"]=="Linux"){
 # ==================================
 # = Load Full Image of sim.basic.R =
 # ==================================
-load("./trawl/Results/Simulation/sim.basic.small.RData")
-# load("./trawl/Results/Simulation/sim.basic.RData")
+# load("./trawl/Results/Simulation/sim.basic.small.RData")
+load("./trawl/Results/Simulation/sim.basic.RData")
 
 
 # ======================================================
@@ -47,41 +47,57 @@ simR <- simR0[[1]]
 for(i in 2:length(simR0)){
 	simR <- rbind(simR, simR0[[i]])
 }
-estR <- sapply(sim.rich.cov, function(x)x$N)
 
-R <- data.frame(simR, rich.est=estR)
+# getZ <- function(x){
+# 	apply(x$mean$Z[,1:ns],2,pTot)
+# }
+#
+# Z.2.Nsite <- function(x){
+# 	x[] <- as.integer(!is.na(x)&x==1)
+# 	x
+# 	# apply(x, 2, function(x)any(!is.na(x)&x==1))
+# 	# colSums(apply(x, c(2,3), function(x)any(!is.na(x)&x==1)))
+# }
+# getZ(sim.rich.cov[[1]])
+#
+# Z.2.Nsite(sim.rich.cov[[1]]$mean$Z)
+
+# estR <- sapply(sim.rich.cov, function(x)x$N)
+R <- data.frame(simR)
+
+# R <- data.frame(simR, rich.est=estR)
 
 # taxChance <- as.integer(unlist(lapply(big.out.obs, function(x)sapply(attributes(x)$obs.params[[3]],min)),F,F)>0)
 taxChance <- c(sapply(big.out.obs, function(x)rowMeans((attributes(x)$obs.params)$tax.chance)))
 
 
-mu.p0 <- lapply(sim.rich.cov, function(x)t(c(plogis(x$v.a0))*t(x$Z)))
+mu.p0 <- lapply(sim.rich.cov, function(x)t(c(plogis(x$mean$v.a0))*t(x$mean$Z)))
 mu.p <- apply(sapply(mu.p0, function(x)apply(x,2,pTot)),2,sum)
 
 
 # Not sure which Z I should be comparing to the richness realized in the process simulation
-Z <- apply(sapply(sim.rich.cov, function(x)apply(x$Z[,1:ns],2,pTot)),2,sum)
+Z <- apply(sapply(sim.rich.cov, function(x)apply(x$mean$Z[,1:ns],2,pTot)),2,sum) # this is right @mtingley
 # Z <- apply(sapply(sim.rich.cov, function(x)apply(x$Z,2,pTot)),2,sum)
 
 
-R[,"taxChance"] <- taxChance
-R[,"mu.p"] <- mu.p
-R[,"Z"] <- Z
+R[,"taxChance"] <- taxChance # note that this averages over all species
+R[,"mu.p"] <- mu.p # originally "mu.p", but actually estimated obs richness
+R[,"Z"] <- Z # originally "Z", but this is actually estimated richness (N, but w/o the asymptote)
 R[,"year"] <- 1:grid.t
 R[,"rep"] <- rep(1:n.obs.reps, each=grid.t)
 
-dev.new(width=3.5, height=5)
+dev.new(width=3.5, height=3.5)
 # pdf("~/Desktop/richnessAssessment1.pdf", width=3.5, height=5)
 tC.names <- round(unique(taxChance),2)
-par(mfrow=c(3,2), mar=c(2.1,2.0,0.1,0.1), cex=1, ps=9, mgp=c(1.15, 0.2, 0), tcl=-0.15, oma=c(0,0,1,0))
+par(mfrow=c(2,2), mar=c(2.1,2.0,0.1,0.1), cex=1, ps=9, mgp=c(1.15, 0.2, 0), tcl=-0.15, oma=c(0,0,1,0))
 boxplot(rich.true~taxChance, data=R, ylab="Realized Richness", names=tC.names)
 mtext("True ", side=3, line=0.1, font=2)
 boxplot(Z~taxChance, data=R, ylab="", names=tC.names)
 mtext("Estimated", side=3, line=0.1, font=2)
 boxplot(rich.obs~taxChance, data=R, ylab="Observed Richness", names=tC.names)
 boxplot(mu.p~taxChance, data=R, ylab="", names=tC.names)
-plot(0,0, xaxt="n",yaxt="n", ylab="Richness Asymptote", xlab="", pch="?")
-boxplot(rich.est~taxChance, data=R, ylab="", xlab="", names=tC.names)
+# plot(0,0, xaxt="n",yaxt="n", ylab="Richness Asymptote", xlab="", pch="?")
+# boxplot(rich.est~taxChance, data=R, ylab="", xlab="", names=tC.names)
 # mtext(paste("Number Simulated Species =",ns), side=3, line=0, outer=TRUE, font=2)
 mtext("Fraction Capable of Being ID'd", side=1, line=-1, outer=TRUE)
 # dev.off()
@@ -139,37 +155,52 @@ lines(R.mu("mu.p"), type="l", lwd=2, col="blue")
 
 
 
-plot(R[R[,"rep"]==1,c("year","rich.est")], type="l")
-
-plot(R[R[,"rep"]==1,c("year","mu.p")], type="l")
-
-plot(R[R[,"rep"]==1,c("year","Z")], type="l")
+# plot(R[R[,"rep"]==1,c("year","rich.est")], type="l")
+#
+# plot(R[R[,"rep"]==1,c("year","mu.p")], type="l")
+#
+# plot(R[R[,"rep"]==1,c("year","Z")], type="l")
 
 
 
 # ============================
 # = Estimated and True Prams =
 # ============================
-proc.params.true <- attr(big.out.obs[[1]], "proc.params")[[2]]
-proc.params.hat <- lapply(sim.rich.cov, function(x)data.frame(x$mean[c("u.a0","a3","a4")]))
-
-# terrible
-# for(j in 1:3){
-# 	p.j <- c("u.a0","a3","a4")[j]
-# 	# plot(proc.params.true[,"u.a0"], proc.params.hat[[1]][1:ns,"u.a0"])
-# 	plot(plogis(proc.params.true[,p.j]), plogis(proc.params.hat[[1]][1:ns,p.j]))
-# 	for(i in 2:length(proc.params.hat)){
-# 		points(plogis(proc.params.true[,p.j]), plogis(proc.params.hat[[i]][1:ns,p.j]))
-# 	}
-# }
 
 
+# ====================
+# = LME Model on Psi =
+# ====================
+# Just exploration/ starting point
 
-plot(plogis(proc.params.true[,p.j]), plogis(proc.params.hat[[1]][1:ns,p.j]))
-for(i in 2:length(proc.params.hat)){
-	points(plogis(proc.params.true[,p.j]), plogis(proc.params.hat[[i]][1:ns,p.j]))
-}
+# Motivation: MSOM skill might differ across dimensions, trying to figure out
+# what patterns I should expect to pick out (spatial patterns in richness, temporal?)
+# E.g., Is the correlation between MSOM and True the same comparing
+# across sites as comparing across years? Species, reps, also.
 
+# Motivation: What factors influence MSOM skill in a given dimension?
+# E.g., Skill in finding differences in Psi across species may depend on p,
+# the chance of being identified. If p changes among years, might also explain
+# 
+
+# This example is looking at psi, probability of an individual species being present
+
+# http://stats.stackexchange.com/questions/31569/questions-about-how-random-effects-are-specified-in-lmer
+blah <- reshape2:::melt.array(proc.params.true, varnames=c("site","spp","time","rep"), value.name="true", as.is=T)
+blah.hat <- reshape2:::melt.array(proc.params.hat, varnames=c("site","spp","time","rep"), value.name="hat", as.is=T)
+blah <- cbind(blah, hat=blah.hat[,"hat"])
+
+blah$site <- as.factor(blah$site)
+blah$spp <- as.factor(blah$spp)
+blah$time <- as.factor(blah$time)
+blah$rep <- as.factor(blah$rep)
+
+
+(blah.mod <- lmer(hat~true+(1|site)+(1|spp)+(1|time)+(1|rep), data=blah))
+
+
+library(car)
+Anova(blah.mod)
 
 
 
@@ -177,13 +208,13 @@ for(i in 2:length(proc.params.hat)){
 # ============================================
 # = Compare True and Estimated Detectability =
 # ============================================
-
-spp.detect0 <- lapply(big.out.obs, function(x)sapply(attributes(x)$obs.params[[3]], colMeans))
-spp.detect <- array(NA, dim=c(ns, grid.t, length(spp.detect0)))
-spp.detect[,,1] <- spp.detect0[[1]]
-for(i in 2:length(spp.detect0)){
-	spp.detect[,,i] <- spp.detect0[[i]]
-}
+#
+# spp.detect0 <- lapply(big.out.obs, function(x)sapply(attributes(x)$p, colMeans))
+# spp.detect <- array(NA, dim=c(ns, grid.t, length(spp.detect0)))
+# spp.detect[,,1] <- spp.detect0[[1]]
+# for(i in 2:length(spp.detect0)){
+# 	spp.detect[,,i] <- spp.detect0[[i]]
+# }
 
 
 
@@ -236,32 +267,24 @@ plot(plogis(sim.rich.cov[[1]]$mean$v.a0)[1:200])
 # ==================================
 # = Compare True and Estimated Psi =
 # ==================================
-# Estimated psi
-psi.hat.mega <- lapply(sim.rich.cov, function(x)x$mean$psi)
-psi.hat.mu <- lapply(psi.hat.mega, function(x)apply(x, 2, mean)) # averages over space
+dim.conv1 <- c(grid.w*grid.h, ns, grid.t, n.obs.reps)
+
+psi.true <- attr(big.out.obs[[1]], "psi")
+psi.true <- (array(psi.true, dim=dim.conv1))
+
+psi.hat <- lapply(sim.rich.cov, function(x)x$mean$psi[,1:ns])
+psi.hat <- plogis(array(simplify2array(psi.hat), dim=dim.conv1))
 
 
-# True psi
-# values(subset(grid.X, 1))
-v.grid.X <- values(grid.X)
-get.psi <- function(x){
-	list(sapply(attr(big.out.obs[[1]], "spp.densX"), dsample, x=x, relative=TRUE))
-}
-psi.true.mega <- unlist(apply(v.grid.X, 2, get.psi),F,F)
-psi.true.mu <- lapply(psi.true.mega, function(x)apply(x, 2, mean)) # averages over space
+psi.true.aggRep <- apply(psi.true, c(1,2,3), median)
+psi.hat.aggRep <- apply(psi.hat, c(1,2,3), median)
 
+lims <- range(c(psi.hat.aggRep, psi.true.aggRep))
+plot(psi.true.aggRep[,,],psi.hat.aggRep[,,], ylim=lims, xlim=lims)
+# for(i in 2:n.obs.reps){
+# 	points(psi.true.aggRep[,,i],psi.hat.aggRep[,,i])
+# }
 
-true.vec <- psi.true.mu[[1]]
-hat.vec <- psi.hat.mu[[1]][1:ns]
-plot(psi.true.mu[[1]], psi.hat.mu[[1]][1:ns])
-for(i in 2:(n.obs.reps*grid.t)){
-	true.i <- i%%grid.t
-	if(true.i==0){true.i <- 1}
-	points(psi.true.mu[[true.i]], psi.hat.mu[[i]][1:ns])
-	
-	true.vec <- c(true.vec,psi.true.mu[[true.i]])
-	hat.vec <- c(hat.vec, psi.hat.mu[[i]][1:ns])
-}
 
 
 # ================================================================
@@ -270,13 +293,19 @@ for(i in 2:(n.obs.reps*grid.t)){
 
 # True Space-Time Richness
 # Simple, b/c no replicates, and no substrata
-Nsite.true <- apply(attributes(big.out.obs[[1]])$spp.bio, c(1,3), function(x)sum(!is.na(x)))
+Nsite.true <- apply(attributes(big.out.obs[[1]])$Z, c(1,3), function(x)sum(x))
 Nsite.true <- aperm(array(Nsite.true, dim=c(grid.w,grid.h,grid.t)), c(2,1,3))
 
 # Observed Space-Time Richness
 # More complicated b/c first have to aggregate to remove substrata (take max for each spp-year-strat)
 # Then have to sum over spp (same as for True)
 # Then have to average over replicates
+Nsite.obs <- apply(attributes(big.out.obs[[1]])$Z.obs, c(1,3), function(x)sum(x))
+Nsite.obs <- aperm(array(Nsite.obs, dim=c(grid.w,grid.h,grid.t)), c(2,1,3))
+
+Nsite.obs <- lapply(big.out.obs, function(x)attributes(x)$Z.obs)
+
+
 get.rich.obs <- function(x){
 	x2 <- aggregate(x, fact=3, max)
 	matrix(values(stackApply(x2, rep(1,nlayers(x2)), sum)),byrow=T, nrow=nrow(x2),ncol=ncol(x2))
