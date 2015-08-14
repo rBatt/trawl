@@ -158,7 +158,7 @@ t.noID <- plogis(obs.chance(dim2=ns, dim1=grid.t, dim3=n.obs.reps, mean=c(-2,-1)
 nChains <- 3
 nIter <- 1E4
 n0s <- 50
-nSamples <- 200
+nSamples <- 500
 nThin <- ((nIter/2)*nChains)/nSamples #40 # max(1, floor((nIter - floor(nIter/2)) / 1000))
 
 
@@ -166,7 +166,7 @@ nThin <- ((nIter/2)*nChains)/nSamples #40 # max(1, floor((nIter - floor(nIter/2)
 # = Do Simulation of True Process =
 # =================================
 # Simulate environment
-env <- sim.env(grid.w=grid.w, grid.h=grid.h, grid.t=grid.t, X.slope=0.75)
+env <- sim.env(grid.w=grid.w, grid.h=grid.h, grid.t=grid.t, X.slope=0.75*(12/grid.t))
 
 # Simulate Species
 out <- sim.spp.proc(env, ns=ns)
