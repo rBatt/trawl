@@ -1,7 +1,7 @@
 
 # Reorder 1st dim of array w/o knowing total dims
 orderD1 <- function(x, ord){	
-	dims <- dim(arr)
+	dims <- dim(x)
 	ndim <- length(dims)
 	
 	stopifnot(ndim>0)
@@ -18,7 +18,7 @@ orderD1 <- function(x, ord){
 	for(i in 2:ndim){
 		dimList[[i]] <- 1:dims[i]
 	}
-	do.call("[",c(list(x=arr),dimList))
+	do.call("[",c(list(x=x),dimList))
 }
 
 # # Example
