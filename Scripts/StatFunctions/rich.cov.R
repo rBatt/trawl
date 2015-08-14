@@ -62,7 +62,7 @@ rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIte
 			w=c(rep(1, nSpp), rbinom(nzeroes, size=1, prob=omegaGuess)),
 	        u.a0=rnorm(nSpp+nzeroes), 
 			v.a0=rnorm(nSpp+nzeroes),
-			p=array(plogis(-1E1), dim=c(dim(data)[1],maxK,nSpp+nzeroes)),
+			# p=array(plogis(-1E1), dim=c(dim(data)[1],maxK,nSpp+nzeroes)),
 			# specify initial for bernoulli outcome; see: http://mbjoseph.github.io/blog/2013/02/24/com_occ/
 			Z = apply(Xaug1, c(1,3), max, na.rm=TRUE)
 		)	
