@@ -1,7 +1,19 @@
+
+
+#' ---
+#' title: "assess.sim.basic.R"
+#' author: "Ryan Batt"
+#' date: "2015-08-14"
+#' output:
+#'   html_document:
+#'     toc: true
+#'     toc_depth: 2
+#' theme: "journal"
+#' ---
+
 # rmarkdown::render("~/Documents/School&Work/pinskyPost/trawl/Scripts/Simulation/assess.sim.basic.R")
 
-
-
+#' #Setup
 #+ setup, include=TRUE, echo=TRUE
 # ================
 # = Report Setup =
@@ -51,16 +63,22 @@ load("../../Results/Simulation/sim.basic.RData")
 
 
 #' 
+#'
 #' 
+#'
 #' ***
+#' 
+#'
 #' 
 #' 
 
+#' #Simulation Settings
 #+ print-sim-msom-info, include=TRUE, echo=TRUE
 # Dimensions of the simulation (and basic richness info)
 big.out.obs[[1]]
-t.noID.mus
-t.noID.sd 
+data.frame(t.noID.mus=t.noID.mus, t.noID.sd=t.noID.sd)
+
+ 
 
 #' 
 # Check the attributes
@@ -69,18 +87,20 @@ str(attributes(big.out.obs[[1]])[c("X.obs","Z","Z.obs","psi","p")])
 
 #'
 # Check on the MSOM output
-nChains
-nIter
-n0s
-nSamples
+data.frame(nChains=nChains, nIter=nIter, n0s=n0s, nSamples=nSamples)
 str(sim.rich.cov[[1]])
 
 #' 
+#'
 #' 
+#'
 #' ***
 #' 
+#'
 #' 
+#'
 
+#' #Richness Boxplots
 #+ richnessBoxplots, fig.width=3.5, fig.height=3.5
 # ======================================================
 # = Compare True, Obs, Est Richness for Tax ID-ability =
@@ -106,8 +126,6 @@ R[,"year"] <- 1:grid.t
 R[,"rep"] <- rep(1:n.obs.reps, each=grid.t)
 
 
-# dev.new(width=3.5, height=3.5)
-# pdf("~/Desktop/richnessAssessment1.pdf", width=3.5, height=5)
 tC.names <- round(unique(taxChance),2)
 par(mfrow=c(2,2), mar=c(2.1,2.0,0.1,0.1), cex=1, ps=9, mgp=c(1.15, 0.2, 0), tcl=-0.15, oma=c(0,0,1,0))
 boxplot(rich.true~taxChance, data=R, ylab="Realized Richness", names=tC.names)
@@ -117,15 +135,19 @@ mtext("Estimated", side=3, line=0.1, font=2)
 boxplot(rich.obs~taxChance, data=R, ylab="Observed Richness", names=tC.names)
 boxplot(mu.p~taxChance, data=R, ylab="", names=tC.names)
 mtext("Fraction Capable of Being ID'd", side=1, line=-1, outer=TRUE)
-#' Old plot, not sure if everything in it is still valid.
-# dev.off()
+#' **Figure.** Old plot, not sure if everything in it is still valid.
 
 #' 
+#'
 #' 
+#'
 #' ***
 #' 
+#'
 #' 
+#'
 
+#' #Richness Time Series
 #+ richnessTimeSeries, fig.width=3.5, fig.height=3.5
 # ===============
 # = Time Series =
@@ -137,8 +159,6 @@ R.ylim <- function(name){
 	range(R[,name])
 }
 
-# dev.new(width=3.5, height=3.5)
-# pdf("~/Desktop/richnessAssessment1.pdf", width=3.5, height=5)
 par(mfrow=c(2,2), mar=c(2.1,2.0,0.1,0.1), cex=1, ps=9, mgp=c(1.15, 0.2, 0), tcl=-0.15, oma=c(0,0,1,0))
 
 # rich.true and Z
@@ -158,18 +178,22 @@ lines(R.mu("rich.obs"), type="l", lwd=2, col="blue")
 plot(R.mu("mu.p"), type="n", ylim=ro.mup.ylim)
 for(i in 2:n.obs.reps){lines(R[R[,"rep"]==i,c("year","mu.p")], col="gray50")}
 lines(R.mu("mu.p"), type="l", lwd=2, col="blue")
-#' Time series of richness. Gray lines are individual replicates. Blue lines are averages.
+#' **Figure.** Time series of richness. Gray lines are individual replicates. Blue lines are averages.
 
 #' 
+#'
 #' 
+#'
 #' ***
 #' 
+#'
 #' 
+#'
 
 
+#' #Demo: Effect of MSOM Hierarchy on $\psi$
 #+ egHierarchEffect_PsiMu, fig.width=4, fig.height=4
-# dev.new(width=4, height=4)
-plot(plogis(sim.rich.cov[[1]]$mean$v.a0)[1:200])
+plot(plogis(sim.rich.cov[[1]]$mean$v.a0)[1:ns])
 #' This plot is interesting because it shows that the only exceptionally high or exceptionally
 #' low chances to be observed occurs fo rthe species that were never observed;
 #' i.e., this says that if you didn't observe it, it just takes on the mean.
@@ -179,11 +203,16 @@ plot(plogis(sim.rich.cov[[1]]$mean$v.a0)[1:200])
 #' So I suppose in the end it just doesn't get informed, and reverts to the mean?
 
 #' 
+#'
 #' 
+#'
 #' ***
+#' 
+#'
 #' 
 #' 
 
+#' #Scatter Plot of Aggregated $\psi$
 #+ psiAggFig, fig.width=3.5, fig.height=3.5, cache=TRUE
 # ==================================
 # = Compare True and Estimated Psi =
@@ -211,19 +240,23 @@ abline(a=0, b=1, lwd=0.5, col="black")
 #' MSOM estimates of $\psi$ ($\hat{\psi}$) vs. true values of $\psi$ ($\psi_{true}$). Each point is a $\psi$ value for a particular site-species-year, averaged across *r*=\Sexpr{n.obs.reps} simulated replicate observations (i.e., the "true" value is the same, but the each simulated replicate has a different outcome of how the same true process was observed). The white and black line is the 1:1 line.
 
 #' 
+#'
 #' 
+#'
 #' ***
 #' 
+#'
 #' 
+#'
 
-#+ fig-psi-full, cache=TRUE, echo=TRUE, fig.width=8, fig.height=4
+#' # $\psi$ Scatter Plots -- Panels Split Years & Reps
+#+ fig-psi-full, cache=TRUE, echo=TRUE, fig.width=10, fig.height=6
 cols2ramp <- c("blue","green","yellow","orange","red")
 box.cols.index <- as.numeric(as.factor(c(t(matrix(taxChance, nrow=grid.t)))))
 box.cols <- colorRampPalette(cols2ramp)(lu(taxChance))[box.cols.index]
 lims <- range(c(psi.hat, psi.true))
 col <- adjustcolor("black",alpha.f=0.1)
  
-# dev.new(width=6, height=3)
 par(mfrow=c(grid.t,n.obs.reps), mar=c(0.25,0.25,0.1,0.1), ps=6, mgp=c(0.75,0.1,0), tcl=-0.05, cex=1, oma=c(0,0.25,0.5,0))
 
 for(j in 1:dim(psi.true)[3]){
@@ -249,12 +282,16 @@ for(j in 1:dim(psi.true)[3]){
 #' **Figure.** True (horizontal axes) and MSOM estimates (vertical axes) of occupancy probabilities ($\psi_{j,i,t,r}$) of species *i* occupying a location *j* in year *t*. In our simulation, $\psi$ is a function of individual species characteristics (niche) and the environment, the latter of which changes among years. The simulated (true) outcome of each year was subject to *r* replicate observations of the true process. Each simulated observation (*r*) was an independent realization, but the *r* replicates also differed in the probability that a species would be detected ($p$): the color of the boxes around each panel indicate whether the among-species average of the probability of detection was low (<span style="color:blue">blue</span> ; $p_{min}=$ `r round(min(taxChance),2)`) or high (<span style="color:red">red</span>; $p_{max}=$ `r round(max(taxChance),2)`). The year *t* of the simulated true process changes across the rows of panels, and the simulated replicate observation *r* changes across columns.
 
 #' 
+#'
 #' 
+#'
 #' ***
 #' 
+#'
 #' 
+#'
 
-
+#' #E.g. LME for $\psi$ Evaluation
 #+ ExploratoryLMER
 # ====================
 # = LME Model on Psi =
@@ -267,12 +304,14 @@ library(lme4)
 #' what patterns I should expect to pick out (spatial patterns in richness, temporal?)
 #' E.g., Is the correlation between MSOM and True the same comparing
 #' across sites as comparing across years? Species, reps, also.
-
+#' 
+#' 
+#' 
 #' Motivation: What factors influence MSOM skill in a given dimension?
-#' E.g., Skill in finding differences in Psi across species may depend on p,
-#' the chance of being identified. If p changes among years, might also explain
+#' E.g., Skill in finding differences in $\psi$ across species may depend on $p$,
+#' the chance of being identified. If $p$ changes among years, might also explain
 
-#' This example is looking at psi, probability of an individual species being present
+#' This example is looking at $\psi$, probability of an individual species being present
 
 # http://stats.stackexchange.com/questions/31569/questions-about-how-random-effects-are-specified-in-lmer
 blah <- reshape2:::melt.array(psi.true, varnames=c("site","spp","time","rep"), value.name="true", as.is=T)
@@ -290,12 +329,18 @@ Anova(blah.mod)
 
 
 #' 
+#'
 #' 
+#'
 #' ***
 #' 
+#'
 #' 
+#'
 
 
+#' #`Nsite` Comparison
+#' ##Spatial & Temporal Representation of `Nsite` 
 #+ NsiteComparison, include=TRUE
 # ================================================================
 # = Compare Site-specific True, Observed, and Estimated Richness =
@@ -369,13 +414,6 @@ Nsite_spaceTime <- function(j){
 	bgplt <- c(0.05,0.82,0.15,0.95)
 	axargs <- list(mgp=c(0.5,0.15,0))
 	
-	# dev.new(width=10, height=3.5)
-	# if(j==1){
-# 		png("./trawl/Figures/Simulation/Nsite.compare.maps.png",width=10,height=3.5,units="in",res=150)
-# 	}else{
-# 		png("./trawl/Figures/Simulation/Nsite.compare.maps_scaled.png",width=10,height=3.5,units="in",res=150)
-# 	}
-#
 	par(mfcol=c(3,grid.t), mar=c(0.25,0.25,0.15,0), ps=6, mgp=c(0,0,0), tcl=-0.15, cex=1, oma=c(0,0.5,0,0))
 
 	# Plot True Richness
@@ -410,31 +448,41 @@ Nsite_spaceTime <- function(j){
 
 #' 
 #'
+#' 
+#'
 #' ***
+#' 
+#'
 #' 
 #'
 
 
 #+ Nsite_compare_spaceTime_diffScale, fig.width=6, fig.height=3.5, include=T
 Nsite_spaceTime(j=1)
-#' **Figure.** Maps of site- and year-specific species richness (`Nsite`) from the simulation of the True process (top row), simulation of the Observed process (middle row), and the MSOM estimates (bottom row). X-axis and Y-axis indicate position in 2 dimensional space; it is important to note that the environmental variable changes linearly across the y-axis, and randomly (and much less) across the x-axis. The different columns represent separate years. The environmental variable changes linearly among years (the rate of change is the same for all x-y locations). Colors indicate species richness (warm colors are higher richness than cool colors), averaged over the simulated replicate observations ($r=$`r n.obs.reps`). Horizontal and vertical axes Each row of panels is scaled independently, columns within a row are scaled equally.
+#' **Figure.** Maps of site- and year-specific species richness (`Nsite`) from the simulation of the True process (top row), simulation of the Observed process (middle row), and the MSOM estimates (bottom row). X-axis and Y-axis indicate position in 2 dimensional space; it is important to note that the environmental variable changes linearly across the y-axis, and randomly (and much less) across the x-axis. The different columns represent separate years. The environmental variable changes linearly among years (the rate of change is the same for all x-y locations). Colors indicate species richness (warm colors are higher richness than cool colors), averaged over the simulated replicate observations ($r=`r n.obs.reps`$ ). Horizontal and vertical axes Each row of panels is scaled independently, columns within a row are scaled equally.
 
 #' 
 #' 
+#' 
+#' 
+#' 
 
-#+ Nsite_compare_spaceTime_sameScale, fig.width=6, fig.height=3.5, include=T
+#+ Nsite-compare-spaceTime-sameScale, fig.width=6, fig.height=3.5, include=T
 Nsite_spaceTime(j=2)
 #' **Figure.** Same as previous figure, but all panels are on the same scale.
 
 #' 
 #'
+#' 
+#'
 #' ***
 #' 
 #'
+#' 
+#'
 
-# dev.new(width=11, height=2.5)
-#+ fig.width=6, fig.height=2.5
-# png("./trawl/Figures/Simulation/Nsite.compare.scatter.png",width=11,height=2.5,units="in",res=150)
+#' ##Scatter Plots of `Nsite` Split by Year
+#+ Nsite-compare-scatter, fig.width=6, fig.height=2.5
 par(mfcol=c(2,grid.t), mar=c(0.5,0.5,0.15,0), ps=6, mgp=c(1,0.0,0), tcl=-0.15, cex=1, oma=c(1,0.65,0.25,0))
 ylim <- range(c(Nsite.true,Nsite.obs.mu,Nsite.msom.mu))
 col <- adjustcolor("black",alpha.f=0.25)
@@ -454,4 +502,4 @@ for(i in 1:grid.t){
 	
 }
 mtext("True", side=1, line=0, outer=TRUE, font=2, cex=1)
-# dev.off()
+#' **Figure.** Site-specific richness (`Nsite`, $N_j$) from simulated observations (vertical axis, top row; $N_j^{obs}$) and from MSOM estimates (vertical axis, bottom row, $\hat{N_j}$) vs true site-specific richness (horizontal axis; $N_j^{*}$). The panel columns delineate the years of the simulation. Each point is site-specific ($j= `r grid.h` \times `r grid.w` = `r grid.h*grid.w`$) species richness that has been averaged over the simulated replicate observations ($r=`r n.obs.reps`$).
