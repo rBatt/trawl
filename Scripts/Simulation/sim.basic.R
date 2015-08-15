@@ -64,8 +64,8 @@ if(Sys.info()["sysname"]=="Windows"){
 # = Grid Options =
 # ================
 # Grid Size
-grid.w <- 5 # Width # 6
-grid.h <- 7 # Height # 11
+grid.w <- 10 # Width # 6
+grid.h <- 14 # Height # 11
 grid.t <- 6 # Time
 
 
@@ -149,7 +149,9 @@ obs.chance <- function(dim2=ns, dim1=grid.t, dim3=n.obs.reps, rand.gen=rnorm, ch
 # no changes between years (dim1), thus no changes between replicates(dim3)
 # plogis(obs.chance(dim2=6, dim3=2, dim1=7))
 
-t.noID <- plogis(obs.chance(dim2=ns, dim1=grid.t, dim3=n.obs.reps, mean=c(-2,-1), sd=2))
+t.noID.mus <- c(-2,-1)
+t.noID.sd <- 2
+t.noID <- plogis(obs.chance(dim2=ns, dim1=grid.t, dim3=n.obs.reps, mean=t.noID.mus, sd=t.noID.sd))
 
 
 # ================
