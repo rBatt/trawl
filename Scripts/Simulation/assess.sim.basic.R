@@ -19,6 +19,7 @@
 # = Report Setup =
 # ================
 library(knitr)
+library(rmarkdown)
 opts_chunk$set(fig.path = '../../Figures/Simulation/assess.sim.basic/')
 
 
@@ -191,13 +192,24 @@ lines(R.mu("mu.p"), type="l", lwd=2, col="blue")
 #'
 
 
-#' #Demo: Effect of MSOM Hierarchy on $\psi$
+#' #Demo: Effect of MSOM Hierarchy on $p$
 #+ egHierarchEffect_PsiMu, fig.width=4, fig.height=4
-plot(plogis(sim.rich.cov[[1]]$mean$v.a0)[1:ns])
-#' This plot is interesting because it shows that the only exceptionally high or exceptionally
-#' low chances to be observed occurs fo rthe species that were never observed;
+
+demo.Zobs <- attr(big.out.obs[[1]],"Z.obs")[,,1] # Z.obs for the demo year
+demo.p.nobs <- apply(demo.Zobs, 2, sum, na.rm=TRUE) # n detections 4 each species
+demo.p.col <- c("black","red")[((demo.p.nobs!=0) + 1)] # red is detected, black is never detected
+
+
+plot(plogis(sim.rich.cov[[1]]$mean$v.a0)[1:ns], ylab="p (detectability)", col=demo.p.col)
+# abline(h=taxChance[1]) # not quite right – but I'm too tired to figure out why wrong
+abline(h=plogis(t.noID.mus)[1]) # horizontal line at mean chance
+#' **Figure.** Probability of being detected, $p$. Horizontal line is mean probability. Figure only shows results for the first year of the simulation/ observation, and only 1 replicate. Different points are different species. Probability of being detected is a species-specific parameter (does not vary among sites, e.g.). Red points are species that were observed, black points are species that were never observed.
+#' 
+#' 
+#' The above plot is interesting because it shows that exceptionally high or exceptionally
+#' low chances to be observed only occur for the species that were observed at least once;
 #' i.e., this says that if you didn't observe it, it just takes on the mean.
-#' that's reasonable, I guess; but I also would think that the things that
+#' That's reasonable, I guess; but I also would think that the things that
 #' were never observed could also be things that had a low chance of observability;
 #' but they could also have just a low chance of actually being present.
 #' So I suppose in the end it just doesn't get informed, and reverts to the mean?
@@ -237,7 +249,7 @@ expYlab <- bquote(logit(hat(psi)))
 plot(psi.true.aggRep[,,],psi.hat.aggRep[,,], ylim=lims.agg, xlim=lims.agg, xlab=expXlab, ylab=expYlab)
 abline(a=0, b=1, lwd=2, col="white")
 abline(a=0, b=1, lwd=0.5, col="black")
-#' MSOM estimates of $\psi$ ($\hat{\psi}$) vs. true values of $\psi$ ($\psi_{true}$). Each point is a $\psi$ value for a particular site-species-year, averaged across *r*=\Sexpr{n.obs.reps} simulated replicate observations (i.e., the "true" value is the same, but the each simulated replicate has a different outcome of how the same true process was observed). The white and black line is the 1:1 line.
+#' **Figure.** MSOM estimates of $\psi$ ($\hat{\psi}$) vs. true values of $\psi$ ($\psi_{true}$). Each point is a $\psi$ value for a particular site-species-year, averaged across *r*=\Sexpr{n.obs.reps} simulated replicate observations (i.e., the "true" value is the same, but the each simulated replicate has a different outcome of how the same true process was observed). The white and black line is the 1:1 line.
 
 #' 
 #'
@@ -395,6 +407,9 @@ Nsite.msom.mu <- apply(Nsite.msom, 1:3, mean)
 # ==================================
 # Graphs comparing True, Observed, and Estimated Site-&-Year-Specific Richness
 my.image <- function(x, smplt=c(0.85,0.88, 0.2,0.8), bgplt=c(0.05,0.82,0.15,0.95), xaxt="n", yaxt="n", ...){
+	smplt <- c(0.85,0.88, 0.2,0.8)
+	bgplt <- c(0.05,0.82,0.15,0.95)
+	axargs <- list(mgp=c(0.5,0.15,0))
 	image.plot(t(x), smallplot=smplt, bigplot=bgplt, axis.args=axargs, xaxt=xaxt, yaxt=yaxt, ...)
 }
 
@@ -408,11 +423,6 @@ Nsite_spaceTime <- function(j){
 	if(j==2){
 		zlim.true <- zlim.obs <- zlim.msom <- range(c(Nsite.true,Nsite.obs.mu,Nsite.msom.mu))
 	}
-
-
-	smplt <- c(0.85,0.88, 0.2,0.8)
-	bgplt <- c(0.05,0.82,0.15,0.95)
-	axargs <- list(mgp=c(0.5,0.15,0))
 	
 	par(mfcol=c(3,grid.t), mar=c(0.25,0.25,0.15,0), ps=6, mgp=c(0,0,0), tcl=-0.15, cex=1, oma=c(0,0.5,0,0))
 
