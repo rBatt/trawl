@@ -3,7 +3,7 @@
 #' ---
 #' title: "assess.sim.basic.R"
 #' author: "Ryan Batt"
-#' date: "2015-08-14"
+#' date: "2015-08-17"
 #' output:
 #'   html_document:
 #'     toc: true
@@ -224,8 +224,36 @@ abline(h=plogis(t.noID.mus)[1]) # horizontal line at mean chance
 #' 
 #' 
 
+#' #Evaluate $p$, the Probability of Detection
+#+ evalP-calcs
+#' The probability of detection ($p$), is a species specific parameter in the MSOM model. In the simulation, $p$ is a function of two independent factors:
+#'   1. A species-specific ($i$) chance of being identified (`taxChance`)
+#'   2. A site-specific ($j$) integer indicating the number of substrata ($k$) sampled
+#'     * Each site is guaranteed to have  $k_{max}=`r n.ss`$ substrata sampled
+# =========================================
+# = Evaluate p (Probability of Detection) =
+# =========================================
+
+
+# True p
+
+
+# MSOM p
+
+
+
+#' 
+#'
+#' 
+#'
+#' ***
+#' 
+#'
+#' 
+#' 
+
 #' #Scatter Plot of Aggregated $\psi$
-#+ psiAggFig, fig.width=3.5, fig.height=3.5, cache=TRUE
+#+ psiAggFig, fig.width=3.5, fig.height=3.5, cache=FALSE
 # ==================================
 # = Compare True and Estimated Psi =
 # ==================================
@@ -249,7 +277,7 @@ expYlab <- bquote(logit(hat(psi)))
 plot(psi.true.aggRep[,,],psi.hat.aggRep[,,], ylim=lims.agg, xlim=lims.agg, xlab=expXlab, ylab=expYlab)
 abline(a=0, b=1, lwd=2, col="white")
 abline(a=0, b=1, lwd=0.5, col="black")
-#' **Figure.** MSOM estimates of $\psi$ ($\hat{\psi}$) vs. true values of $\psi$ ($\psi_{true}$). Each point is a $\psi$ value for a particular site-species-year, averaged across *r*=\Sexpr{n.obs.reps} simulated replicate observations (i.e., the "true" value is the same, but the each simulated replicate has a different outcome of how the same true process was observed). The white and black line is the 1:1 line.
+#' **Figure.** MSOM estimates of $\psi$ ($\hat{\psi}$) vs. true values of $\psi$ ($\psi_{true}$). Each point is a $\psi$ value for a particular site-species-year, averaged across $r=`r n.obs.reps`$ simulated replicate observations (i.e., the "true" value is the same, but the each simulated replicate has a different outcome of how the same true process was observed). The white and black line is the 1:1 line.
 
 #' 
 #'
@@ -262,7 +290,7 @@ abline(a=0, b=1, lwd=0.5, col="black")
 #'
 
 #' # $\psi$ Scatter Plots -- Panels Split Years & Reps
-#+ fig-psi-full, cache=TRUE, echo=TRUE, fig.width=10, fig.height=6
+#+ fig-psi-full, cache=FALSE, echo=TRUE, fig.width=10, fig.height=6
 cols2ramp <- c("blue","green","yellow","orange","red")
 box.cols.index <- as.numeric(as.factor(c(t(matrix(taxChance, nrow=grid.t)))))
 box.cols <- colorRampPalette(cols2ramp)(lu(taxChance))[box.cols.index]
@@ -431,7 +459,7 @@ Nsite_spaceTime <- function(j){
 		my.image(Nsite.true[,,i], ylim=ylim, zlim=zlim.true)
 		par(mar=c(0.25,0.25,0.15,0), ps=6, mgp=c(0,0,0), tcl=-0.15, cex=1)
 		if(i==1){text("",x=-0,y=0.5, xpd=T,srt=90, cex=1, ps=10)} # this is so weird ... why do I have to do this?
-		if(i==1){text("True",x=-0.3,y=0.5, xpd=NA,srt=90, cex=1.25)}
+		if(i==1){text("True",x=-0.2,y=0.5, xpd=NA,srt=90, cex=1.25)}
 	}
 
 	# Plot obs richness
@@ -439,7 +467,7 @@ Nsite_spaceTime <- function(j){
 		my.image(Nsite.obs.mu[,,i], zlim=zlim.obs, ylim=ylim)
 		par(mar=c(0.25,0.25,0.15,0), ps=6, mgp=c(0,0,0), tcl=-0.15, cex=1)
 		if(i==1){text("",x=-0,y=0.5, xpd=T,srt=90, cex=1, ps=10)}
-		if(i==1){text("Observed",x=-0.3,y=0.5, xpd=NA,srt=90, cex=1.25)}
+		if(i==1){text("Observed",x=-0.2,y=0.5, xpd=NA,srt=90, cex=1.25)}
 	}
 
 	# Plot msom estimates of richness
@@ -447,7 +475,7 @@ Nsite_spaceTime <- function(j){
 		my.image(Nsite.msom.mu[,,i], zlim=zlim.msom, ylim=ylim)
 		par(mar=c(0.25,0.25,0.15,0), ps=6, mgp=c(0,0,0), tcl=-0.15, cex=1)
 		if(i==1){text("",x=-0,y=0.5, xpd=T,srt=90, cex=1, ps=10)}
-		if(i==1){text("MSOM",x=-0.3,y=0.5, xpd=NA,srt=90, cex=1.25)}
+		if(i==1){text("MSOM",x=-0.2,y=0.5, xpd=NA,srt=90, cex=1.25)}
 		# text(i,x=0.5,y=-0.1, xpd=T,srt=90, cex=1.25)
 		text("",x=0.5,y=1.15, xpd=T,srt=0, cex=1.25)
 		text(paste0("t=",i),x=0.5,y=1.15, xpd=NA,srt=0, cex=1.25)
