@@ -171,7 +171,7 @@ nThin <- ((nIter/2)*nChains)/nSamples #40 # max(1, floor((nIter - floor(nIter/2)
 env <- sim.env(grid.w=grid.w, grid.h=grid.h, grid.t=grid.t, X.slope=0.75*(12/grid.t))
 
 # Simulate Species
-out <- sim.spp.proc(env, ns=ns)
+out <- sim.spp.proc(env, ns=ns, dynamic=FALSE)
 
 # name output attributes for easy access
 spp.bio <- attr(out, "spp.bio")
@@ -281,7 +281,7 @@ file.copy(from=saveFile_c, to=renameNow(saveFile_c), copy.date=TRUE)
 # # prp(path, scriptName, remoteName, verbose=TRUE)
 #
 # # Pull whole trawl
-# pull("./Documents/School&Work/pinskyPost/trawl/", remoteName)
+# pull("./Documents/School&Work/pinskyPost/trawl/", "ryanb@amphiprion.deenr.rutgers.edu")
 #
 # setwd(oldwd)
 
