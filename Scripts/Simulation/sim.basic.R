@@ -64,8 +64,8 @@ if(Sys.info()["sysname"]=="Windows"){
 # = Grid Options =
 # ================
 # Grid Size
-grid.w <- 8 # Width # 6
-grid.h <- 11 # Height # 11
+grid.w <- 5 # Width # 6
+grid.h <- 7 # Height # 11
 grid.t <- 6 # Time
 
 
@@ -78,7 +78,7 @@ ns <- 100 # Number of Species
 # ======================
 # = Simulation Options =
 # ======================
-n.obs.reps <- 10 # number of time to observe the same true process (each observation is analyzed separately)
+n.obs.reps <- 5 # number of time to observe the same true process (each observation is analyzed separately)
 n.ss <- 9 # number of substrata (for observation)
 n.ss.mu <- max(trunc((n.ss*grid.w*grid.h)/3*2), grid.w*grid.h) # total substrata observed
 base.chance <- plogis(rnorm(ns)) #rbeta(ns,2,2) #runif(n=ns, 0.2, 0.8) # baseline detectability (before ID chance)
@@ -239,13 +239,7 @@ sim.rich.cov <- foreach(i=(1:length(big.simDat))) %dopar%{ # run all other subse
 # ===============
 saveFile_a <- "./trawl/Results/Simulation/sim.rich.cov.RData"
 saveFile_b <- "./trawl/Results/Simulation/sim.basic.RData"
-saveFile_c <- "./trawl/Results/Simulation/sim.basic.small.RData"
-
-renameNow <- function(x){
-	stopifnot(grepl("(\\.[^.]+$)",x))
-	datetime <- format.Date(Sys.time(), format="%Y-%d-%m_%H-%M-%S-%Z")
-	gsub("(\\.[^.]+$)",paste0("_",datetime,"\\1"),x)
-}
+# saveFile_c <- "./trawl/Results/Simulation/sim.basic.small.RData"
 
 save(sim.rich.cov, file=saveFile_a)
 file.copy(from=saveFile_a, to=renameNow(saveFile_a), copy.date=TRUE)
@@ -253,35 +247,35 @@ file.copy(from=saveFile_a, to=renameNow(saveFile_a), copy.date=TRUE)
 save.image(file=saveFile_b)
 file.copy(from=saveFile_b, to=renameNow(saveFile_b), copy.date=TRUE)
 
-sim.rich.cov <- lapply(sim.rich.cov, function(x)x$mean)
-save.image(file=saveFile_c)
-file.copy(from=saveFile_c, to=renameNow(saveFile_c), copy.date=TRUE)
+# sim.rich.cov <- lapply(sim.rich.cov, function(x)x$mean)
+# save.image(file=saveFile_c)
+# file.copy(from=saveFile_c, to=renameNow(saveFile_c), copy.date=TRUE)
 
 
 # =================================
 # = Run this script on amphiprion =
 # =================================
-# # Make sure the
-# library(rbLib)
-# oldwd <- getwd()
-# setwd("~")
-#
-# # Mirror
-# from <- "Documents/School&Work/pinskyPost/trawl/"
-# to <- "ryanb@amphiprion.deenr.rutgers.edu:'Documents/School&Work/pinskyPost/trawl/'"
-# mirror(from, to)
-#
-# # Push, Run, Pull
-# path <- "./Documents/School&Work/pinskyPost/trawl/Scripts/Simulation/"
-# scriptName <- "sim.basic.R"
-# remoteName <- "ryanb@amphiprion.deenr.rutgers.edu"
-# push(path, remoteName, fileName=scriptName)
-# run(scriptName, path, remoteName)
-# pull(path, remoteName)
-# # prp(path, scriptName, remoteName, verbose=TRUE)
-#
-# # Pull whole trawl
-# pull("./Documents/School&Work/pinskyPost/trawl/", "ryanb@amphiprion.deenr.rutgers.edu")
-#
-# setwd(oldwd)
+# Make sure the
+library(rbLib)
+oldwd <- getwd()
+setwd("~")
+
+# Mirror
+from <- "Documents/School&Work/pinskyPost/trawl/"
+to <- "ryanb@amphiprion.deenr.rutgers.edu:'Documents/School&Work/pinskyPost/trawl/'"
+mirror(from, to)
+
+# Push, Run, Pull
+path <- "./Documents/School&Work/pinskyPost/trawl/Scripts/Simulation/"
+scriptName <- "sim.basic.R"
+remoteName <- "ryanb@amphiprion.deenr.rutgers.edu"
+push(path, remoteName, fileName=scriptName)
+run(scriptName, path, remoteName)
+pull(path, remoteName)
+# prp(path, scriptName, remoteName, verbose=TRUE)
+
+# Pull whole trawl
+pull("./Documents/School&Work/pinskyPost/trawl/", "ryanb@amphiprion.deenr.rutgers.edu")
+
+setwd(oldwd)
 
