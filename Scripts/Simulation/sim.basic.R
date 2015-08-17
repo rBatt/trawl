@@ -53,7 +53,7 @@ if(Sys.info()["sysname"]=="Windows"){
 	registerDoParallel(cores=nC)
 }else if(Sys.info()["sysname"]=="Linux"){
 	# registerDoParallel(cores=min(c(25,floor(detectCores()*0.75))))
-	registerDoParallel(floor(detectCores()*0.80))
+	registerDoParallel(floor(detectCores()*0.70))
 	# registerDoParallel(floor(detectCores()*0.90))
 }else{
 	registerDoParallel()
@@ -64,8 +64,8 @@ if(Sys.info()["sysname"]=="Windows"){
 # = Grid Options =
 # ================
 # Grid Size
-grid.w <- 5 # Width # 6
-grid.h <- 7 # Height # 11
+grid.w <- 6 # Width # 6
+grid.h <- 8 # Height # 11
 grid.t <- 6 # Time
 
 
@@ -78,9 +78,9 @@ ns <- 100 # Number of Species
 # ======================
 # = Simulation Options =
 # ======================
-n.obs.reps <- 5 # number of time to observe the same true process (each observation is analyzed separately)
-n.ss <- 9 # number of substrata (for observation)
-n.ss.mu <- max(trunc((n.ss*grid.w*grid.h)/3*2), grid.w*grid.h) # total substrata observed
+n.obs.reps <- 6 # number of time to observe the same true process (each observation is analyzed separately)
+n.ss <- 4 # number of substrata (for observation)
+n.ss.mu <- n.ss*grid.w*grid.h #max(trunc((n.ss*grid.w*grid.h)/3*2), grid.w*grid.h) # total substrata observed
 base.chance <- plogis(rnorm(ns)) #rbeta(ns,2,2) #runif(n=ns, 0.2, 0.8) # baseline detectability (before ID chance)
 
 # Create chance to be identified if caught
@@ -149,7 +149,7 @@ obs.chance <- function(dim2=ns, dim1=grid.t, dim3=n.obs.reps, rand.gen=rnorm, ch
 # no changes between years (dim1), thus no changes between replicates(dim3)
 # plogis(obs.chance(dim2=6, dim3=2, dim1=7))
 
-t.noID.mus <- c(-2,0,2)
+t.noID.mus <- c(0,2,4)
 t.noID.sd <- 2
 t.noID <- plogis(obs.chance(dim2=ns, dim1=grid.t, dim3=n.obs.reps, mean=t.noID.mus, sd=t.noID.sd))
 
@@ -255,27 +255,24 @@ file.copy(from=saveFile_b, to=renameNow(saveFile_b), copy.date=TRUE)
 # =================================
 # = Run this script on amphiprion =
 # =================================
-# Make sure the
-library(rbLib)
-oldwd <- getwd()
-setwd("~")
-
-# Mirror
-from <- "Documents/School&Work/pinskyPost/trawl/"
-to <- "ryanb@amphiprion.deenr.rutgers.edu:'Documents/School&Work/pinskyPost/trawl/'"
-mirror(from, to)
-
-# Push, Run, Pull
-path <- "./Documents/School&Work/pinskyPost/trawl/Scripts/Simulation/"
-scriptName <- "sim.basic.R"
-remoteName <- "ryanb@amphiprion.deenr.rutgers.edu"
-push(path, remoteName, fileName=scriptName)
-run(scriptName, path, remoteName)
-pull(path, remoteName)
-# prp(path, scriptName, remoteName, verbose=TRUE)
-
-# Pull whole trawl
-pull("./Documents/School&Work/pinskyPost/trawl/", "ryanb@amphiprion.deenr.rutgers.edu")
-
-setwd(oldwd)
+# # Make sure the
+# library(rbLib)
+# oldwd <- getwd()
+# setwd("~")
+#
+# # Mirror
+# from <- "Documents/School&Work/pinskyPost/trawl/"
+# to <- "ryanb@amphiprion.deenr.rutgers.edu:'Documents/School&Work/pinskyPost/trawl/'"
+# mirror(from, to)
+#
+# # Push, Run, Pull
+# path <- "./Documents/School&Work/pinskyPost/trawl/Scripts/Simulation/"
+# scriptName <- "sim.basic.R"
+# remoteName <- "ryanb@amphiprion.deenr.rutgers.edu"
+# prp(path, scriptName, remoteName, verbose=TRUE, path2=)
+#
+# # Pull whole trawl
+# pull("./Documents/School&Work/pinskyPost/trawl/", "ryanb@amphiprion.deenr.rutgers.edu")
+#
+# setwd(oldwd)
 
