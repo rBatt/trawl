@@ -269,7 +269,7 @@ file.copy(from=saveFile_b, to=renameNow(saveFile_b), copy.date=TRUE)
 # path <- "./Documents/School&Work/pinskyPost/trawl/Scripts/Simulation/"
 # scriptName <- "sim.basic.R"
 # remoteName <- "ryanb@amphiprion.deenr.rutgers.edu"
-# prp(path, scriptName, remoteName, verbose=TRUE, path2=)
+# prp(path, scriptName, remoteName, verbose=TRUE)
 #
 # # Pull whole trawl
 # pull("./Documents/School&Work/pinskyPost/trawl/", "ryanb@amphiprion.deenr.rutgers.edu")
