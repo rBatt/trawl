@@ -1,6 +1,6 @@
 
 spp2msom <- function(sim.obs){
-	n.substrat <- 9 # TODO needs to be changed not not magic number
+	n.substrat <- dim(attributes(sim.obs)$X.obs)[2]
 	n.strat <- nrow(sim.obs)
 	ns <- attr(sim.obs, "dims")["ns"]
 	grid.t <- attr(sim.obs, "dims")["grid.t"]
