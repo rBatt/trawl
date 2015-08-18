@@ -121,7 +121,7 @@ rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIte
 		
 			# Parameters to Trace
 			# sp.params <- c("N", "omega", "Nsite", "Z", "u.a0", "v.a0", "a3", "a4")
-			sp.params <- c("omega", "Z", "w", "p", "psi", "u.a0", "v.a0", "a3", "a4")
+			sp.params <- c("omega", "Z", "w", "p", "psi", "u.a0", "v.a0", "a3", "a4", "mu.u.a0", "mu.v.a0","tau.u.a0","tau.v.a0")
 		
 			#Data
 			sp.data <- list(
@@ -129,7 +129,7 @@ rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIte
 				nzeroes=nzeroes, 
 				J=nStrat, 
 				K=nK,
-				maxK=maxK,
+				# maxK=maxK,
 				# k.OK=k.OK,
 				X=Xaug1,
 				cov1=covs[[2]]
@@ -170,6 +170,7 @@ rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIte
 		n.chains=nChains,
 		n.iter=nIter,
 		n.thin=nThin,
+		# working.directory=paste0(getwd(),"/","trawl/Scripts/Analysis/JAGS")
 		working.directory=paste0(getwd(),"/","trawl/Scripts/Analysis/JAGS")
 	)
 
@@ -186,7 +187,37 @@ rich.cov <- function(data, covs, cov.precs, nameID, nzeroes=100, nChains=3, nIte
 	
 	# out <- list(mean=fit.cov$BUGSoutput$mean, median=fit.cov$BUGSoutput$median, sd=fit.cov$BUGSoutput$sd)
 	# out <- list(mean=fit.cov$BUGSoutput$mean, BUGSoutput=fit.cov$BUGSoutput)
-	out <- list(mean=fit.cov$BUGSoutput$mean)
+	# sims <- fit.cov$BUGSoutput$sims.matrix
+#
+# 	# add mu.psi to sims
+# 	w.ind <- grepl("w\\[.*", colnames(sims))
+# 	psi.ind <- grepl("psi.*", colnames(sims))
+# 	mu.psi <- rep(sims[,w.ind],each=grid.w*grid.h)*sims[,psi.ind]
+# 	colnames(mu.psi) <- paste0("mu.",colnames(mu.psi))
+#
+# 	# add mu.p to sims
+# 	# TODO Need to finish this – computer crashed when i did something stupid; need to check indices on p and Z to do this calculation correctly; i know the repeating isn't right
+# 	Z.ind <- grepl("Z\\[.*", colnames(sims))
+# 	p.ind <- grepl("p\\[.*", colnames(sims))
+# 	mu.p <- rep(sims[,Z.ind],each=grid.w*grid.h)*sims[,p.ind]
+# 	colnames(mu.p) <- paste0("mu.",colnames(mu.p))
+#
+# 	out.mode <- apply(sims, 2, mode)
+# 	out.med <- apply(sims, 2, median)
+# 	out.mean <- apply(sims, 2, mean)
+#
+#
+# 	centrals <- data.frame(mode=out.mode, med=out.med, mean=out.mean)
+#
+#
+# 	mu.psi <-
+# 	centrals.psi <- cbind(centrals[psi.ind,][1:(ns*grid.w*grid.h),], true.mean=c(psi.true[,,1,1]))
+# 	centrals.w <- centrals[w.ind,]
+# 	pairs(centrals.psi, panel=function(x,y,...){points(x,y, ...);abline(a=0,b=1)}, pch=20, cex=0.5, col=adjustcolor("black",alpha.f=0.2))
+#
+# 	table(gsub("\\[.*\\]", "", colnames(sims))) # number of parameters per main parameter
+	
+	out <- list(mean=fit.cov$BUGSoutput$mean, median=fit.cov$BUGSoutput$median)
 	
 	# out <- list(blah=rnorm(5))
 	#
