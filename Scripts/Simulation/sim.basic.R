@@ -65,8 +65,8 @@ if(Sys.info()["sysname"]=="Windows"){
 # ================
 # Grid Size
 grid.w <- 6 # Width # 6
-grid.h <- 8 # Height # 11
-grid.t <- 6 # Time
+grid.h <- 9 # Height # 11
+grid.t <- 8 # Time
 
 
 # ===================
@@ -78,7 +78,7 @@ ns <- 100 # Number of Species
 # ======================
 # = Simulation Options =
 # ======================
-n.obs.reps <- 6 # number of time to observe the same true process (each observation is analyzed separately)
+n.obs.reps <- 8 # number of time to observe the same true process (each observation is analyzed separately)
 n.ss <- 4 # number of substrata (for observation)
 n.ss.mu <- n.ss*grid.w*grid.h #max(trunc((n.ss*grid.w*grid.h)/3*2), grid.w*grid.h) # total substrata observed
 base.chance <- plogis(rnorm(ns)) #rbeta(ns,2,2) #runif(n=ns, 0.2, 0.8) # baseline detectability (before ID chance)
@@ -149,7 +149,7 @@ obs.chance <- function(dim2=ns, dim1=grid.t, dim3=n.obs.reps, rand.gen=rnorm, ch
 # no changes between years (dim1), thus no changes between replicates(dim3)
 # plogis(obs.chance(dim2=6, dim3=2, dim1=7))
 
-t.noID.mus <- c(0,2,4)
+t.noID.mus <- c(-2,0,2,4)
 t.noID.sd <- 2
 t.noID <- plogis(obs.chance(dim2=ns, dim1=grid.t, dim3=n.obs.reps, mean=t.noID.mus, sd=t.noID.sd))
 
@@ -159,7 +159,7 @@ t.noID <- plogis(obs.chance(dim2=ns, dim1=grid.t, dim3=n.obs.reps, mean=t.noID.m
 # ================
 nChains <- 3
 nIter <- 1E4
-n0s <- 100
+n0s <- 25
 nSamples <- 500
 nThin <- ((nIter/2)*nChains)/nSamples #40 # max(1, floor((nIter - floor(nIter/2)) / 1000))
 
@@ -168,7 +168,8 @@ nThin <- ((nIter/2)*nChains)/nSamples #40 # max(1, floor((nIter - floor(nIter/2)
 # = Do Simulation of True Process =
 # =================================
 # Simulate environment
-env <- sim.env(grid.w=grid.w, grid.h=grid.h, grid.t=grid.t, X.slope=0.75*(12/grid.t))
+# env <- sim.env(grid.w=grid.w, grid.h=grid.h, grid.t=grid.t, X.slope=0.75*(12/grid.t))
+env <- sim.env(grid.w=grid.w, grid.h=grid.h, grid.t=grid.t, X.slope=0)
 
 # Simulate Species
 out <- sim.spp.proc(env, ns=ns, dynamic=FALSE)
