@@ -3,7 +3,7 @@
 #' ---
 #' title: "assess.sim.basic.R"
 #' author: "Ryan Batt"
-#' date: "2015-08-17"
+#' date: "2015-08-18"
 #' output:
 #'   html_document:
 #'     toc: true
@@ -14,7 +14,7 @@
 # rmarkdown::render("~/Documents/School&Work/pinskyPost/trawl/Scripts/Simulation/assess.sim.basic.R")
 
 #' #Setup
-#+ setup, include=TRUE, echo=FALSE, cache=FALSE
+#+ setup, include=TRUE, echo=FALSE
 # ================
 # = Report Setup =
 # ================
@@ -167,17 +167,18 @@ rt.z.ylim <- range(c(R.ylim("rich.true"),R.ylim("Z")))
 plot(R[R[,"rep"]==1,c("year","rich.true")], type="l", lwd=2, col="blue", ylim=rt.z.ylim)
 
 plot(R.mu("Z"), type="n", ylim=rt.z.ylim)
-for(i in 2:n.obs.reps){lines(R[R[,"rep"]==i,c("year","Z")], col="gray50")}
+for(i in 1:n.obs.reps){lines(R[R[,"rep"]==i,c("year","Z")], col="gray50")}
 lines(R.mu("Z"), type="l", lwd=2, col="blue")
 
 # rich.obs and mu.p
 ro.mup.ylim <- range(c(R.ylim("rich.obs"),R.ylim("mu.p")))
 plot(R.mu("rich.obs"), type="n", ylim=ro.mup.ylim)
-for(i in 2:n.obs.reps){lines(R[R[,"rep"]==i,c("year","rich.obs")], col="gray50")}
+lines(R[R[,"rep"]==i,c("year","rich.obs")], col="gray50")
+for(i in 1:n.obs.reps){lines(R[R[,"rep"]==i,c("year","rich.obs")], col="gray50")}
 lines(R.mu("rich.obs"), type="l", lwd=2, col="blue")
 
 plot(R.mu("mu.p"), type="n", ylim=ro.mup.ylim)
-for(i in 2:n.obs.reps){lines(R[R[,"rep"]==i,c("year","mu.p")], col="gray50")}
+for(i in 1:n.obs.reps){lines(R[R[,"rep"]==i,c("year","mu.p")], col="gray50")}
 lines(R.mu("mu.p"), type="l", lwd=2, col="blue")
 #' **Figure.** Time series of richness. Gray lines are individual replicates. Blue lines are averages.
 
@@ -244,14 +245,80 @@ format_t.noID.mus <- gsub(", (?=[0-9]{1}$)", ", and ", paste(t.noID.mus, collaps
 # =========================================
 # = Evaluate p (Probability of Detection) =
 # =========================================
-
+use.logit.p <- FALSE
+agg.p <- FALSE
 
 # True p
+get.pTrue <- function(x, use.logit=FALSE, agg=FALSE){
+	mini.get.pTrue <- function(x){
+		op <- attr(x, "obs.params")
+		miniP <- t(op$tax.chance)*op$base.chance
+	}
+	p.true <- lapply(x, mini.get.pTrue)
+	p.true <- array(unlist(p.true,F,F),dim=c(ns,grid.t,n.obs.reps))
+	
+	return(p.true)
+	
+}
+
+p.true <- get.pTrue(big.out.obs, use.logit.p, agg.p)
+
 
 
 # MSOM p
+# Note that I am only able to get the p parameter out of the MSOM model if all
+# substrata are visited in all cases, otherwise the node isn't fully defined,
+# and JAGS returns a warning that p can't be tracked as a paramter.
+get.pHat <- function(x, use.logit=FALSE, agg=FALSE){
+	mini.get.pHat <- function(x){
+		names.pHat <- names(x$mean)
+		if("p"%in%names.pHat){
+			if(length(dim)==3){ # putting this in here b/c I think I'm going to change how p is indexed
+				x$mean$p[1,1,1:ns] # to be used when p indexed by j,k,i
+			}else{
+				x$mean$p[1:ns] # to be used when p index by i only
+			}
+			
+		}else{ # p won't always be available; so just calculate it from v.a0
+			# note that this won't be right if the observation process is not simply predicted by this intercept
+			plogis(x$mean$v.a0[1:ns])
+			
+			# to check that they're the same:
+			# plot(sim.rich.cov[[1]]$mean$p[1,1,1:ns], plogis(sim.rich.cov[[1]]$mean$v.a0[1:ns]))
+			# abline(a=0, b=1)
+			#
+			# vals <- replicate(1E2,{
+# 				vals <- rnorm(1E3, sd=2);
+# 				c("mean.first"=plogis(mean(vals)), "mean.second"=mean(plogis(vals)))
+# 			})
+# 			plot(t(vals)); abline(a=0, b=1)
+			#
+			# vals2 <- replicate(1E2,{
+			# 	vals2 <- rnorm(1E3, sd=2);
+			# 	c("mean.first"=logit(mean(plogis(vals2))), "mean.second"=mean(logit(plogis(vals2))))
+			# })
+			# plot(t(vals2)); abline(a=0, b=1)
+			
+		}
+	}
+	p.hat <- lapply(sim.rich.cov, mini.get.pHat)
+	p.hat <- array(unlist(p.hat,F,F), dim=c(ns, grid.t, n.obs.reps))
+	return(p.hat)
+}
+p.hat <- get.pHat(sim.rich.cov, use.logit.p, agg.p)
+# all(sapply(sim.rich.cov, function(x)apply(x$mean$p, c(3), all.same))) # 3rd dimension is species. Substrata are identical (within year, rep, species, stratum); this is as described previously, and why I am tempted to only write p with the i subscript.
 
 
+
+lims.p <- range(c(p.true, p.hat))
+
+# Set up plot
+par(mar=c(2.5,2.5,0.1,0.1), mgp=c(1.25,0.15,0), tcl=-0.15, ps=10, cex=1)
+expXlab.p <- bquote(logit(p[true]))
+expYlab.p <- bquote(logit(hat(p)))
+plot(p.true, p.hat, ylim=lims.p, xlim=lims.p, xlab=expXlab.p, ylab=expYlab.p)
+abline(a=0, b=1, lwd=2, col="white")
+abline(a=0, b=1, lwd=0.5, col="black")
 
 #' 
 #'
@@ -268,27 +335,59 @@ format_t.noID.mus <- gsub(", (?=[0-9]{1}$)", ", and ", paste(t.noID.mus, collaps
 # ==================================
 # = Compare True and Estimated Psi =
 # ==================================
+use.logit.psi <- FALSE
+agg.psi <- FALSE
 dim.conv1 <- c(grid.w*grid.h, ns, grid.t, n.obs.reps)
 
-psi.true <- attr(big.out.obs[[1]], "psi")
-psi.true <- logit(pmax(pmin(array(psi.true, dim=dim.conv1),1-1E-3),1E-3))
 
-psi.hat <- lapply(sim.rich.cov, function(x)x$mean$psi[,1:ns])
-psi.hat <- logit(pmax(pmin(array(simplify2array(psi.hat), dim=dim.conv1),1-1E-3),1E-3))
+get.psiTrue <- function(x, use.logit=FALSE, agg=FALSE){
+	psi.true <- attr(x, "psi")
+	psi.true <- array(psi.true, dim=dim.conv1)
+	if(use.logit){
+		psi.true <- logit(pmax(pmin(psi.true,1-1E-3),1E-3))
+	}
+	if(agg){
+		psi.true <- apply(psi.true, c(1,2,3), mean)
+	}
+	return(psi.true)
+}
 
-psi.true.aggRep <- apply(psi.true, c(1,2,3), mean)
-psi.hat.aggRep <- apply(psi.hat, c(1,2,3), mean)
+psi.true <- get.psiTrue(big.out.obs[[1]], use.logit.psi, agg.psi)
 
-lims.agg <- range(c(psi.hat.aggRep, psi.true.aggRep))
+
+get.psiHat <- function(x, use.logit=FALSE, agg=FALSE){
+	psi.hat <- lapply(x, function(x)x$mean$psi[,1:ns])
+	psi.hat <- array(simplify2array(psi.hat), dim=dim.conv1)
+	if(use.logit){
+		psi.hat <- logit(pmax(pmin(psi.hat,1-1E-3),1E-3))
+	}
+	if(agg){
+		psi.hat <- apply(psi.hat, c(1,2,3), mean)
+	}
+	return(psi.hat)
+}
+
+psi.hat <- get.psiHat(sim.rich.cov, use.logit.psi, agg.psi)
+
+
 
 # Set up plot
 par(mar=c(2.5,2.5,0.1,0.1), mgp=c(1.25,0.15,0), tcl=-0.15, ps=10, cex=1)
-expXlab <- bquote(logit(psi[true]))
-expYlab <- bquote(logit(hat(psi)))
-plot(psi.true.aggRep[,,],psi.hat.aggRep[,,], ylim=lims.agg, xlim=lims.agg, xlab=expXlab, ylab=expYlab)
-abline(a=0, b=1, lwd=2, col="white")
-abline(a=0, b=1, lwd=0.5, col="black")
-#' **Figure.** MSOM estimates of $\psi$ ($\hat{\psi}$) vs. true values of $\psi$ ($\psi_{true}$). Each point is a $\psi$ value for a particular site-species-year, averaged across $r=`r n.obs.reps`$ simulated replicate observations (i.e., the "true" value is the same, but the each simulated replicate has a different outcome of how the same true process was observed). The white and black line is the 1:1 line.
+lims.psi <- range(c(psi.hat, psi.true))
+if(use.logit.psi){
+	expXlab.psi <- bquote(logit(psi[true]))
+	expYlab.psi <- bquote(logit(hat(psi)))
+}else{
+	expXlab.psi <- bquote(psi[true])
+	expYlab.psi <- bquote(hat(psi))
+}
+
+
+col <- adjustcolor("black", alpha.f=0.25)
+plot(psi.true, psi.hat, ylim=lims.psi, xlim=lims.psi, xlab=expXlab.psi, ylab=expYlab.psi, pch=20, col=col, cex=0.5)
+abline(a=0, b=1, lwd=3, col="white")
+abline(a=0, b=1, lwd=1, col="black")
+#' **Figure.** MSOM estimates of $\psi$ ($\hat{\psi}$) vs. true values of $\psi$ ($\psi_{true}$). Each point is a $\psi$ value for a particular site-species-year~~, averaged across $r=`r n.obs.reps`$ simulated replicate observations (i.e., the "true" value is the same, but each simulated replicate has a different outcome of how the same true process was observed)~~. The white and black line is the 1:1 line.
 
 #' 
 #'
@@ -302,6 +401,9 @@ abline(a=0, b=1, lwd=0.5, col="black")
 
 #' # $\psi$ Scatter Plots -- Panels Split Years & Reps
 #+ fig-psi-full, fig.width=10, fig.height=6
+# ======================================================
+# = Full Psi Figure w/ Panels Splitting Years and Reps =
+# ======================================================
 cols2ramp <- tim.colors(8)[-c(1,8)]
 box.cols.index <- as.numeric(as.factor(c(t(matrix(taxChance, nrow=grid.t)))))
 box.cols <- colorRampPalette(cols2ramp)(lu(taxChance))[box.cols.index]
@@ -330,7 +432,7 @@ for(j in 1:dim(psi.true)[3]){
 	}
 }
 
-#' **Figure.** True (horizontal axes) and MSOM estimates (vertical axes) of occupancy probabilities ($\psi_{j,i,t,r}$) of species *i* occupying a location *j* in year *t*. In our simulation, $\psi$ is a function of individual species characteristics (niche) and the environment, the latter of which changes among years. The simulated (true) outcome of each year was subject to *r* replicate observations of the true process. Each simulated observation (*r*) was an independent realization, but the *r* replicates also differed in the probability that a species would be detected ($p$): the color of the boxes around each panel refer to the among-species average of the probability of detection; warm colors are mean that the mean detection probability is high (<span style="color:red">red</span>; $p_{max}=$ `r round(max(taxChance),2)`), whereas cool colors indicate that $p$ was low (<span style="color:blue">blue</span>; $p_{min}=$ `r round(min(taxChance),2)`). The year *t* of the simulated true process changes across the rows of panels, and the simulated replicate observation *r* changes across columns. *Note: what I refer to as $p$ here is really just the probability that a species will be detected if an occupied site is sampled. In this simulation, `r round(n.ss.mu / (n.ss*grid.w*grid.h),2)*100`% of substrata were sampled, which doesn't influence $p$, but can add noise to its estimates.*
+#' **Figure.** True (horizontal axes) and MSOM estimates (vertical axes) of occupancy probabilities ($\psi_{j,i,t,r}$) of species *i* occupying a location *j* in year *t*. In our simulation, $\psi$ is a function of individual species characteristics (niche) and the environment, the latter of which changes among years. The simulated (true) outcome of each year was subject to *r* replicate observations of the true process. Each simulated observation (*r*) was an independent realization, but the *r* replicates also differed in the probability that a species would be detected ($p$): the color of the boxes around each panel refer to the among-species average of the probability of detection; warm colors indicate that the mean detection probability is high (<span style="color:red">red</span>; $p_{max}=$ `r round(max(taxChance),2)`), whereas cool colors indicate that $p$ was low (<span style="color:blue">blue</span>; $p_{min}=$ `r round(min(taxChance),2)`). The year *t* of the simulated true process changes across the rows of panels, and the simulated replicate observation *r* changes across columns. *Note: what I refer to as $p$ here is really just the probability that a species will be detected if an occupied site is sampled. In this simulation, `r round(n.ss.mu / (n.ss*grid.w*grid.h),2)*100`% of substrata were sampled, which doesn't influence $p$, but can add noise to its estimates.*
 
 #' 
 #'
@@ -508,16 +610,22 @@ Nsite_spaceTime <- function(j){
 
 
 #+ compareNsite_spaceTime_diffScale, fig.width=6, fig.height=3.5
+# ====================================
+# = compareNsite_spaceTime_diffScale =
+# ====================================
 Nsite_spaceTime(j=1)
 #' **Figure.** Maps of site- and year-specific species richness (`Nsite`) from the simulation of the True process (top row), simulation of the Observed process (middle row), and the MSOM estimates (bottom row). X-axis and Y-axis indicate position in 2 dimensional space; it is important to note that the environmental variable changes linearly across the y-axis, and randomly (and much less) across the x-axis. The different columns represent separate years. The environmental variable changes linearly among years (the rate of change is the same for all x-y locations). Colors indicate species richness (warm colors are higher richness than cool colors), averaged over the simulated replicate observations ($r=`r n.obs.reps`$ ). Horizontal and vertical axes Each row of panels is scaled independently, columns within a row are scaled equally.
 
-#' 
-#' 
-#' 
-#' 
-#' 
+#'   
+#'   
+#'   
+#'   
+#'   
 
 #+ compareNsite-spaceTime-sameScale, fig.width=6, fig.height=3.5
+# ====================================
+# = compareNsite-spaceTime-sameScale =
+# ====================================
 Nsite_spaceTime(j=2)
 #' **Figure.** Same as previous figure, but all panels are on the same scale.
 
@@ -553,3 +661,12 @@ for(i in 1:grid.t){
 }
 mtext("True", side=1, line=0, outer=TRUE, font=2, cex=1)
 #' **Figure.** Site-specific richness (`Nsite`, $N_j$) from simulated observations (vertical axis, top row; $N_j^{obs}$) and from MSOM estimates (vertical axis, bottom row, $\hat{N_j}$) vs true site-specific richness (horizontal axis; $N_j^{*}$). The panel columns delineate the years of the simulation. Each point is site-specific ($j= `r grid.h` \times `r grid.w` = `r grid.h*grid.w`$) species richness that has been averaged over the simulated replicate observations ($r=`r n.obs.reps`$).
+#' 
+#'
+#' 
+#'
+#' ***
+#' 
+#'
+#' 
+#'
