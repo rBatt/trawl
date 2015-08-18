@@ -214,8 +214,24 @@ big.out.obs[[1]]</code></pre>
 # = LME Model on Psi =
 # ====================
 # Just exploration/ starting point
-library(car)
-library(lme4)</code></pre>
+library(car)</code></pre>
+<pre><code>## 
+## Attaching package: 'car'
+## 
+## The following object is masked _by_ '.GlobalEnv':
+## 
+##     logit</code></pre>
+<pre class="r"><code>library(lme4)</code></pre>
+<pre><code>## Loading required package: Matrix
+## 
+## Attaching package: 'Matrix'
+## 
+## The following object is masked _by_ '.GlobalEnv':
+## 
+##     lu
+## 
+## Loading required package: Rcpp</code></pre>
+<pre><code>## Warning: package 'Rcpp' was built under R version 3.1.3</code></pre>
 <p><strong>Motivation</strong>: MSOM skill might differ across dimensions, trying to figure out what patterns I should expect to pick out (spatial patterns in richness, temporal?) E.g., Is the correlation between MSOM and True the same comparing across sites as comparing across years? Species, reps, also.</p>
 <p><strong>Motivation</strong>: What factors influence MSOM skill in a given dimension? E.g., Skill in finding differences in <span class="math inline">\(\psi\)</span> across species may depend on <span class="math inline">\(p\)</span>, the chance of being identified. If <span class="math inline">\(p\)</span> changes among years, might also explain This example is looking at <span class="math inline">\(\psi\)</span>, probability of an individual species being present</p>
 <pre><code>## Linear mixed model fit by REML ['lmerMod']
