@@ -413,7 +413,7 @@ Nsite.obs <- lapply(big.out.obs, function(x)attributes(x)$Z.obs)
 
 
 get.rich.obs <- function(x){
-	x2 <- aggregate(x, fact=3, max)
+	x2 <- aggregate(x, fact=sqrt(n.ss), max)
 	matrix(values(stackApply(x2, rep(1,nlayers(x2)), sum)),byrow=T, nrow=nrow(x2),ncol=ncol(x2))
 	# stackApply(x2, rep(1,nlayers(x2)), sum)
 }
@@ -452,7 +452,7 @@ my.image <- function(x, smplt=c(0.85,0.88, 0.2,0.8), bgplt=c(0.05,0.82,0.15,0.95
 	image.plot(t(x), smallplot=smplt, bigplot=bgplt, axis.args=axargs, xaxt=xaxt, yaxt=yaxt, ...)
 }
 
-	
+
 Nsite_spaceTime <- function(j){
 	zlim.true <- range(Nsite.true) # this is true, observed will be less, but idk about estimated, b/c could be overestimate
 	zlim.obs <- range(Nsite.obs.mu)
