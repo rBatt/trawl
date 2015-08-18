@@ -343,6 +343,21 @@ for(j in 1:dim(psi.true)[3]){
 #'
 
 #' #E.g. LME for $\psi$ Evaluation
+#' 
+#' **Motivation**: MSOM skill might differ across dimensions, trying to figure out
+#' what patterns I should expect to pick out (spatial patterns in richness, temporal?)
+#' E.g., Is the correlation between MSOM and True the same comparing
+#' across sites as comparing across years? Species, reps, also.
+#'   
+#'   
+#'   
+#' **Motivation**: What factors influence MSOM skill in a given dimension?
+#' E.g., Skill in finding differences in $\psi$ across species may depend on $p$,
+#' the chance of being identified. If $p$ changes among years, might also explain
+#'   
+#' Read more about [Mixed Effect Models Here](http://stats.stackexchange.com/questions/31569/questions-about-how-random-effects-are-specified-in-lmer)
+#'   
+#' This example is looking at $\psi$, probability of an individual species being present
 #+ exploratoryLMER, echo=TRUE
 # ====================
 # = LME Model on Psi =
@@ -351,20 +366,6 @@ for(j in 1:dim(psi.true)[3]){
 library(car)
 library(lme4)
 
-#' **Motivation**: MSOM skill might differ across dimensions, trying to figure out
-#' what patterns I should expect to pick out (spatial patterns in richness, temporal?)
-#' E.g., Is the correlation between MSOM and True the same comparing
-#' across sites as comparing across years? Species, reps, also.
-#' 
-#' 
-#' 
-#' **Motivation**: What factors influence MSOM skill in a given dimension?
-#' E.g., Skill in finding differences in $\psi$ across species may depend on $p$,
-#' the chance of being identified. If $p$ changes among years, might also explain
-
-#' This example is looking at $\psi$, probability of an individual species being present
-
-# http://stats.stackexchange.com/questions/31569/questions-about-how-random-effects-are-specified-in-lmer
 blah <- reshape2:::melt.array(psi.true, varnames=c("site","spp","time","rep"), value.name="true", as.is=T)
 blah.hat <- reshape2:::melt.array(psi.hat, varnames=c("site","spp","time","rep"), value.name="hat", as.is=T)
 blah <- cbind(blah, hat=blah.hat[,"hat"])
