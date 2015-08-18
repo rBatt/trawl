@@ -18,7 +18,10 @@ sim.env <- function(grid.w=5, grid.h=7, grid.t=12, X.slope=0.75){
 	# Create latitudinal (grid.h) gradient in environmental variable for 1st year (1 longitude) 
 	# X.h <- seq(from=-(grid.t-1)*X.slope, by=(grid.t*X.slope)/(grid.h-1), length.out=(grid.h-1))
 	ampSpatial <- 4
-	X.h <- seq(from=-(grid.t-1)*(X.slope*ampSpatial/2), by=(grid.t*X.slope*ampSpatial)/(grid.h-1), length.out=(grid.h-1))
+	h.slope <- pmax(0.75*(12/grid.t), X.slope)
+	h.from <- -(grid.t-1)*(h.slope*ampSpatial/2)
+	h.by <- (grid.t*h.slope*ampSpatial)/(grid.h-1)
+	X.h <- seq(from=h.from, by=h.by, length.out=(grid.h-1))
 	
 	# Create env values at all longitudes by adding noise to default lat gradient
 	X <- c()
