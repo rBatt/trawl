@@ -14,13 +14,13 @@
 # rmarkdown::render("~/Documents/School&Work/pinskyPost/trawl/Scripts/Simulation/assess.sim.basic.R")
 
 #' #Setup
-#+ setup, include=TRUE, echo=TRUE
+#+ setup, include=TRUE, echo=FALSE, cache=FALSE
 # ================
 # = Report Setup =
 # ================
 library(knitr)
 library(rmarkdown)
-opts_chunk$set(fig.path = '../../Figures/Simulation/assess.sim.basic/')
+opts_chunk$set(fig.path = '../../Figures/Simulation/assess.sim.basic/', echo=FALSE, include=TRUE, cache=TRUE)
 
 
 # =================
@@ -225,11 +225,22 @@ abline(h=plogis(t.noID.mus)[1]) # horizontal line at mean chance
 #' 
 
 #' #Evaluate $p$, the Probability of Detection
-#+ evalP-calcs
-#' The probability of detection ($p$), is a species specific parameter in the MSOM model. In the simulation, $p$ is a function of two independent factors:
-#'   1. A species-specific ($i$) chance of being identified (`taxChance`)
-#'   2. A site-specific ($j$) integer indicating the number of substrata ($k$) sampled
-#'     * Each site is guaranteed to have  $k_{max}=`r n.ss`$ substrata sampled
+#+ evalP-calcs, indent="    "
+format_t.noID.mus <- gsub(", (?=[0-9]{1}$)", ", and ", paste(t.noID.mus, collapse=", "), perl=T)
+#' The probability of detection ($p$), is a species specific parameter in the MSOM model. The MSOM analyzes all years ($t$) and replicates ($r$) separately, so I am going to leave those subscripts out of this description. In the simulation, the probability of observing a species is a function of two independent factors:
+#' 
+#'   1. The probability that site $j$ is occupied by species $i$; this is $\psi_{j,i}$
+#' 	+ $\psi_{j,i}$ is a function of species-specific niche and an environmental variable that changes over space and time  
+#' 	+ $Z_{j,i}$ is the species- and site-specific richness, which is a function of $\psi$ (given that we're only talking about species that are in the pool of possible species, determined by $w_i$)  
+#'   
+#'   2. A species-specific ($i$) chance of being identified (`taxChance`), given that it is present in a location that was sampled (i.e., detectability does not reflect the probability of sampling a place); this detectability parameter is $p_{i}$  
+#' 	+ Detectability changed between years.
+#' 	+ In a given year, $logit(p_i) \sim \mathcal{N(p_{\mu},\sigma^2)}$. $p_{\mu}$ changed between years (taking on values of `r format_t.noID.mus`), $\sigma^2=`r t.noID.sd`$ in all years.
+#' 	+ The value of $p$ only changes between species (and years), but the observation process occurs at the substratum ($k$) level. Thus, the parameter is really $p_{j,k,i}$, but for a given $i$, all $p_{j,k}$ are constant. I represent this probability as $p_i$ with the understanding that this value is repeated over space.
+#' 	+ $Y_{j,i}$ is the observed version of $Z_{j,i}$.
+#' 	+ $Y_{j,i} \sim Bern(p_i \times Z_{j,i})$.  
+#' 	    + *Note: Because $p$ is actually subscripted to $k$, the $Y$ are also actually subscripted to $k$. Maybe leaving these subscripts out is making things more confusing. I've only excluded them to emphasize how parameters are estimated.*
+#' 	+ Our data about species presence/ absence correspond to $Y_{j,i}$. So it might be useful to think of the MSOM as estimating $\hat{Y}_{j,i}$, which is compared to the observed data $Y_{j,i}^{obs}$.
 # =========================================
 # = Evaluate p (Probability of Detection) =
 # =========================================
@@ -253,7 +264,7 @@ abline(h=plogis(t.noID.mus)[1]) # horizontal line at mean chance
 #' 
 
 #' #Scatter Plot of Aggregated $\psi$
-#+ psiAggFig, fig.width=3.5, fig.height=3.5, cache=FALSE
+#+ psiAggFig, fig.width=3.5, fig.height=3.5
 # ==================================
 # = Compare True and Estimated Psi =
 # ==================================
@@ -290,19 +301,19 @@ abline(a=0, b=1, lwd=0.5, col="black")
 #'
 
 #' # $\psi$ Scatter Plots -- Panels Split Years & Reps
-#+ fig-psi-full, cache=FALSE, echo=TRUE, fig.width=10, fig.height=6
-cols2ramp <- c("blue","green","yellow","orange","red")
+#+ fig-psi-full, fig.width=10, fig.height=6
+cols2ramp <- tim.colors(8)[-c(1,8)]
 box.cols.index <- as.numeric(as.factor(c(t(matrix(taxChance, nrow=grid.t)))))
 box.cols <- colorRampPalette(cols2ramp)(lu(taxChance))[box.cols.index]
 lims <- range(c(psi.hat, psi.true))
-col <- adjustcolor("black",alpha.f=0.1)
+col <- adjustcolor("black",alpha.f=0.2)
  
 par(mfrow=c(grid.t,n.obs.reps), mar=c(0.25,0.25,0.1,0.1), ps=6, mgp=c(0.75,0.1,0), tcl=-0.05, cex=1, oma=c(0,0.25,0.5,0))
 
 for(j in 1:dim(psi.true)[3]){
 	for(i in 1:dim(psi.true)[4]){
 		counter <- i + (j-1)*dim(psi.true)[4]
-		plot(psi.true[,,j,i],psi.hat[,,j,i], ylim=lims, xlim=lims, xlab="", ylab="", cex=0.1, xaxt="n",yaxt="n", col=col,pch=20,bty="n")
+		plot(psi.true[,,j,i],psi.hat[,,j,i], ylim=lims, xlim=lims, xlab="", ylab="", cex=0.2, xaxt="n",yaxt="n", col=col,pch=20,bty="n")
 		axis(side=1, labels=F)
 		axis(side=2, labels=F)
 		box(col=box.cols[counter])
@@ -319,7 +330,7 @@ for(j in 1:dim(psi.true)[3]){
 	}
 }
 
-#' **Figure.** True (horizontal axes) and MSOM estimates (vertical axes) of occupancy probabilities ($\psi_{j,i,t,r}$) of species *i* occupying a location *j* in year *t*. In our simulation, $\psi$ is a function of individual species characteristics (niche) and the environment, the latter of which changes among years. The simulated (true) outcome of each year was subject to *r* replicate observations of the true process. Each simulated observation (*r*) was an independent realization, but the *r* replicates also differed in the probability that a species would be detected ($p$): the color of the boxes around each panel indicate whether the among-species average of the probability of detection was low (<span style="color:blue">blue</span> ; $p_{min}=$ `r round(min(taxChance),2)`) or high (<span style="color:red">red</span>; $p_{max}=$ `r round(max(taxChance),2)`). The year *t* of the simulated true process changes across the rows of panels, and the simulated replicate observation *r* changes across columns.
+#' **Figure.** True (horizontal axes) and MSOM estimates (vertical axes) of occupancy probabilities ($\psi_{j,i,t,r}$) of species *i* occupying a location *j* in year *t*. In our simulation, $\psi$ is a function of individual species characteristics (niche) and the environment, the latter of which changes among years. The simulated (true) outcome of each year was subject to *r* replicate observations of the true process. Each simulated observation (*r*) was an independent realization, but the *r* replicates also differed in the probability that a species would be detected ($p$): the color of the boxes around each panel refer to the among-species average of the probability of detection; warm colors are mean that the mean detection probability is high (<span style="color:red">red</span>; $p_{max}=$ `r round(max(taxChance),2)`), whereas cool colors indicate that $p$ was low (<span style="color:blue">blue</span>; $p_{min}=$ `r round(min(taxChance),2)`). The year *t* of the simulated true process changes across the rows of panels, and the simulated replicate observation *r* changes across columns. *Note: what I refer to as $p$ here is really just the probability that a species will be detected if an occupied site is sampled. In this simulation, `r round(n.ss.mu / (n.ss*grid.w*grid.h),2)*100`% of substrata were sampled, which doesn't influence $p$, but can add noise to its estimates.*
 
 #' 
 #'
@@ -332,7 +343,7 @@ for(j in 1:dim(psi.true)[3]){
 #'
 
 #' #E.g. LME for $\psi$ Evaluation
-#+ ExploratoryLMER
+#+ exploratoryLMER, echo=TRUE
 # ====================
 # = LME Model on Psi =
 # ====================
@@ -340,14 +351,14 @@ for(j in 1:dim(psi.true)[3]){
 library(car)
 library(lme4)
 
-#' Motivation: MSOM skill might differ across dimensions, trying to figure out
+#' **Motivation**: MSOM skill might differ across dimensions, trying to figure out
 #' what patterns I should expect to pick out (spatial patterns in richness, temporal?)
 #' E.g., Is the correlation between MSOM and True the same comparing
 #' across sites as comparing across years? Species, reps, also.
 #' 
 #' 
 #' 
-#' Motivation: What factors influence MSOM skill in a given dimension?
+#' **Motivation**: What factors influence MSOM skill in a given dimension?
 #' E.g., Skill in finding differences in $\psi$ across species may depend on $p$,
 #' the chance of being identified. If $p$ changes among years, might also explain
 
@@ -381,7 +392,7 @@ Anova(blah.mod)
 
 #' #`Nsite` Comparison
 #' ##Spatial & Temporal Representation of `Nsite` 
-#+ NsiteComparison, include=TRUE
+#+ compareNsite
 # ================================================================
 # = Compare Site-specific True, Observed, and Estimated Richness =
 # ================================================================
@@ -429,7 +440,7 @@ Nsite.msom.mu <- apply(Nsite.msom, 1:3, mean)
 
 
 
-#+ uglyNsiteRich_fig_code, include=FALSE, echo=FALSE
+#+ uglyNsiteRich_fig_code
 # ==================================
 # = Nsite Graphing Code/ Functions =
 # ==================================
@@ -495,7 +506,7 @@ Nsite_spaceTime <- function(j){
 #'
 
 
-#+ Nsite_compare_spaceTime_diffScale, fig.width=6, fig.height=3.5, include=T
+#+ compareNsite_spaceTime_diffScale, fig.width=6, fig.height=3.5
 Nsite_spaceTime(j=1)
 #' **Figure.** Maps of site- and year-specific species richness (`Nsite`) from the simulation of the True process (top row), simulation of the Observed process (middle row), and the MSOM estimates (bottom row). X-axis and Y-axis indicate position in 2 dimensional space; it is important to note that the environmental variable changes linearly across the y-axis, and randomly (and much less) across the x-axis. The different columns represent separate years. The environmental variable changes linearly among years (the rate of change is the same for all x-y locations). Colors indicate species richness (warm colors are higher richness than cool colors), averaged over the simulated replicate observations ($r=`r n.obs.reps`$ ). Horizontal and vertical axes Each row of panels is scaled independently, columns within a row are scaled equally.
 
@@ -505,7 +516,7 @@ Nsite_spaceTime(j=1)
 #' 
 #' 
 
-#+ Nsite-compare-spaceTime-sameScale, fig.width=6, fig.height=3.5, include=T
+#+ compareNsite-spaceTime-sameScale, fig.width=6, fig.height=3.5
 Nsite_spaceTime(j=2)
 #' **Figure.** Same as previous figure, but all panels are on the same scale.
 
@@ -520,7 +531,7 @@ Nsite_spaceTime(j=2)
 #'
 
 #' ##Scatter Plots of `Nsite` Split by Year
-#+ Nsite-compare-scatter, fig.width=6, fig.height=2.5
+#+ compareNsite-scatter, fig.width=6, fig.height=2.5
 par(mfcol=c(2,grid.t), mar=c(0.5,0.5,0.15,0), ps=6, mgp=c(1,0.0,0), tcl=-0.15, cex=1, oma=c(1,0.65,0.25,0))
 ylim <- range(c(Nsite.true,Nsite.obs.mu,Nsite.msom.mu))
 col <- adjustcolor("black",alpha.f=0.25)
