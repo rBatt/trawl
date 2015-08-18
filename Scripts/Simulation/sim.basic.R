@@ -53,7 +53,7 @@ if(Sys.info()["sysname"]=="Windows"){
 	registerDoParallel(cores=nC)
 }else if(Sys.info()["sysname"]=="Linux"){
 	# registerDoParallel(cores=min(c(25,floor(detectCores()*0.75))))
-	registerDoParallel(floor(detectCores()*0.70))
+	registerDoParallel(floor(detectCores()*0.20))
 	# registerDoParallel(floor(detectCores()*0.90))
 }else{
 	registerDoParallel()
@@ -66,19 +66,19 @@ if(Sys.info()["sysname"]=="Windows"){
 # Grid Size
 grid.w <- 6 # Width # 6
 grid.h <- 9 # Height # 11
-grid.t <- 8 # Time
+grid.t <- 4 # Time
 
 
 # ===================
 # = Species Options =
 # ===================
-ns <- 100 # Number of Species
+ns <- 50 # Number of Species
 
 
 # ======================
 # = Simulation Options =
 # ======================
-n.obs.reps <- 8 # number of time to observe the same true process (each observation is analyzed separately)
+n.obs.reps <- 4 # number of time to observe the same true process (each observation is analyzed separately)
 n.ss <- 4 # number of substrata (for observation)
 n.ss.mu <- n.ss*grid.w*grid.h #max(trunc((n.ss*grid.w*grid.h)/3*2), grid.w*grid.h) # total substrata observed
 base.chance <- plogis(rnorm(ns)) #rbeta(ns,2,2) #runif(n=ns, 0.2, 0.8) # baseline detectability (before ID chance)
@@ -159,7 +159,7 @@ t.noID <- plogis(obs.chance(dim2=ns, dim1=grid.t, dim3=n.obs.reps, mean=t.noID.m
 # ================
 nChains <- 3
 nIter <- 1E4
-n0s <- 25
+n0s <- 10
 nSamples <- 500
 nThin <- ((nIter/2)*nChains)/nSamples #40 # max(1, floor((nIter - floor(nIter/2)) / 1000))
 
