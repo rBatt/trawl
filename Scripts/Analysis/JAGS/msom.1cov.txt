@@ -35,6 +35,9 @@ model{
 
 		a3[i] ~ dnorm(mua3, tau.a3)
 		a4[i] ~ dnorm(mua4, tau.a4)
+		
+		logit(p[i]) <- v.a0[i] # moved out of k loop (not sure if right?)
+		
 
 		#Create a loop to estimate the Z matrix (true occurrence for species i 
 		#at point j.      
@@ -43,14 +46,16 @@ model{
 
 			mu.psi[j,i] <- psi[j,i]*w[i]
 			Z[j,i] ~ dbern(mu.psi[j,i])
+			
+			mu.p[j,i] <- p[i]*Z[j,i] # moved out of k loop (not sure if right?)
 
 			#Create a loop to estimate detection for species i at point k during 
 			#sampling period k.      
 			for (k in 1:K[j]) {  
 			# for(k in k.OK[j,1:nK[j]]){
-				logit(p[j,k,i]) <- v.a0[i]
-				mu.p[j,k,i] <- p[j,k,i]*Z[j,i]
-				X[j,k,i] ~ dbern(mu.p[j,k,i])
+				# logit(p[j,k,i]) <- v.a0[i]
+				# mu.p[j,k,i] <- p[j,k,i]*Z[j,i]
+				X[j,k,i] ~ dbern(mu.p[j,i])
 			} # end i 
 		} # end j
 	} # end i
