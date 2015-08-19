@@ -99,6 +99,20 @@ str(sim.rich.cov[[1]])
 #' 
 #'
 #' 
+#' 
+
+#' #Analysis Settings
+#+ analysisSettings, include=TRUE, echo=TRUE
+(centralT <- c("mean","median")[2])
+
+#' 
+#'
+#' 
+#'
+#' ***
+#' 
+#'
+#' 
 #'
 
 #' #Richness Boxplots
@@ -115,10 +129,10 @@ for(i in 2:length(simR0)){
 R <- data.frame(simR)
 taxChance <- c(sapply(big.out.obs, function(x)rowMeans((attributes(x)$obs.params)$tax.chance)))
 
-mu.p0 <- lapply(sim.rich.cov, function(x)t(c(plogis(x$mean$v.a0))*t(x$mean$Z)))
+mu.p0 <- lapply(sim.rich.cov, function(x)t(c(plogis(x[[centralT]]$v.a0))*t(x[[centralT]]$Z)))
 mu.p <- apply(sapply(mu.p0, function(x)apply(x,2,pTot)),2,sum)
 
-Z <- apply(sapply(sim.rich.cov, function(x)apply(x$mean$Z[,1:ns],2,pTot)),2,sum) # this is right @mtingley
+Z <- apply(sapply(sim.rich.cov, function(x)apply(x[[centralT]]$Z[,1:ns],2,pTot)),2,sum) # this is right @mtingley
 
 R[,"taxChance"] <- taxChance # note that this averages over all species
 R[,"mu.p"] <- mu.p # originally "mu.p", but actually estimated obs richness
@@ -201,7 +215,7 @@ demo.p.nobs <- apply(demo.Zobs, 2, sum, na.rm=TRUE) # n detections 4 each specie
 demo.p.col <- c("black","red")[((demo.p.nobs!=0) + 1)] # red is detected, black is never detected
 
 
-plot(plogis(sim.rich.cov[[1]]$mean$v.a0)[1:ns], ylab="p (detectability)", col=demo.p.col)
+plot(plogis(sim.rich.cov[[1]][[centralT]]$v.a0)[1:ns], ylab="p (detectability)", col=demo.p.col)
 # abline(h=taxChance[1]) # not quite right – but I'm too tired to figure out why wrong
 abline(h=plogis(t.noID.mus)[1]) # horizontal line at mean chance
 #' **Figure.** Probability of being detected, $p$. Horizontal line is mean probability. Figure only shows results for the first year of the simulation/ observation, and only 1 replicate. Different points are different species. Probability of being detected is a species-specific parameter (does not vary among sites, e.g.). Red points are species that were observed, black points are species that were never observed.
@@ -271,20 +285,20 @@ p.true <- get.pTrue(big.out.obs, use.logit.p, agg.p)
 # and JAGS returns a warning that p can't be tracked as a paramter.
 get.pHat <- function(x, use.logit=FALSE, agg=FALSE){
 	mini.get.pHat <- function(x){
-		names.pHat <- names(x$mean)
+		names.pHat <- names(x[[centralT]])
 		if("p"%in%names.pHat){
 			if(length(dim)==3){ # putting this in here b/c I think I'm going to change how p is indexed
-				x$mean$p[1,1,1:ns] # to be used when p indexed by j,k,i
+				x[[centralT]]$p[1,1,1:ns] # to be used when p indexed by j,k,i
 			}else{
-				x$mean$p[1:ns] # to be used when p index by i only
+				x[[centralT]]$p[1:ns] # to be used when p index by i only
 			}
 			
 		}else{ # p won't always be available; so just calculate it from v.a0
 			# note that this won't be right if the observation process is not simply predicted by this intercept
-			plogis(x$mean$v.a0[1:ns])
+			plogis(x[[centralT]]$v.a0[1:ns])
 			
 			# to check that they're the same:
-			# plot(sim.rich.cov[[1]]$mean$p[1,1,1:ns], plogis(sim.rich.cov[[1]]$mean$v.a0[1:ns]))
+			# plot(sim.rich.cov[[1]][[centralT]]$p[1,1,1:ns], plogis(sim.rich.cov[[1]][[centralT]]$v.a0[1:ns]))
 			# abline(a=0, b=1)
 			#
 			# vals <- replicate(1E2,{
@@ -306,19 +320,19 @@ get.pHat <- function(x, use.logit=FALSE, agg=FALSE){
 	return(p.hat)
 }
 p.hat <- get.pHat(sim.rich.cov, use.logit.p, agg.p)
-# all(sapply(sim.rich.cov, function(x)apply(x$mean$p, c(3), all.same))) # 3rd dimension is species. Substrata are identical (within year, rep, species, stratum); this is as described previously, and why I am tempted to only write p with the i subscript.
+# all(sapply(sim.rich.cov, function(x)apply(x[[centralT]]$p, c(3), all.same))) # 3rd dimension is species. Substrata are identical (within year, rep, species, stratum); this is as described previously, and why I am tempted to only write p with the i subscript.
 
 
 
 lims.p <- range(c(p.true, p.hat))
 
 # Set up plot
-par(mar=c(2.5,2.5,0.1,0.1), mgp=c(1.25,0.15,0), tcl=-0.15, ps=10, cex=1)
-expXlab.p <- bquote(logit(p[true]))
-expYlab.p <- bquote(logit(hat(p)))
-plot(p.true, p.hat, ylim=lims.p, xlim=lims.p, xlab=expXlab.p, ylab=expYlab.p)
-abline(a=0, b=1, lwd=2, col="white")
-abline(a=0, b=1, lwd=0.5, col="black")
+# par(mar=c(2.5,2.5,0.1,0.1), mgp=c(1.25,0.15,0), tcl=-0.15, ps=10, cex=1)
+# expXlab.p <- bquote(logit(p[true]))
+# expYlab.p <- bquote(logit(hat(p)))
+# plot(p.true, p.hat, ylim=lims.p, xlim=lims.p, xlab=expXlab.p, ylab=expYlab.p)
+# abline(a=0, b=1, lwd=2, col="white")
+# abline(a=0, b=1, lwd=0.5, col="black")
 
 #' 
 #'
@@ -329,6 +343,93 @@ abline(a=0, b=1, lwd=0.5, col="black")
 #'
 #' 
 #' 
+
+#' #MSOM Estimates of Occupancy Response Curves
+#+ responseCurve-logisticRegression, include=TRUE, fig.height=6, fig.width=10
+range.X <- range(values(grid.X))
+pred.X <- seq(range.X[1], range.X[2], length.out=100)
+u.a0.hat <- sapply(sim.rich.cov, function(x)x[[centralT]]$u.a0[1:ns])
+a3.hat <- sapply(sim.rich.cov, function(x)x[[centralT]]$a3[1:ns])
+a4.hat <- sapply(sim.rich.cov, function(x)x[[centralT]]$a4[1:ns])
+# dev.new(width=9, height=6)
+par(mfrow=c(grid.t,n.obs.reps), mar=c(0.25,0.25,0.1,0.1), ps=6, mgp=c(0.75,0.1,0), tcl=-0.05, cex=1, oma=c(0,0.25,0.5,0))
+psiPred <- function(X, u.a0, a3, a4){
+	cbind(x=X, y=plogis(u.a0 + a3*X + a4*X^2))
+}
+
+cols2ramp <- tim.colors(8)[-c(1,8)]
+box.cols.index <- as.numeric(as.factor(c(t(matrix(taxChance, nrow=grid.t)))))
+box.cols <- colorRampPalette(cols2ramp)(lu(taxChance))[box.cols.index]
+col <- adjustcolor("black",alpha.f=0.2)
+
+
+for(j in 1:grid.t){
+	for(i in 1:n.obs.reps){
+		cntr <- i + (j-1)*n.obs.reps
+				
+		# t.psi1 <- psiPred(X=pred.X, u.a0=u.a0.hat[1,cntr], a3=a3.hat[1,cntr], a4=a4.hat[1,cntr])
+		t.psi <- mapply(psiPred, 
+			u.a0=u.a0.hat[,cntr], a3=a3.hat[,cntr], a4=a4.hat[,cntr], 
+			MoreArgs=list(X=pred.X), 
+			SIMPLIFY=F
+		)
+		# t.psi <- c(list(t.psi1), t.psi.not1)
+		psi.mus <- apply(simplify2array(t.psi)[,2,],1,mean)
+		
+		
+		plot(t.psi[[1]], ylim=0:1, xlab="", ylab="", type="l", xaxt="n", yaxt="n", col=col, bty="n")
+		invisible(lapply(t.psi[-1], lines, col=col))
+		lines(pred.X, psi.mus, lwd=3, col="black")
+		lines(pred.X, psi.mus, lwd=1, col="white", lty="dotted")
+		
+		axis(side=1, labels=F)
+		axis(side=2, labels=F)
+		box(col=box.cols[cntr])
+		
+		if(i==1){
+			mtext(paste0("t = ",j), side=2, line=0, font=2, cex=1)
+		}
+		
+		if(j==1){
+			mtext(paste0("rep = ",i), side=3, line=-0.1, font=2, cex=1, adj=0)
+		}
+		
+	}
+}
+#' **Figure.** Response curves of species' probability of occupancy ($\psi_{i}$, vertical axis) across the full range of temperatures in the simulation ($min(X)=`r round(range.X[1],1)`$, and $max(X)=`r round(range.X[2],1)`$). The color of the boxes around each panel refer to the among-species average of the probability of detection; warm colors indicate that the mean detection probability is high (<span style="color:red">red</span>; $p_{max}=$ `r round(max(taxChance),2)`), whereas cool colors indicate that $p$ was low (<span style="color:blue">blue</span>; $p_{min}=$ `r round(min(taxChance),2)`). The year *t* of the simulated true process changes across the rows of panels, and the simulated replicate observation *r* changes across columns.
+#' 
+#' 
+#' 
+#' The predictions in the above figure are calculated as $$ logit(\psi_i)=\mathbf{X} \times \mathbf{a_i} $$ where 
+#' 
+#' $$ \mathbf{X} =
+#' \left( \begin{array}{ccc}
+#' 1 & X_{min} & X^{2}_{min} \\
+#' \vdots & \vdots & \vdots \\
+#' 1 & X_{max} & X^{2}_{min}
+#' \end{array} \right) 
+#' \text{;  }
+#' \mathbf{a_i} =
+#' \left( \begin{array}{ccc}
+#' a_{0,i} \\
+#' a_{3,i} \\
+#' a_{4,i} 
+#' \end{array} \right) $$
+
+
+#' 
+#'
+#' 
+#'
+#' ***
+#' 
+#'
+#' 
+#' 
+
+
+
+
 
 #' #Scatter Plot of Aggregated $\psi$
 #+ psiAggFig, fig.width=3.5, fig.height=3.5
@@ -356,7 +457,7 @@ psi.true <- get.psiTrue(big.out.obs[[1]], use.logit.psi, agg.psi)
 
 
 get.psiHat <- function(x, use.logit=FALSE, agg=FALSE){
-	psi.hat <- lapply(x, function(x)x$mean$psi[,1:ns])
+	psi.hat <- lapply(x, function(x)x[[centralT]]$psi[,1:ns])
 	psi.hat <- array(simplify2array(psi.hat), dim=dim.conv1)
 	if(use.logit){
 		psi.hat <- logit(pmax(pmin(psi.hat,1-1E-3),1E-3))
@@ -530,7 +631,7 @@ get.Nsite <- function(x, ns, format=TRUE){
 	if(missing(ns)){
 		ns <- get("ns", envir=parent.env(environment()))
 	}
-	xo <- apply(x$mean$Z[,1:ns], 1, sum)
+	xo <- apply(x[[centralT]]$Z[,1:ns], 1, sum)
 	if(format){
 		xo <- matrix(xo, nrow=grid.h, byrow=TRUE)
 	}
