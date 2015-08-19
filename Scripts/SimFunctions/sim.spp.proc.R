@@ -67,6 +67,38 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 	# rX2 <- function(mean, sd){rnorm(n=n, mean=mean, sd=sd)}
 	
 	
+	# OK, fine. I'll simulate in a way that's damn near identical to the way the
+	# MSOM works. I've been having trouble recovering parameters, and I'm not sure
+	# what the deal is (maybe I have an error somewhere, statistical or
+	# programmatic), but I've fiddled enough to feel like it's time to do what I can
+	# to get this to run and return the "right" answer.
+	
+	t.func <- function(b0, b3, b4){x <- seq(-5,5, length.out=50); cbind(x=x, psi=plogis(b0+b3*x+b4*x^2))}
+	plot(t.func(0, 0, -0.01), type="l")
+	
+	omega <- 0.5 #omega ~ dunif(0,1)
+	
+	mu.u.a0 <- logit(0.25)
+	mua3 <- 1
+	mua4 <- -1
+	
+	tau <- 1
+	tau.u.a0 <- 1/tau^2 #rgamma(1, 0.1, 0.1) #~ dgamma(0.1,0.1)
+	tau.a3 <- 1/tau^2 #rgamma(1, 0.1, 0.1) #~ dgamma(0.1,0.1)
+	tau.a4 <- 1/tau^2 #rgamma(1, 0.1, 0.1) #~ dgamma(0.1,0.1)
+	
+	u.a0 <- rnorm(ns, mu.u.a0, sqrt(1/tau.u.a0))
+	a3 <- rnorm(ns, mua3, sqrt(1/tau.a3)) #~ dnorm(0, 0.001)
+	a4 <- rnorm(ns, mua4, sqrt(1/tau.a4)) #~ dnorm(0, 0.001)
+	
+	plot(t.func(u.a0[1], a3[1], a4[1]), ylim=0:1, type="l")
+	for(i in 2:ns){
+		lines(t.func(u.a0[i], a3[i], a4[i]), ylim=0:1, type="l")
+	}
+	
+	# TODO still in the process of writing out all of these parameters to make the
+	# easiest test I possibly can for the MSOM. It had better pass ...
+		
 
 	# Use the rescaled beta distribution to give each species a fake history of observed temperatures
 	# S.obs.X <- mapply(rX, alpha=ab[1,], beta=ab[2,], min=mm[1,], max=mm[2,], MoreArgs=list(n=500))
