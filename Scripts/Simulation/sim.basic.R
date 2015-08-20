@@ -53,7 +53,7 @@ if(Sys.info()["sysname"]=="Windows"){
 	registerDoParallel(cores=nC)
 }else if(Sys.info()["sysname"]=="Linux"){
 	# registerDoParallel(cores=min(c(25,floor(detectCores()*0.75))))
-	registerDoParallel(floor(detectCores()*0.4))
+	registerDoParallel(floor(detectCores()*0.8))
 	# registerDoParallel(floor(detectCores()*0.90))
 }else{
 	registerDoParallel()
