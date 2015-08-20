@@ -63,10 +63,9 @@ obs.spp <- function(x, n.ss=9, n.ss.mu, base.chance, t.noID){
 	# obs.ss is the substrata that are observed. This doesn't change across years (as currently setup), and is (obviously) constant across speices
 	
 	# Number of substrata sampled per stratum
-	n.haul <- table(extract(sub.stratum, obs.ss.cells)) # the number of sampled substrata per stratum
-	# hist(table(extract(sub.stratum, obs.ss.cells)))
+	n.haul <- table(raster::extract(sub.stratum, obs.ss.cells)) # the number of sampled substrata per stratum
 	
-	# Plot showing which substrata were sampled
+	# Plot showing which substratawere sampled
 	# dev.new(height=3.5, width=2.5+0.95)
 	# par(mar=c(2,2,0.25,0.1))
 	# plot(sub.stratum)
