@@ -62,8 +62,8 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 	# simulate in a way that is more directly comparable to analysis
 	# of course, this is what I was trying to avoid, but 
 	# at least if I do this I'll know what the results mean
-	mus <- runif(ns, min.X, max.X)
-	sds <- sqrt(rgamma(ns, 3, 2))
+	# mus <- runif(ns, min.X, max.X)
+	# sds <- sqrt(rgamma(ns, 3, 2))
 	# rX2 <- function(mean, sd){rnorm(n=n, mean=mean, sd=sd)}
 	
 	
@@ -282,13 +282,22 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 	# Add True Psi Parameter Value as Attribute
 	list.grid.X <- unlist(apply(values(grid.X), 2, list),F,F)
 	psi0 <- mapply(
-		function(mu0, sd0, X){
-			sapply(X, function(x){dnorm(x, mu0, sd0)/dnorm(mu0, mu0, sd0)})
-		}, 
-		mu0=mus, sd0=sds, MoreArgs=list(X=list.grid.X), SIMPLIFY=F
-	)
+		function(b0,b3,b4,X){
+			sapply(X, function(x){psiMod(X=x, b0, b3, b4)$y})
+			},
+			b0=u.a0, b3=a3, b4=a4, MoreArgs=list(X=list.grid.X), SIMPLIFY=F
+		)
+	# psi0 <- mapply(
+# 		function(mu0, sd0, X){
+# 			sapply(X, function(x){dnorm(x, mu0, sd0)/dnorm(mu0, mu0, sd0)})
+# 		},
+# 		mu0=mus, sd0=sds, MoreArgs=list(X=list.grid.X), SIMPLIFY=F
+# 	)
 	psi <- aperm(simplify2array(psi0), c(1,3,2))
 	attr(out, "psi") <- psi
+	attr(out, "u.a0") <- u.a0
+	attr(out, "a3") <- a3
+	attr(out, "a4") <- a4
 	
 	# Add True Z as Attribute
 	Z <- spp.pres[m2r,,]
