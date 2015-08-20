@@ -53,7 +53,7 @@ if(Sys.info()["sysname"]=="Windows"){
 	registerDoParallel(cores=nC)
 }else if(Sys.info()["sysname"]=="Linux"){
 	# registerDoParallel(cores=min(c(25,floor(detectCores()*0.75))))
-	registerDoParallel(floor(detectCores()*0.20))
+	registerDoParallel(floor(detectCores()*0.80))
 	# registerDoParallel(floor(detectCores()*0.90))
 }else{
 	registerDoParallel()
@@ -72,7 +72,7 @@ grid.t <- 8 # Time
 # ===================
 # = Species Options =
 # ===================
-ns <- 100 # Number of Species
+ns <- 50 # Number of Species
 
 
 # ======================
@@ -159,7 +159,7 @@ t.noID <- plogis(obs.chance(dim2=ns, dim1=grid.t, dim3=n.obs.reps, mean=t.noID.m
 # ================
 nChains <- 4
 nIter <- 5E4
-n0s <- 100
+n0s <- 50
 nSamples <- 500
 nThin <- ((nIter/2)*nChains)/nSamples #40 # max(1, floor((nIter - floor(nIter/2)) / 1000))
 
