@@ -49,8 +49,9 @@ plot(env, zlim=c(temp.range[1], temp.range[2]), col=tim.colors(), smallplot=smpl
 # =======================================
 # Plot Temperature Distributions for the Whole Community
 store <- c()
-sdt2 <- lapply(S.dens.X, FUN=function(x){x$y <- x$y/max(x$y); x})
-for(d in 1:512){
+# sdt2 <- lapply(S.dens.X, FUN=function(x){x$y <- x$y/max(x$y); x})
+sdt2 <- lapply(S.dens.X, FUN=function(x){x})
+for(d in 1:length(S.dens.X[[1]]$x)){
 	ti <- c()
 	for(i in 1:length(sdt2)){
 		ti[i] <- sdt2[[i]]$y[d]
