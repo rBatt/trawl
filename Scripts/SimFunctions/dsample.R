@@ -7,7 +7,8 @@
 
 dsample <- function(ref,x, relative=FALSE){
 
-	if(class(ref)!="density"){
+	# if(class(ref)!="density"){
+	if(!all(c("x","y")%in%names(ref))){
 		ref <- density(ref)
 	}
 	
