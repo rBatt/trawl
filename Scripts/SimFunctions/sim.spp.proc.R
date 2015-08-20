@@ -73,28 +73,54 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 	# programmatic), but I've fiddled enough to feel like it's time to do what I can
 	# to get this to run and return the "right" answer.
 	
-	t.func <- function(b0, b3, b4){x <- seq(-5,5, length.out=50); cbind(x=x, psi=plogis(b0+b3*x+b4*x^2))}
-	plot(t.func(0, 0, -0.01), type="l")
+	psiMod <- function(b0, b3, b4, X, n){
+
+		if(missing(X)){
+			if(missing(n)){
+				n <- 100
+			}
+			X <- seq(-15,15, length.out=n)
+			cbind(X=X, psi=plogis(b0+b3*x+b4*x^2))
+		}else{
+			list(x=X, y=plogis(b0 + b3*X + b4*X^2))
+		}
+		
+	}
 	
-	omega <- 0.5 #omega ~ dunif(0,1)
-	
-	mu.u.a0 <- logit(0.25)
-	mua3 <- 1
-	mua4 <- -1
-	
-	tau <- 1
-	tau.u.a0 <- 1/tau^2 #rgamma(1, 0.1, 0.1) #~ dgamma(0.1,0.1)
-	tau.a3 <- 1/tau^2 #rgamma(1, 0.1, 0.1) #~ dgamma(0.1,0.1)
-	tau.a4 <- 1/tau^2 #rgamma(1, 0.1, 0.1) #~ dgamma(0.1,0.1)
-	
+	# parent means
+	mu.u.a0 <- -1 #logit(0.0001)
+	mua3 <- 0.1
+	mua4 <- -0.1
+
+	# precisions (all species share a precision)
+	# I'm additionally assuming all of these parameters have the same
+	# precision, but that might not be true
+	# (this constraint does not exist in the msom)
+	tau.u.a0 <- 1/1^2
+	tau.a3 <- 1/1^2
+	tau.a4 <- 1/0.1^2
+
+	# species-specific means of logistic regression parameters
 	u.a0 <- rnorm(ns, mu.u.a0, sqrt(1/tau.u.a0))
 	a3 <- rnorm(ns, mua3, sqrt(1/tau.a3)) #~ dnorm(0, 0.001)
 	a4 <- rnorm(ns, mua4, sqrt(1/tau.a4)) #~ dnorm(0, 0.001)
+
+	# plot(psiMod(u.a0[1], a3[1], a4[1]), ylim=0:1, type="l")
+	# for(i in 2:ns){
+	# 	lines(psiMod(u.a0[i], a3[i], a4[i]), ylim=0:1, type="l")
+	# }
 	
-	plot(t.func(u.a0[1], a3[1], a4[1]), ylim=0:1, type="l")
-	for(i in 2:ns){
-		lines(t.func(u.a0[i], a3[i], a4[i]), ylim=0:1, type="l")
-	}
+	minX <- min(values(grid.X))
+	maxX <- max(values(grid.X))
+	
+	
+	Xvals <- do.call("seq",c(as.list(range.X),list(length.out=500)))
+	S.dens.X <- mapply(psiMod, b0=u.a0, b3=a3, b4=a4, MoreArgs=list(X=Xvals), SIMPLIFY=F)
+	
+	# Plot response curves that were just generated:
+	# plot(S.dens.X[[1]], ylim=0:1, type="l")
+	# invisible(sapply(S.dens.X[-1], lines))
+	
 	
 	# TODO still in the process of writing out all of these parameters to make the
 	# easiest test I possibly can for the MSOM. It had better pass ...
@@ -102,10 +128,10 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 
 	# Use the rescaled beta distribution to give each species a fake history of observed temperatures
 	# S.obs.X <- mapply(rX, alpha=ab[1,], beta=ab[2,], min=mm[1,], max=mm[2,], MoreArgs=list(n=500))
-	S.obs.X <- mapply(rnorm, mean=mus, sd=sds, MoreArgs=list(n=500))
+	# S.obs.X <- mapply(rnorm, mean=mus, sd=sds, MoreArgs=list(n=500))
 
 	# Use that fake history of observed temperatures to generate an empirical density (like histogram)
-	S.dens.X <- apply(S.obs.X, 2, density, from=X.range[1], to=X.range[2], adjust=1)
+	# S.dens.X <- apply(S.obs.X, 2, density, from=X.range[1], to=X.range[2], adjust=1)
 
 	# cov.params <- t(sapply(S.dens.X, get.cov.params))
 	# =====================================
