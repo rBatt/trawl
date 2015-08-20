@@ -110,8 +110,7 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 	# 	lines(psiMod(u.a0[i], a3[i], a4[i]), ylim=0:1, type="l")
 	# }
 	
-	minX <- min(values(grid.X))
-	maxX <- max(values(grid.X))
+	range.X <- range(values(grid.X))
 	
 	
 	Xvals <- do.call("seq",c(as.list(range.X),list(length.out=500)))
