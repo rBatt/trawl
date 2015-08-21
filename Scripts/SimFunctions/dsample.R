@@ -19,7 +19,7 @@ dsample <- function(ref,x, relative=FALSE){
 	
 	if(relative | max(ref.xy$y)>1){
 		if(all(ref.xy$y==0)){
-			
+			stop("all probabilities are 0; relative=TRUE cannot be used")
 		}else{
 			ref.xy$y <- ref.xy$y/max(ref.xy$y)
 		}
