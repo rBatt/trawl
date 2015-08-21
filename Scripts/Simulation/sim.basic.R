@@ -216,8 +216,10 @@ for(i in 1:n.obs.reps){
 # = Analyze simData with MSOM =
 # =============================
 # Run all other Bayesian richness in parallel
+msom.start <- proc.time()
 year <- as.numeric(gsub("year([0-9]{1,2})\\.[0-9]{1,2}","\\1",names(big.simDat)))
-sim.rich.cov <- foreach(i=(1:length(big.simDat))) %dopar%{ # run all other subsets in parallel
+n.loops <- length(big.simDat)
+sim.rich.cov <- foreach(i=(1:n.loops)) %dopar%{ # run all other subsets in parallel
 	yi <- year[i]
 	rich.cov(
 		data=big.simDat[[i]], 
@@ -233,9 +235,35 @@ sim.rich.cov <- foreach(i=(1:length(big.simDat))) %dopar%{ # run all other subse
 		Save=FALSE
 	) # do analysis for this subset
 }
+msom.end <- proc.time()
 
+# ===============================================================
+# = Some Statistics about the Computational Demands of this Run =
+# ===============================================================
+msom.elapsed <- data.frame(t((msom.start - msom.end)[1:3]))
 
- 
+runtimeStats <- data.frame(
+	datetime=Sys.time(), 
+	msom.elapsed, 
+	sim.rich.cov.size=as.numeric(object.size(sim.rich.cov)), 
+	ns=ns, n0s=n0s, grid.w=grid.w, grid.h=grid.h, grid.t=grid.t, reps=n.obs.reps, n.ss=n.ss,
+	nChains=nChains, nIter=nIter, nSamples=nSamples, 
+	n.foreach.loops = n.loops,
+	n.params.tracked=length(sim.rich.cov[[1]][[1]]), 
+	n.nodes.tracked=sum(sapply(sim.rich.cov[[1]][[1]], function(x)prod(dim(x)))), 
+	nCores=min(getDoParWorkers(), n.loops)
+)
+
+runtimeStats.file <- "./trawl/Scripts/Simulation/sim.basic.meta.runtimeStats.txt"
+if(file.exists(runtimeStats.file)){
+	write.table(runtimeStats, runtimeStats.file, append=TRUE, row.names=F, col.names=FALSE)
+	
+}else{
+	write.table(runtimeStats, runtimeStats.file, append=F, col.names=TRUE, row.names=F)
+	
+}
+# read.table(runtimeStats.file, header=TRUE, row.names=NULL)
+
 
 # ===============
 # = Save Output =
@@ -258,7 +286,7 @@ file.copy(from=saveFile_b, to=renameNow(saveFile_b), copy.date=TRUE)
 # =================================
 # = Run this script on amphiprion =
 # =================================
-# # Make sure the
+# Make sure the
 # library(rbLib)
 # oldwd <- getwd()
 # setwd("~")
