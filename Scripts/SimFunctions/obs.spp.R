@@ -156,7 +156,7 @@ obs.spp <- function(x, n.ss=9, n.ss.mu, base.chance, t.noID){
 	# > str(visit.chance) # structure after last step
 	#  num [1:35, 1:9] 0 1 1 1 1 1 1 1 1 0 ...
 	split2jk <- function(x){
-		array(orderD1(Z.obs0, ss.key), dim=c(n.ss, grid.w*grid.h,ns,grid.t))
+		array(orderD1(x, ss.key), dim=c(n.ss, grid.w*grid.h,ns,grid.t))
 	} 
 	X.obs <- aperm(split2jk(Z.obs0),c(2,1,3,4))
 	Z.obs <- apply(X.obs,c(1,3,4),max, na.rm=T)
