@@ -178,3 +178,95 @@ invisible(mapply(comp.psi.method, nsamps, samp.label))
 #
 # 	table(gsub("\\[.*\\]", "", colnames(sims))) # number of parameters per main parameter
 #
+
+
+
+# ===========================================================
+# = trying to find a good combination of parameters for psi =
+# ===========================================================
+
+findGoodPsi <- function(pars){
+	Nsim <- 1E3
+	
+	a0 <- pars[1]
+	a1 <- pars[2]
+	a2 <- pars[3]
+	tau0 <- pars[4]
+	tau1 <- pars[5]
+	tau2 <- pars[6]
+	
+	if(any(c(tau0,tau1,tau2)<=0)){
+		return(999)
+	}
+	
+	u.a0.o <- rnorm(Nsim, a0, sqrt(1/tau0))
+	a1.o <- rnorm(Nsim, a1, sqrt(1/tau1)) #~ dnorm(0, 0.001)
+	a2.o <- rnorm(Nsim, a2, sqrt(1/tau2)) #~ dnorm(0, 0.001)
+	
+	mu.psi.max <- psi.max(u.a0.o, a1.o, a2.o)
+	mu.psi.opt <- psi.opt(a1.o, a2.o)
+	
+	if(sum(mu.psi.opt<(-1) | mu.psi.opt>30)>(0.01 * Nsim)){
+		# return((9 * sum(mu.psi.opt<(-1) | mu.psi.opt>30)))
+		return(999)
+	}
+	if(sum(mu.psi.max>=0.95 | mu.psi.max <= 0.25)>(0.01 * Nsim)){
+		return(999)
+	}
+	if(sum(a2.o >=0) > (0.01 * Nsim)){
+		return(999)
+	}
+	# if(!all((c(5:25)%in%round(mu.psi.opt,0)))){
+	# 	(c(5:25)%in%round(mu.psi.opt,0))
+	# 	return(9999)
+	# }
+	
+	# opt1 <- mu.psi.opt[mu.psi.opt>0]
+	# opt2 <- abs(mu.psi.opt[mu.psi.opt<=0])+1E-3
+	ryanHappinessIndex <- -var(mu.psi.opt) + -entropy.empirical(mu.psi.opt) - sum(c(5:25)%in%round(mu.psi.opt,0)) + sd(psi.tol(a2.o))^2 # + -sd(mu.psi.max) #-entropy.empirical(mu.psi.opt) + -entropy.empirical(mu.psi.max)
+	# ryanHappinessIndex <- -entropy.empirical(opt1) + -entropy.empirical(opt2) + -entropy.empirical(mu.psi.max)
+	# + (mean(opt1)-mean(opt2))/2
+	return(ryanHappinessIndex)
+}
+findGoodPsi(c(mu.u.a0, mua3, mua4, tau.u.a0, tau.a3, tau.a4))
+happyPars <- optim(c(mu.u.a0, mua3, mua4, tau.u.a0, tau.a3, tau.a4), findGoodPsi, control=list(maxit=1E6))
+# c(mu.u.a0, mua3, mua4, tau.u.a0, tau.a3, tau.a4),
+domains <- matrix(c(-50,0, -10,10, -10,10, 1E-5,1E4, 1E-1,1E4, 1E-1,1E4), ncol=2, byrow=TRUE)
+happyPars <- genoud(findGoodPsi,  6, Domains=domains, pop.size=1E4)$par
+
+speciesPars <- function(pars){
+	# species-specific means of logistic regression parameters
+	u.a0 <- rnorm(ns, pars[1], sqrt(1/pars[4]))
+	a3 <- rnorm(ns, pars[2], sqrt(1/pars[5])) #~ dnorm(0, 0.001)
+	a4 <- rnorm(ns, pars[3], sqrt(1/pars[6])) #~ dnorm(0, 0.001)
+	
+	list(mu.u.a0 = pars[1], mua3 = pars[2], mua4 = pars[3], tau.u.a0 = pars[4], tau.a3 = pars[5], tau.a4 = pars[6], u.a0=u.a0, a3=a3, a4=a4)
+}
+
+speciesPars.out <- speciesPars(very.best) #speciesPars(happyPars$par)
+mu.u.a0 <- speciesPars.out$mu.u.a0
+mua3 <- speciesPars.out$mua3
+mua4 <- speciesPars.out$mua4
+tau.u.a0 <- speciesPars.out$tau.u.a0
+tau.a3 <- speciesPars.out$tau.a3
+tau.a4 <- speciesPars.out$tau.a4
+u.a0 <- speciesPars.out$u.a0
+a3 <- speciesPars.out$a3
+a4 <- speciesPars.out$a4
+
+
+mua34 <- expand.grid(sort(a3),  sort(a4))
+mu.psi.max <- psi.max(mu.u.a0, mua34[,1], mua34[,2])
+mu.psi.opt <- psi.opt(mua34[,1], mua34[,2])
+# image.plot(matrix(mu.psi.max, nrow=length(a3), byrow=TRUE, dimnames=list(sort(a3), sort(a4))), zlim=0:1)
+par(mfrow=c(1,3))
+
+
+image.plot(x=sort(a3), y=sort(a4), z=matrix(mu.psi.max, nrow=length(unique(mua34[,1])), byrow=F), zlim=0:1)
+points(a3,a4, pch=20)
+abline(v=c(-0.5, 0.5))
+abline(h=-0.04)
+image.plot(x=sort(a3), y=sort(a4), z=matrix(mu.psi.opt, nrow=length(unique(mua34[,1])), byrow=F), zlim=c(-20,20))
+points(a3,a4, pch=20)
+abline(v=c(-0.5, 0.5))
+abline(h=-0.04)
