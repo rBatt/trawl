@@ -359,14 +359,19 @@ Nsite.true <- aperm(array(Nsite.true, dim=c(grid.w,grid.h,grid.t)), c(2,1,3))
 # Nsite.obs <- lapply(big.out.obs, function(x)attributes(x)$Z.obs)
 
 
-get.rich.obs <- function(x){
-	x2 <- aggregate(x, fact=sqrt(n.ss), max)
-	matrix(values(stackApply(x2, rep(1,nlayers(x2)), sum)),byrow=T, nrow=nrow(x2),ncol=ncol(x2))
-	# stackApply(x2, rep(1,nlayers(x2)), sum)
-}
-Nsite.obs <- lapply(big.out.obs, function(x){lapply(attributes(x)$obs, get.rich.obs)})
-Nsite.obs.array <- simplify2array(lapply(Nsite.obs, simplify2array)) # 1=height,2=width,3=grid.t,4=n.obs.reps
-Nsite.obs.mu <- apply(Nsite.obs.array, 1:3, mean)
+# get.rich.obs <- function(x){
+# 	x2 <- aggregate(x, fact=sqrt(n.ss), max)
+# 	matrix(values(stackApply(x2, rep(1,nlayers(x2)), sum)),byrow=T, nrow=nrow(x2),ncol=ncol(x2))
+# 	# stackApply(x2, rep(1,nlayers(x2)), sum)
+# }
+# Nsite.obs <- lapply(big.out.obs, function(x){lapply(attributes(x)$obs, get.rich.obs)})
+# Nsite.obs.array <- simplify2array(lapply(Nsite.obs, simplify2array)) # 1=height,2=width,3=grid.t,4=n.obs.reps
+# Nsite.obs.mu <- apply(Nsite.obs.array, 1:3, mean)
+
+Z.obs <- lapply(big.out.obs, function(x)attributes(x)$Z.obs)
+Z.obs.array <- aperm(array(simplify2array(Z.obs), dim=c(grid.w, grid.h, ns, grid.t, n.obs.reps)),c(2,1,3:5))
+Nsite.obs <- apply(Z.obs.array, c(1,2,4,5), sum)
+Nsite.obs.mu <- apply(Nsite.obs,c(1,2,3), mean)
 
 
 # Estimated Space-Time Richness
