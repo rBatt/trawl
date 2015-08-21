@@ -79,7 +79,7 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 			if(missing(n)){
 				n <- 100
 			}
-			X <- seq(-15,15, length.out=n)
+			X <- seq(1,30, length.out=n)
 			cbind(X=X, psi=plogis(b0+b3*X+b4*X^2))
 		}else{
 			list(x=X, y=plogis(b0 + b3*X + b4*X^2))
@@ -88,54 +88,65 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 	}
 	
 	# psi.opt <- function(b1,b2){-b1/(2*b2)}
-# 	psi.tol <- function(b2){1/sqrt(-2*b2)}
+	# psi.tol <- function(b2){1/sqrt(-2*b2)}
 	# psi.max <- function(b0,b1,b2){1/(1+exp((b1^2)/(4*b2)-b0))}
 	
-	
+
 	# parent means
-	mu.u.a0 <- -0.25 #logit(0.0001)
-	mua3 <- -0.1
-	mua4 <- -0.075
-	
-	# psi.opt(-1:1, mua4)
-	# psi.tol(mua4)
-	# psi.max(mu.u.a0, mua3, mua4)
+	mu.u.a0 <- -1
+	mua3 <- 0.001
+	mua4 <- -0.025
 
 	# precisions (all species share a precision)
 	# I'm additionally assuming all of these parameters have the same
 	# precision, but that might not be true
 	# (this constraint does not exist in the msom)
-	tau.u.a0 <- 1/0.025^2
-	tau.a3 <- 1/0.35^2
-	tau.a4 <- 1/0.03^2
+	tau.u.a0 <- 1/0.75^2
+	tau.a3 <- 1/0.21^2
+	tau.a4 <- 1/0.01^2
 
 	# species-specific means of logistic regression parameters
 	u.a0 <- rnorm(ns, mu.u.a0, sqrt(1/tau.u.a0))
 	a3 <- rnorm(ns, mua3, sqrt(1/tau.a3)) #~ dnorm(0, 0.001)
 	a4 <- rnorm(ns, mua4, sqrt(1/tau.a4)) #~ dnorm(0, 0.001)
 	
+
+	
+	# grid.X <- grid.X - min(values(grid.X)) + 0.1
 	range.X <- range(values(grid.X))
 	Xvals <- do.call("seq",c(as.list(range.X),list(length.out=500)))
 	S.dens.X <- mapply(psiMod, b0=u.a0, b3=a3, b4=a4, MoreArgs=list(X=Xvals), SIMPLIFY=F)
 	
-	# Plot response curves that were just generated:
-	plot(S.dens.X[[1]], ylim=0:1, type="l", col=adjustcolor("black",alpha.f=0.25))
-	invisible(sapply(S.dens.X[-1], lines, col=adjustcolor("black",alpha.f=0.25)))
-	lines(S.dens.X[[1]]$x, apply(simplify2array(lapply(S.dens.X, function(x)x$y)), 1, mean), lwd=3)
+	p.suit2 <- simplify2array(mapply(function(...)psiMod(...)$y, u.a0, a3, a4, MoreArgs=list(X=temps), SIMPLIFY=F))
 	
 	
-	# TODO still in the process of writing out all of these parameters to make the
-	# easiest test I possibly can for the MSOM. It had better pass ...
-		
-
-	# Use the rescaled beta distribution to give each species a fake history of observed temperatures
-	# S.obs.X <- mapply(rX, alpha=ab[1,], beta=ab[2,], min=mm[1,], max=mm[2,], MoreArgs=list(n=500))
-	# S.obs.X <- mapply(rnorm, mean=mus, sd=sds, MoreArgs=list(n=500))
-
-	# Use that fake history of observed temperatures to generate an empirical density (like histogram)
-	# S.dens.X <- apply(S.obs.X, 2, density, from=X.range[1], to=X.range[2], adjust=1)
-
-	# cov.params <- t(sapply(S.dens.X, get.cov.params))
+	
+	
+	# ==========================================================================
+	# = Graph Psi_max, Environmental Optima, and Environmental Response curves =
+	# ==========================================================================
+	# mua34 <- expand.grid(sort(a3),  sort(a4))
+# 	mu.psi.max <- psi.max(mu.u.a0, mua34[,1], mua34[,2])
+# 	mu.psi.opt <- psi.opt(mua34[,1], mua34[,2])
+# 	# image.plot(matrix(mu.psi.max, nrow=length(a3), byrow=TRUE, dimnames=list(sort(a3), sort(a4))), zlim=0:1)
+# 	par(mfrow=c(1,3))
+#
+#
+# 	image.plot(x=sort(a3), y=sort(a4), z=matrix(mu.psi.max, nrow=length(unique(mua34[,1])), byrow=F), zlim=0:1)
+# 	points(a3,a4, pch=20)
+# 	abline(v=c(-0.5, 0.5))
+# 	abline(h=-0.04)
+# 	image.plot(x=sort(a3), y=sort(a4), z=matrix(mu.psi.opt, nrow=length(unique(mua34[,1])), byrow=F), zlim=c(-15,15))
+# 	points(a3,a4, pch=20)
+# 	abline(v=c(-0.5, 0.5))
+# 	abline(h=-0.04)
+#
+# 	# Plot response curves that were just generated:
+# 	plot(S.dens.X[[1]], ylim=0:1, type="l", col=adjustcolor("black",alpha.f=0.25))
+# 	invisible(sapply(S.dens.X[-1], lines, col=adjustcolor("black",alpha.f=0.25)))
+# 	lines(S.dens.X[[1]]$x, apply(simplify2array(lapply(S.dens.X, function(x)x$y)), 1, mean), lwd=3)
+#
+	
 	# =====================================
 	# = Initial Secies Population of Grid =
 	# =====================================
