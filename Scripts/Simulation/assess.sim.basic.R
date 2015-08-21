@@ -272,7 +272,7 @@ mtext("Estimated", side=3, line=0.1, font=2)
 boxplot(rich.obs~taxChance, data=R, ylab="Observed Richness", names=tC.names)
 boxplot(mu.p~taxChance, data=R, ylab="", names=tC.names)
 mtext("Fraction Capable of Being ID'd", side=1, line=-1, outer=TRUE)
-#' **Figure.** Old plot, not sure if everything in it is still valid.
+#' **Figure.** Boxplots of species richness. Numeric groupings indicate the average value of $p$ across species during a given year--replicate combination. The panels in the left column are the true simulated values, and the panels on the right are the corresponding MSOM estimates. The top row indicates the latent realized species richness or MSOM estimates of the richness. The bottom row's panels are the simulated observed values of richness (the response variable in the MSOM) and the MSOM estimates of the observed values.
 
 #'   
 #'   
@@ -346,17 +346,17 @@ lines(R.mu("mu.p"), type="l", lwd=2, col="blue")
 # ======================
 # True Space-Time Richness
 # Simple, b/c no replicates, and no substrata
-Nsite.true <- apply(attributes(big.out.obs[[1]])$Z.obs, c(1,3), function(x)sum(x))
+Nsite.true <- apply(attributes(big.out.obs[[1]])$Z, c(1,3), function(x)sum(x))
 Nsite.true <- aperm(array(Nsite.true, dim=c(grid.w,grid.h,grid.t)), c(2,1,3))
 
 # Observed Space-Time Richness
 # More complicated b/c first have to aggregate to remove substrata (take max for each spp-year-strat)
 # Then have to sum over spp (same as for True)
 # Then have to average over replicates
-Nsite.obs <- apply(attributes(big.out.obs[[1]])$Z.obs, c(1,3), function(x)sum(x))
-Nsite.obs <- aperm(array(Nsite.obs, dim=c(grid.w,grid.h,grid.t)), c(2,1,3))
-
-Nsite.obs <- lapply(big.out.obs, function(x)attributes(x)$Z.obs)
+# Nsite.obs <- apply(attributes(big.out.obs[[1]])$Z.obs, c(1,3), function(x)sum(x))
+# Nsite.obs <- aperm(array(Nsite.obs, dim=c(grid.w,grid.h,grid.t)), c(2,1,3))
+#
+# Nsite.obs <- lapply(big.out.obs, function(x)attributes(x)$Z.obs)
 
 
 get.rich.obs <- function(x){
