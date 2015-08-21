@@ -1,0 +1,2 @@
+"datetime" "user" "system" "elapsed" "sim.rich.cov.size" "ns" "n0s" "grid.w" "grid.h" "grid.t" "reps" "n.ss" "nChains" "nIter" "nSamples" "n.foreach.loops" "n.params.tracked" "n.nodes.tracked" "nCores"
+2015-08-21 09:07:05 100084.092 236.466 7075.532 3051432 50 50 6 9 4 4 4 3 50000 500 16 14 11406 8
