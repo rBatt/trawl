@@ -155,8 +155,12 @@ obs.spp <- function(x, n.ss=9, n.ss.mu, base.chance, t.noID){
 	#  num [1:315] 0 0 1 1 1 1 1 0 1 1 ...
 	# > str(visit.chance) # structure after last step
 	#  num [1:35, 1:9] 0 1 1 1 1 1 1 1 1 0 ...
-	split2jk <- function(x){
-		array(orderD1(x, ss.key), dim=c(n.ss, grid.w*grid.h,ns,grid.t))
+	split2jk <- function(x.ss){
+		# Note on ordering of dimensions:
+		# order is substrtaa, the width, then height
+		# for Z.obs as of 2015-08-21
+		# aggregate(orderD1(x.ss, ss.key)[,1,1], by=list(ss=rep(1:54, each=4)), sd) # should show all 0's when x.ss is identical in all substrata; otherwise, these sd's should be lower than the case where instead of `each=4` you had `times=4`
+		array(orderD1(x.ss, ss.key), dim=c(n.ss, grid.w*grid.h, ns, grid.t))
 	} 
 	X.obs <- aperm(split2jk(Z.obs0),c(2,1,3,4))
 	Z.obs <- apply(X.obs,c(1,3,4),max, na.rm=T)
