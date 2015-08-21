@@ -64,15 +64,15 @@ if(Sys.info()["sysname"]=="Windows"){
 # = Grid Options =
 # ================
 # Grid Size
-grid.w <- 6 # Width # 6
-grid.h <- 9 # Height # 11
-grid.t <- 4 # Time
+grid.w <- 5 # Width # 6
+grid.h <- 7 # Height # 11
+grid.t <- 2 # Time
 
 
 # ===================
 # = Species Options =
 # ===================
-ns <- 50 # Number of Species
+ns <- 20 # Number of Species
 
 
 # ======================
@@ -159,7 +159,7 @@ t.noID <- plogis(obs.chance(dim2=ns, dim1=grid.t, dim3=n.obs.reps, mean=t.noID.m
 # ================
 nChains <- 3
 nIter <- 5E4
-n0s <- 50
+n0s <- 10
 nSamples <- 500
 nThin <- ((nIter/2)*nChains)/nSamples #40 # max(1, floor((nIter - floor(nIter/2)) / 1000))
 
