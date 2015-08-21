@@ -119,8 +119,8 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 	S.dens.X <- mapply(psiMod, b0=u.a0, b3=a3, b4=a4, MoreArgs=list(X=Xvals), SIMPLIFY=F)
 	
 	# Plot response curves that were just generated:
-	plot(S.dens.X[[1]], ylim=0:1, type="l")
-	invisible(sapply(S.dens.X[-1], lines))
+	# plot(S.dens.X[[1]], ylim=0:1, type="l")
+	# invisible(sapply(S.dens.X[-1], lines))
 	
 	
 	# TODO still in the process of writing out all of these parameters to make the
