@@ -89,13 +89,13 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 	
 	# psi.opt <- function(b1,b2){-b1/(2*b2)}
 # 	psi.tol <- function(b2){1/sqrt(-2*b2)}
-# 	psi.max <- function(b0,b1,b2){1/(1+exp((b1^2)/(4*b2)-b0))}
+	# psi.max <- function(b0,b1,b2){1/(1+exp((b1^2)/(4*b2)-b0))}
 	
 	
 	# parent means
-	mu.u.a0 <- -1 #logit(0.0001)
-	mua3 <- 0
-	mua4 <- -0.035
+	mu.u.a0 <- -0.25 #logit(0.0001)
+	mua3 <- -0.1
+	mua4 <- -0.075
 	
 	# psi.opt(-1:1, mua4)
 	# psi.tol(mua4)
@@ -105,9 +105,9 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 	# I'm additionally assuming all of these parameters have the same
 	# precision, but that might not be true
 	# (this constraint does not exist in the msom)
-	tau.u.a0 <- 1/0.25^2
-	tau.a3 <- 1/1^2
-	tau.a4 <- 1/0.0005^2
+	tau.u.a0 <- 1/0.025^2
+	tau.a3 <- 1/0.35^2
+	tau.a4 <- 1/0.03^2
 
 	# species-specific means of logistic regression parameters
 	u.a0 <- rnorm(ns, mu.u.a0, sqrt(1/tau.u.a0))
@@ -119,8 +119,9 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 	S.dens.X <- mapply(psiMod, b0=u.a0, b3=a3, b4=a4, MoreArgs=list(X=Xvals), SIMPLIFY=F)
 	
 	# Plot response curves that were just generated:
-	# plot(S.dens.X[[1]], ylim=0:1, type="l")
-	# invisible(sapply(S.dens.X[-1], lines))
+	plot(S.dens.X[[1]], ylim=0:1, type="l", col=adjustcolor("black",alpha.f=0.25))
+	invisible(sapply(S.dens.X[-1], lines, col=adjustcolor("black",alpha.f=0.25)))
+	lines(S.dens.X[[1]]$x, apply(simplify2array(lapply(S.dens.X, function(x)x$y)), 1, mean), lwd=3)
 	
 	
 	# TODO still in the process of writing out all of these parameters to make the
