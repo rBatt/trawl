@@ -277,7 +277,7 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 	attr(out, "spp.bio") <- spp.bio
 	
 	attr(out, "grid.X") <- grid.X
-	# attr(out, "spp.densX") <- S.dens.X
+	attr(out, "spp.densX") <- S.dens.X
 	# attr(out, "proc.params") <- list(sd.occupiedX=apply(S.obs.X,2,sd),cov.params=data.frame(mus=mus,sds=sds))
 	
 	# Add True Psi Parameter Value as Attribute
@@ -301,7 +301,8 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 	attr(out, "a4") <- a4
 	
 	# Add True Z as Attribute
-	Z <- spp.pres[m2r,,]
+	# Z <- spp.pres[m2r,,]
+	Z <- spp.pres
 	Z[is.na(Z)] <- 0
 	# plot(colSums(apply(Z,2:3,max)), type="l") # e.g., plot total richness over time
 	attr(out, "Z") <- Z
