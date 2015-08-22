@@ -10,6 +10,8 @@
 #'     toc_depth: 2
 #'     fig_caption: true
 #'     theme: "readable"
+#'   pdf_document:
+#'     toc: true
 #' ---
 
 #+ setup, include=TRUE, echo=FALSE
@@ -48,6 +50,7 @@ opts_chunk$set(fig.path = '../../Figures/Simulation/assess.sim.basic/', echo=FAL
 
 # render!
 # rmarkdown::render("~/Documents/School&Work/pinskyPost/trawl/Scripts/Simulation/assess.sim.basic.R")
+# rmarkdown::render("~/Documents/School&Work/pinskyPost/trawl/Scripts/Simulation/assess.sim.basic.R", output_format="pdf_document")
 
 
 # ===============================
@@ -349,6 +352,7 @@ lines(R.mu("mu.p"), type="l", lwd=2, col="blue")
 Nsite.true <- apply(attributes(big.out.obs[[1]])$Z, c(1,3), function(x)sum(x))
 Nsite.true <- aperm(array(Nsite.true, dim=c(grid.w,grid.h,grid.t)), c(2,1,3))
 
+
 # Observed Space-Time Richness
 # More complicated b/c first have to aggregate to remove substrata (take max for each spp-year-strat)
 # Then have to sum over spp (same as for True)
@@ -556,7 +560,7 @@ get.psiTrue <- function(x, use.logit=FALSE, agg=FALSE){
 	}
 	return(psi.true)
 }
-
+man.psi.true <- attributes(big.out.obs[[1]])$psi
 psi.true <- get.psiTrue(big.out.obs[[1]], use.logit.psi, agg.psi)
 
 
@@ -571,8 +575,14 @@ get.psiHat <- function(x, use.logit=FALSE, agg=FALSE){
 	}
 	return(psi.hat)
 }
-
+man.psi.hat0 <- lapply(sim.rich.cov, function(x)x[["median"]]$psi[,1:ns])
+man.psi.hat <- array(simplify2array(man.psi.hat0), dim=dim.conv1)
 psi.hat <- get.psiHat(sim.rich.cov, use.logit.psi, agg.psi)
+
+
+
+image.plot(t(matrix(apply(sim.rich.cov[[1]]$median$psi[,1:ns],1, sum), nrow=grid.h, nc=grid.w, byrow=TRUE)))
+image.plot(t(matrix(apply(man.psi.true[,,1],1, sum), nrow=grid.h, nc=grid.w, byrow=TRUE)))
 
 
 
@@ -676,12 +686,18 @@ for(j in 1:dim(psi.true)[3]){
 # = True Response Curves =
 # ========================
 #' ####True Occupancy Response Curves
-#+ responseCurve-true, fig.height=4, fig.width=4
-plot(1, type="n")
-text(1,1, labels="place holder!")
-#' **Figure.** Caption goes here.  
+#+ responseCurve-true, fig.height=3.5, fig.width=3.5
+par(mar=c(1.75,1.75,0.1,0.1), ps=10, mgp=c(0.65,0.05,0), tcl=-0.15, cex=1)
+plot(S.dens.X[[1]], ylim=0:1, type="l", col=adjustcolor("black",alpha.f=0.25), xlab="", ylab="")
+invisible(sapply(S.dens.X[-1], lines, col=adjustcolor("black",alpha.f=0.25)))
+psiCurve.true.mu <- apply(simplify2array(lapply(S.dens.X, function(x)x$y)), 1, mean)
+lines(S.dens.X[[1]]$x, psiCurve.true.mu, lwd=3)
+lines(S.dens.X[[1]]$x, psiCurve.true.mu, lwd=1, col="white", lty="dotted")
+mtext("Environmental Variable", side=1, line=0.85)
+mtext(bquote(psi^{true}), side=2, line=0.65)
+#' **Figure.** True simulated response curves. Vertical axis is the value of $\psi^{true}$, horizontal axis is the value of the environmental variable that, along with species-specific regression parameters, determines $\psi^{true}$. The thick line is the among-species mean value of $\psi^{true}$ at a given value of the environmental variable.
 #'   
-#' Text explanation goes here
+#' In the response curve, the values of the environmental variable are an arbitrary gradient, and do not necessarily correspond to what was observed in the simulated environment (although they are intended to cover the same range).
 
 
 # =============================
