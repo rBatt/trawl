@@ -64,8 +64,8 @@ if(Sys.info()["sysname"]=="Windows"){
 # = Grid Options =
 # ================
 # Grid Size
-grid.w <- 5 # Width # 6
-grid.h <- 7 # Height # 11
+grid.w <- 20 # Width # 6
+grid.h <- 20 # Height # 11
 grid.t <- 2 # Time
 
 
