@@ -240,7 +240,7 @@ msom.end <- proc.time()
 # ===============================================================
 # = Some Statistics about the Computational Demands of this Run =
 # ===============================================================
-msom.elapsed <- data.frame(t((msom.start - msom.end)[1:3]))
+msom.elapsed <- data.frame(t((msom.end - msom.start)[1:3]))
 
 runtimeStats <- data.frame(
 	datetime=Sys.time(), 
