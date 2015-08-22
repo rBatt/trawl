@@ -27,7 +27,7 @@ sim.env <- function(grid.w=5, grid.h=7, grid.t=12, X.slope=0.75){
 	# Create env values at all longitudes by adding noise to default lat gradient
 	X <- c()
 	for(i in 1:grid.w){
-		X <- c(X, X.h+rnorm(grid.h, sd=0.1))
+		X <- c(X, X.h+rnorm(grid.h, sd=0.5))
 	}
 
 	# Insert first year of environment grid
