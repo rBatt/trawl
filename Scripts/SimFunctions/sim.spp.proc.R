@@ -111,13 +111,14 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 	a4 <- rnorm(ns, mua4, sqrt(1/tau.a4)) #~ dnorm(0, 0.001)
 	
 
-	
-	# grid.X <- grid.X - min(values(grid.X)) + 0.1
+	# ======================================================================================
+	# = Calculate Probabilities of Species Occurrence Given Logistic Regression Parameters =
+	# ======================================================================================
 	range.X <- range(values(grid.X))
 	Xvals <- do.call("seq",c(as.list(range.X),list(length.out=500)))
 	S.dens.X <- mapply(psiMod, b0=u.a0, b3=a3, b4=a4, MoreArgs=list(X=Xvals), SIMPLIFY=F)
 	
-	p.suit2 <- simplify2array(mapply(function(...)psiMod(...)$y, u.a0, a3, a4, MoreArgs=list(X=temps), SIMPLIFY=F))
+	p.suit2 <- simplify2array(mapply(function(...)psiMod(...)$y, u.a0, a3, a4, MoreArgs=list(X=values(subset(grid.X, 1))), SIMPLIFY=F)) # this can now go to colonize() instead of having to rely on dsample(); I tested, and it shouldn't matter much provided that a large enough reference sample size is used.
 	
 	
 	
@@ -167,7 +168,7 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 	# given that probability, we can flip a count to decide 1 (present) or 0 (absent)
 	# This process is repeated for each grid cell in the first year, and each species
 	# The result is an initial distribution of species
-	c0 <- colonize(values(subset(grid.X, 1)), S.dens.X, spp.bio.mu)
+	c0 <- colonize(values(subset(grid.X, 1)), S.dens.X, spp.bio.mu, relative=FALSE, probs=p.suit2)
 
 	# Store some values from the initial colonization
 	# These array were defined above.
@@ -317,6 +318,11 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 	Z <- spp.pres
 	Z[is.na(Z)] <- 0
 	# plot(colSums(apply(Z,2:3,max)), type="l") # e.g., plot total richness over time
+	# par(mfrow=c(2,2)) # histograms of species' psi values, summarized as mean, median, max, or min across years and sites
+	# hist(apply(psi, c(2), mean))
+	# hist(apply(psi, c(2), median))
+	# hist(apply(psi, c(2), max))
+	# hist(apply(psi, c(2), min))
 	attr(out, "Z") <- Z
 	
 	
