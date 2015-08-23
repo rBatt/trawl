@@ -11,6 +11,7 @@
 #'   pdf_document:
 #'     toc: true
 #'     template: latex-ryan.template
+#'     fig_caption: true
 #' geometry: margin=1.0in
 #' lineno: true
 #' lineSpacing: true
@@ -23,7 +24,7 @@
 # #'      "--chapters"
 # #'      ]
 
-#+ setup, include=TRUE, echo=FALSE
+#+ setup, include=FALSE, echo=FALSE
 # =================
 # = Load Packages =
 # =================
