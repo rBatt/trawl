@@ -66,13 +66,13 @@ if(Sys.info()["sysname"]=="Windows"){
 # Grid Size
 grid.w <- 20 # Width # 6
 grid.h <- 20 # Height # 11
-grid.t <- 2 # Time
+grid.t <- 4 # Time
 
 
 # ===================
 # = Species Options =
 # ===================
-ns <- 20 # Number of Species
+ns <- 40 # Number of Species
 
 
 # ======================
@@ -80,7 +80,7 @@ ns <- 20 # Number of Species
 # ======================
 n.obs.reps <- 4 # number of time to observe the same true process (each observation is analyzed separately)
 n.ss <- 4 # number of substrata (for observation)
-n.ss.mu <- n.ss*grid.w*grid.h #max(trunc((n.ss*grid.w*grid.h)/3*2), grid.w*grid.h) # total substrata observed
+n.ss.mu <- (n.ss*grid.w*grid.h)*(75/100) #max(trunc((n.ss*grid.w*grid.h)/3*2), grid.w*grid.h) # total substrata observed
 base.chance <- 1 #plogis(rnorm(ns)) #rbeta(ns,2,2) #runif(n=ns, 0.2, 0.8) # baseline detectability (before ID chance)
 
 # Create chance to be identified if caught
@@ -149,7 +149,7 @@ obs.chance <- function(dim2=ns, dim1=grid.t, dim3=n.obs.reps, rand.gen=rnorm, ch
 # no changes between years (dim1), thus no changes between replicates(dim3)
 # plogis(obs.chance(dim2=6, dim3=2, dim1=7))
 
-t.noID.mus <- c(0,4)
+t.noID.mus <- c(-2,0,2,4)
 t.noID.sd <- 2
 t.noID <- plogis(obs.chance(dim2=ns, dim1=grid.t, dim3=n.obs.reps, mean=t.noID.mus, sd=t.noID.sd))
 
