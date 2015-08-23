@@ -10,10 +10,18 @@
 #'     theme: "readable"
 #'   pdf_document:
 #'     toc: true
-#'     template: latexDefault.template
+#'     template: latex-ryan.template
+#' geometry: margin=1.0in
+#' lineno: true
+#' lineSpacing: true
+#' titlesec: true
+#' documentclass: article
 #' ---
 
-
+#+ deleted-pandoc-headers, include=FALSE, echo=FALSE
+# #'      pandoc_args: [
+# #'      "--chapters"
+# #'      ]
 
 #+ setup, include=TRUE, echo=FALSE
 # =================
@@ -86,7 +94,7 @@ rangeK <- range(sapply(big.out.obs, function(x)attr(x,"n.haul")))
 #'  
 #'  
 #'  
-#' \newpage
+
 
 #' #<u>Conventions and Settings</u>
 #' ##Dimension Conventions
@@ -216,7 +224,7 @@ centralT <- c("mean","median")[2]
 #'   
 #'   
 #'   
-#' \newpage  
+  
 
 
 #' #<u>Species Richness</u>
@@ -524,7 +532,7 @@ Nsite_spaceTime(j=2)
 #'  
 #'  
 #'  
-#' \newpage
+
 
 # ====================================
 # = # ==============================
@@ -782,7 +790,7 @@ for(j in 1:grid.t){
 #'  
 #'  
 #'  
-#' \newpage
+
 
 
 
@@ -964,7 +972,7 @@ text(1,1, labels="place holder!")
 #'  
 #'  
 #'  
-#' \newpage
+
 
 #' #<u>Assessment with Mixed Effects Models</u>
 #' ##E.g. LME for $\psi$ Evaluation
