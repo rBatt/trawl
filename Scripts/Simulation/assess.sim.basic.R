@@ -1,9 +1,7 @@
-
-
 #' ---
-#' title: "assess.sim.basic.R"
 #' author: "Ryan Batt"
-#' date: "2015-08-19"
+#' date: "2015-08-22"
+#' abstract: "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enimad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
 #' output:
 #'   html_document:
 #'     toc: true
@@ -12,12 +10,17 @@
 #'     theme: "readable"
 #'   pdf_document:
 #'     toc: true
+#'     template: latexDefault.template
 #' ---
+
+
 
 #+ setup, include=TRUE, echo=FALSE
 # =================
 # = Load Packages =
 # =================
+# #' date: "2015-08-22"
+# #' title: "assess.sim.basic.R"
 # Data structure
 library(raster)
 library(data.table)
@@ -83,6 +86,7 @@ rangeK <- range(sapply(big.out.obs, function(x)attr(x,"n.haul")))
 #'  
 #'  
 #'  
+#' \newpage
 
 #' #<u>Conventions and Settings</u>
 #' ##Dimension Conventions
@@ -212,6 +216,7 @@ centralT <- c("mean","median")[2]
 #'   
 #'   
 #'   
+#' \newpage  
 
 
 #' #<u>Species Richness</u>
@@ -222,7 +227,6 @@ centralT <- c("mean","median")[2]
 
 
 #' Estimates of richness can be made spatially or temporally explicit (or neither, or both), but obviously a  
-
 
 #'   
 #'  
@@ -512,6 +516,15 @@ Nsite_spaceTime(j=2)
 #'   
 #' Text explanation goes here  
 
+#'  
+#'  
+#'  
+#'  
+#' ***
+#'  
+#'  
+#'  
+#' \newpage
 
 # ====================================
 # = # ==============================
@@ -761,15 +774,15 @@ for(j in 1:grid.t){
 #' 
 
 
-#' 
-#'
-#' 
-#'
+#'  
+#'  
+#'  
+#'  
 #' ***
-#' 
-#'
-#' 
-#' 
+#'  
+#'  
+#'  
+#' \newpage
 
 
 
@@ -943,15 +956,15 @@ text(1,1, labels="place holder!")
 #'   
 #' Text explanation goes here
 
-#'   
 #'  
-#'   
 #'  
-#' ***  
-#'   
 #'  
-#'   
 #'  
+#' ***
+#'  
+#'  
+#'  
+#' \newpage
 
 #' #<u>Assessment with Mixed Effects Models</u>
 #' ##E.g. LME for $\psi$ Evaluation
