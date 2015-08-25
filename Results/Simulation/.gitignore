@@ -1,0 +1,4 @@
+*
+!.gitignore
+!sim.basic.RData
+!sim.rich.cov.RData
