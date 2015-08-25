@@ -181,10 +181,118 @@ invisible(mapply(comp.psi.method, nsamps, samp.label))
 
 
 
+# =======================
+# = From sim.spp.proc.R =
+# =======================
+
+psiMod <- function(b0, b3, b4, X, n){
+
+	if(missing(X)){
+		if(missing(n)){
+			n <- 100
+		}
+		X <- seq(1,30, length.out=n)
+		cbind(X=X, psi=plogis(b0+b3*X+b4*X^2))
+	}else{
+		list(x=X, y=plogis(b0 + b3*X + b4*X^2))
+	}
+	
+}
+
+psi.opt <- function(b1,b2){-b1/(2*b2)}
+psi.tol <- function(b2){1/sqrt(-2*b2)}
+psi.max <- function(b0,b1,b2){1/(1+exp((b1^2)/(4*b2)-b0))}
+
+
+
+# parent means
+mu.u.a0 <- 0.5
+mua3 <- 0.00
+mua4 <- -0.025
+
+# precisions (all species share a precision)
+# I'm additionally assuming all of these parameters have the same
+# precision, but that might not be true
+# (this constraint does not exist in the msom)
+tau.u.a0 <- 1/0.5^2
+tau.a3 <- 1/0.21^2
+tau.a4 <- 1/0.008^2
+
+cov.a0.a3 <- -(0.05^2)
+cov.a0.a4 <- -(0.05^2)
+cov.a3.a4 <- -(0.01^2)
+
+
+cov.mat.use <- matrix(
+	c(	1/tau.u.a0,	cov.a0.a3,	cov.a0.a4,
+		cov.a0.a3,	1/tau.a3,	cov.a3.a4, 
+		cov.a0.a4,	cov.a3.a4,	1/tau.a4), 
+	ncol=3
+)
+
+
+# species-specific means of logistic regression parameters
+u.a0 <- rnorm(ns, mu.u.a0, sqrt(1/tau.u.a0))
+a3 <- rnorm(ns, mua3, sqrt(1/tau.a3)) #~ dnorm(0, 0.001)
+
+a4 <- rnorm(ns, mua4, sqrt(1/tau.a4)) #~ dnorm(0, 0.001)
+#
+# a.out <- mvrnorm(ns, mu=c(mu.u.a0, mua3, mua4), Sigma=cov.mat.use, empirical=TRUE)
+# u.a0 <- a.out[,1]
+# a3 <- a.out[,2]
+# a4 <- a.out[,3]
+
+(cov.mat.obs <- cov(matrix(c(u.a0,a3,a4), ncol=3)))
+# (cov.mat.true <- diag(c(1/tau.u.a0, 1/tau.a3, 1/tau.a4)))
+cov.mat.use
+
+
+
+range.X <- range(values(grid.X))
+Xvals <- do.call("seq",c(as.list(range.X),list(length.out=500)))
+S.dens.X <- mapply(psiMod, b0=u.a0, b3=a3, b4=a4, MoreArgs=list(X=Xvals), SIMPLIFY=F)
+p.suit2 <- simplify2array(mapply(function(...)psiMod(...)$y, u.a0, a3, a4, MoreArgs=list(X=values(subset(grid.X, 1))), SIMPLIFY=F)) # this can now go to colonize() instead of having to rely on dsample(); I tested, and it shouldn't matter much provided that a large enough reference sample size is used.
+
+
+
+mua34 <- expand.grid(sort(a3),  sort(a4))
+mu.psi.max <- psi.max(mu.u.a0, mua34[,1], mua34[,2])
+mu.psi.opt <- psi.opt(mua34[,1], mua34[,2])
+# image.plot(matrix(mu.psi.max, nrow=length(a3), byrow=TRUE, dimnames=list(sort(a3), sort(a4))), zlim=0:1)
+
+par(mfrow=c(2,2))
+
+image.plot(x=sort(a3), y=sort(a4), z=matrix(mu.psi.max, nrow=length(unique(mua34[,1])), byrow=F), zlim=0:1)
+points(a3,a4, pch=20)
+abline(v=c(-0.5, 0.5))
+abline(h=-0.04)
+image.plot(x=sort(a3), y=sort(a4), z=matrix(mu.psi.opt, nrow=length(unique(mua34[,1])), byrow=F), zlim=c(-15,15))
+points(a3,a4, pch=20)
+abline(v=c(-0.5, 0.5))
+abline(h=-0.04)
+
+# Plot response curves that were just generated:
+plot(S.dens.X[[1]], ylim=0:1, type="l", col=adjustcolor("black",alpha.f=0.25))
+invisible(sapply(S.dens.X[-1], lines, col=adjustcolor("black",alpha.f=0.25)))
+lines(S.dens.X[[1]]$x, apply(simplify2array(lapply(S.dens.X, function(x)x$y)), 1, mean), lwd=3)
+
+a.shapes <- data.frame(u.a0=u.a0, a3=a3, a4=a4,psi.max=psi.max(u.a0, a3, a4), psi.opt=psi.opt(a3, a4), psi.tol=psi.tol(a4))
+panel.hist <- function(x, ...)
+{
+    usr <- par("usr"); on.exit(par(usr))
+    par(usr = c(usr[1:2], 0, 1.5) )
+    h <- hist(x, plot = FALSE)
+    breaks <- h$breaks; nB <- length(breaks)
+    y <- h$counts; y <- y/max(y)
+    rect(breaks[-nB], 0, breaks[-1], y, col = "cyan", ...)
+}
+
+pairs(a.shapes, diag.panel=panel.hist)
+
+
 # ===========================================================
 # = trying to find a good combination of parameters for psi =
 # ===========================================================
-
 findGoodPsi <- function(pars){
 	Nsim <- 1E3
 	
@@ -255,18 +363,3 @@ a3 <- speciesPars.out$a3
 a4 <- speciesPars.out$a4
 
 
-mua34 <- expand.grid(sort(a3),  sort(a4))
-mu.psi.max <- psi.max(mu.u.a0, mua34[,1], mua34[,2])
-mu.psi.opt <- psi.opt(mua34[,1], mua34[,2])
-# image.plot(matrix(mu.psi.max, nrow=length(a3), byrow=TRUE, dimnames=list(sort(a3), sort(a4))), zlim=0:1)
-par(mfrow=c(1,3))
-
-
-image.plot(x=sort(a3), y=sort(a4), z=matrix(mu.psi.max, nrow=length(unique(mua34[,1])), byrow=F), zlim=0:1)
-points(a3,a4, pch=20)
-abline(v=c(-0.5, 0.5))
-abline(h=-0.04)
-image.plot(x=sort(a3), y=sort(a4), z=matrix(mu.psi.opt, nrow=length(unique(mua34[,1])), byrow=F), zlim=c(-20,20))
-points(a3,a4, pch=20)
-abline(v=c(-0.5, 0.5))
-abline(h=-0.04)

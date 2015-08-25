@@ -64,8 +64,8 @@ if(Sys.info()["sysname"]=="Windows"){
 # = Grid Options =
 # ================
 # Grid Size
-grid.w <- 12 # Width # 6
-grid.h <- 12 # Height # 11
+grid.w <- 9 # Width # 6
+grid.h <- 9 # Height # 11
 grid.t <- 4 # Time
 
 
@@ -79,7 +79,7 @@ ns <- 40 # Number of Species
 # = Simulation Options =
 # ======================
 n.obs.reps <- 8 # number of time to observe the same true process (each observation is analyzed separately)
-n.ss <- 25 # number of substrata (for observation)
+n.ss <- 4 # number of substrata (for observation)
 n.ss.mu <- trunc((n.ss*grid.w*grid.h)*(50/100)) #max(trunc((n.ss*grid.w*grid.h)/3*2), grid.w*grid.h) # total substrata observed
 base.chance <- 1 #plogis(rnorm(ns)) #rbeta(ns,2,2) #runif(n=ns, 0.2, 0.8) # baseline detectability (before ID chance)
 
