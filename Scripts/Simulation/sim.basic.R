@@ -64,15 +64,15 @@ if(Sys.info()["sysname"]=="Windows"){
 # = Grid Options =
 # ================
 # Grid Size
-grid.w <- 8 # Width # 6
-grid.h <- 8 # Height # 11
+grid.w <- 9 # Width # 6
+grid.h <- 9 # Height # 11
 grid.t <- 4 # Time
 
 
 # ===================
 # = Species Options =
 # ===================
-ns <- 50 # Number of Species
+ns <- 30 # Number of Species
 
 
 # ======================
