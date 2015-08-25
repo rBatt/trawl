@@ -56,6 +56,7 @@ library(knitr)
 library(rmarkdown)
 library(xtable)
 library(kfigr)
+library(stargazer)
 
 # Other
 library(rbLib) # library(devtools); install_github("rBatt/rbLib")
@@ -64,12 +65,25 @@ library(rbLib) # library(devtools); install_github("rBatt/rbLib")
 # ================
 # = Report Setup =
 # ================
-opts_chunk$set(fig.path = '../../Figures/Simulation/assess.sim.basic/', echo=FALSE, include=TRUE, cache=TRUE)
+o_f <- c("html_document", "pdf_document")[2]
+
+opts_chunk$set(
+	fig.path = '../../Figures/Simulation/assess.sim.basic/', 
+	cache.path='../../Reports/assess.sim.basic/assess.sim.basic_cache2/',
+	echo=FALSE, 
+	include=TRUE, 
+	cache=TRUE,
+	fig.show="hold",
+	fig.lp = if(o_f=="html_document"){"**Figure.**"}else{NULL}
+)
+
 
 # render!
-# rmarkdown::render("~/Documents/School&Work/pinskyPost/trawl/Scripts/Simulation/assess.sim.basic.R")
-# rmarkdown::render("~/Documents/School&Work/pinskyPost/trawl/Scripts/Simulation/assess.sim.basic.R", output_format="pdf_document")
-
+# rmarkdown::render(
+# 	"~/Documents/School&Work/pinskyPost/trawl/Scripts/Simulation/assess.sim.basic.R",
+# 	output_format=o_f,
+# 	output_dir='~/Documents/School&Work/pinskyPost/trawl/Reports/assess.sim.basic/',
+# )
 
 # ===============================
 # = Guess appropriate directory =
@@ -362,13 +376,19 @@ R[,"rep"] <- rep(1:n.obs.reps, each=grid.t)
 # =================================
 #+ speciesRichness-boxplots, fig.width=3.5, fig.height=3.5, fig.cap=boxplot.cap 
 tC.names <- round(unique(taxChance),2)
-par(mfrow=c(2,2), mar=c(2.1,2.0,0.1,0.1), cex=1, ps=9, mgp=c(1.15, 0.2, 0), tcl=-0.15, oma=c(0,0,1,0))
-boxplot(rich.true~taxChance, data=R, ylab="Realized Richness", names=tC.names)
+par(mfrow=c(2,2), mar=c(1.75,1.25,0.1,0.1), cex=1, ps=8, mgp=c(1, 0.1, 0), tcl=-0.15, oma=c(0.35,0.5,1,0))
+
+ylim.rr <- range(R[,c("rich.true","Z")])
+boxplot(rich.true~taxChance, data=R, ylab="", names=tC.names, ylim=ylim.rr)
+mtext("Realized Richness", side=2, line=0.85)
 mtext("True ", side=3, line=0.1, font=2)
-boxplot(Z~taxChance, data=R, ylab="", names=tC.names)
+boxplot(Z~taxChance, data=R, ylab="", names=tC.names, ylim=ylim.rr)
 mtext("Estimated", side=3, line=0.1, font=2)
-boxplot(rich.obs~taxChance, data=R, ylab="Observed Richness", names=tC.names)
-boxplot(mu.p~taxChance, data=R, ylab="", names=tC.names)
+
+ylim.or <- range(R[,c("rich.obs","mu.p")])
+boxplot(rich.obs~taxChance, data=R, ylab="", names=tC.names, ylim=ylim.or)
+mtext("Observed Richness", side=2, line=0.85)
+boxplot(mu.p~taxChance, data=R, ylab="", names=tC.names, ylim=ylim.or)
 mtext("Average Detection Probability", side=1, line=-1, outer=TRUE)
 
 
@@ -1151,39 +1171,173 @@ text(1,1, labels="place holder!")
 library(car)
 library(lme4)
 
-blah <- reshape2:::melt.array(
+# psi
+# psi true
+dat.psi.true <- reshape2:::melt.array(
 	psi.true, 
 	varnames=c("site","spp","time","rep"), 
-	value.name="true", 
+	value.name="psi.true", 
 	as.is=T
 )
-
-blah.hat <- reshape2:::melt.array(
+# psi hat
+dat.psi.hat <- reshape2:::melt.array(
 	psi.hat, 
 	varnames=c("site","spp","time","rep"), 
-	value.name="hat", 
+	value.name="psi.hat", 
 	as.is=T
 )
 
-blah <- cbind(blah, hat=blah.hat[,"hat"])
+# p
+# p true
+dat.p.true <- reshape2:::melt.array(
+	aperm(array(p.true, dim=c(dim(p.true), dim(psi.true)[1])),c(4,1,2,3)), 
+	varnames=c("site","spp","time","rep"), 
+	value.name="p.true", 
+	as.is=T
+)
+# p hat
+dat.p.hat <- reshape2:::melt.array(
+	aperm(array(p.hat, dim=c(dim(p.hat), dim(psi.hat)[1])),c(4,1,2,3)), 
+	varnames=c("site","spp","time","rep"), 
+	value.name="p.hat", 
+	as.is=T
+)
 
-blah$site <- as.factor(blah$site)
-blah$spp <- as.factor(blah$spp)
-blah$time <- as.factor(blah$time)
-blah$rep <- as.factor(blah$rep)
+# n.hauls
+n.hauls <- sapply(big.out.obs, function(x)attributes(x)$n.haul) # same across all years within a n.obs.rep
+n.hauls.dim <- c(grid.w*grid.h, n.obs.reps, ns, grid.t)
+dat.n.hauls <- reshape2:::melt.array(
+	aperm(array(n.hauls, dim=n.hauls.dim), c(1,3,4,2)), 
+	varnames=c("site","spp","time","rep"), 
+	value.name="n.hauls", 
+	as.is=T
+)
+
+# grid.X
+# same structure (dims) as n.hauls
+temp <- values(grid.X)
+temp.dim <- c(grid.w*grid.h, n.obs.reps, ns, grid.t)
+dat.temp <- reshape2:::melt.array(
+	aperm(array(temp, dim=temp.dim), c(1,3,4,2)), 
+	varnames=c("site","spp","time","rep"), 
+	value.name="temp", 
+	as.is=T
+)
+
+# tax chance
+tax.chance <- simplify2array(lapply(big.out.obs, function(x)(attributes(x)$obs.params)$tax.chance))
+tax.chance.dim <- c(grid.t, ns, n.obs.reps, grid.w*grid.h)
+dat.tax.chance <- reshape2:::melt.array(
+	aperm(array(tax.chance, dim=tax.chance.dim), c(4,2,1,3)), 
+	varnames=c("site","spp","time","rep"), 
+	value.name="tax.chance", 
+	as.is=T
+)
+
+
+mod.dat <- cbind(
+	dat.psi.true, 
+	psi.hat=dat.psi.hat[,"psi.hat"],
+	p.true=dat.p.true[,"p.true"], 
+	p.hat=dat.p.hat[,"p.hat"], 
+	n.hauls=dat.n.hauls[,"n.hauls"],
+	tax.chance=dat.tax.chance[,"tax.chance"],
+	temp=dat.temp[,"temp"]
+)
+mod.dat[,"psi.error"] <- mod.dat[,"psi.hat"]-mod.dat[,"psi.true"]
+mod.dat[,"p.error"] <- mod.dat[,"p.hat"] - mod.dat[,"p.true"]
+
+mod.dat$site <- as.factor(mod.dat$site)
+mod.dat$spp <- as.factor(mod.dat$spp)
+mod.dat$time <- as.factor(mod.dat$time)
+mod.dat$rep <- as.factor(mod.dat$rep)
 
 
 # ====================
 # = Do LMER Analysis =
 # ====================
-(blah.mod <- lmer(hat~true+(1|spp)+(1|time), data=blah))
+mod1 <- lmer(psi.error~temp-1+(1|spp)+(1|site), data=mod.dat)
+mod2 <- lmer(psi.error~n.hauls-1+(1|spp)+(1|site), data=mod.dat)
+mod3 <- lmer(psi.error~p.error-1+(1|spp)+(1|site), data=mod.dat)
+# mod4 <- lmer(psi.error~n.hauls-1+(1|spp)+(n.hauls-1|spp)+(1|site), data=mod.dat)
+mod4 <- lmer(psi.error~temp-1+(1|spp)+(temp-1|spp)+(1|site), data=mod.dat)
+mod5 <- lmer(psi.error~p.error-1+(1|spp)+(p.error-1|spp)+(1|site), data=mod.dat)
+mod6 <- lmer(psi.error~p.error+temp-1+(p.error+temp|spp)+(1|site), data=mod.dat)
 
-Anova(blah.mod)
+# Site as a random effect
+# test.siteRE <- list(
+# 	lmer(psi.hat~psi.true+(1|spp), data=mod.dat),
+# 	lmer(psi.hat~psi.true+(1|spp)+(1|site), data=mod.dat)
+# 	)
+# site.RE <- do.call(anova, test.siteRE)
+# #' Site is an important random effect
+
+
+# n.hauls as a main effect
+# test.nhaulsME1 <- list(
+# 	lmer(psi.hat~psi.true+(1|spp), data=mod.dat),
+# 	lmer(psi.hat~psi.true+n.hauls+(1|spp), data=mod.dat)
+# )
+# n.haulsME1 <- do.call(anova, test.nhaulsME1)
+# chi <- format(n.haulsME1[["Chisq"]][2], digits=2)
+# chidf <- format(n.haulsME1[["Chi Df"]][2], digits=2)
+# pval <- format(n.haulsME1[["Pr(>Chisq)"]][2], digits=2)
+#texreg(test.nhaulsME1)
+# #' A model that includes `n.hauls` as a main effect provides a marginal significance/ improvement over the base model ($\mathcal{X}^2_{`r chidf`}=`r chi`; p=`r pval`$).
+#
+# test.nhaulsME2 <- list(
+# 	lmer(psi.hat~psi.true+(1|spp)+(1|site), data=mod.dat),
+# 	lmer(psi.hat~psi.true+n.hauls+(1|spp), data=mod.dat),
+# 	lmer(psi.hat~psi.true+n.hauls+(1|spp)+(1|site), data=mod.dat)
+# )
+# n.haulsME2 <- do.call(anova, test.nhaulsME2)
+# chi <- format(n.haulsME2[["Chisq"]][2], digits=2)
+# chidf <- format(n.haulsME2[["Chi Df"]][2], digits=2)
+# pval <- format(n.haulsME2[["Pr(>Chisq)"]][2], digits=2)
+# #' However, we can see that most of the explanatory power of n.hauls was wrapped up in its ability to distinguish among sites; the `site` random effect appears to explain all of the variance that could be exlained by `n.hauls`, and more.
+
+
+# mod.sumry <- list(
+# 	list(mod1, mod2),
+# 	list(
+# 		data.frame(summary(mod1)$varcor),
+# 		data.frame(summary(mod2)$varcor)
+# 	)
+# )
+mod.cap <- c("Mixed effect models assessing sensitivity of $\\hat{\\psi}$ to simulation conditions")
+
+#+ lmer-table, results="asis"
+# sg <- stargazer(mod.sumry[[1]], summary=c(FALSE), title=mod.sumry.title, header=FALSE)
+texreg(list(mod1, mod2, mod3, mod4, mod5, mod6), booktabs=TRUE, caption.above=TRUE, caption=mod.cap, sideways=F, digits=3)
 
 
 # ================
 # = Explain LMER =
 # ================
+#'   
+#'   
+#'   
+#'   
+#' ***
+#'   
+#'   
+#'   
+#'   
+
+
+# ==============
+# = Conclusion =
+# ==============
+#' #Conclusion  
+#' The MSOM reliably recover model parameters so long as average values of $p_i$ were not at their lowest levels.
+#'   
+#' ##Discussion of Results
+#'   
+#' ##Next Steps
+#'   
+#' ## Concluding Remarks
+#' 
+
 #'   
 #'   
 #'   
@@ -1214,7 +1368,7 @@ sessionInfo()
 # =================
 #' ##Date Document Last Compiled
 #+ dateCompiled, include=TRUE, echo=F
-cat("Last compiled on: ",as.character(Sys.Date()),"\n\n")
+message("Last compiled on: ",as.character(Sys.Date()),"\n\n")
 #'   
 #'   
 #'   
