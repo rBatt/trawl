@@ -140,14 +140,14 @@ print.xtable.booktabs <- function(x){
             '\\midrule\n',
              '\\bottomrule\n')))
 }
-#'  
-#'  
-#'  
-#'  
+#'   
+#'   
+#'   
+#'    
 #' ***
-#'  
-#'  
-#'  
+#'   
+#'   
+#'   
 
 
 # ================
@@ -264,7 +264,7 @@ print.xtable.booktabs <- function(x){
 #'   
 #'   
 #'   
-#' ***  
+#' ***
 #'   
 #'   
 #'   
@@ -293,7 +293,7 @@ big.out.obs[[1]] # Dimensions of the simulation (and basic richness info)
 #'   
 #'   
 #'   
-#' ***  
+#' ***
 #'   
 #'   
 #'   
@@ -316,7 +316,7 @@ centralT <- c("mean","median")[2]
 #'   
 #'   
 #'   
-#' ***  
+#' ***
 #'   
 #'   
 #'   
@@ -336,14 +336,14 @@ centralT <- c("mean","median")[2]
 #' ##Definition of species richness
 #' Species richness is the number of different species, or more generically, unique taxa. The point is moot in the simulation study, and in the empirical trawl data it refers to species.  
 #'   
-#' Estimates of richness ($R$) can be made spatially or temporally explicit (or neither, or both). In the following figures, different levels of aggregation are performed – for most figures $R$ is split by year (this is true for all figures but `r figRef("boxplots")`). `r figRef("timeSeries")` emphasizes temporal dynamics and keeps replicates separated, but aggregates over space (the $j$ sites). `r figRef("nsite.scatter")` doesn't aggregate over space or time, but it does aggregate over "replicate" observations; importantly, while the figure does present any spatial aggregation, it does not retain the spatial relationship (you can't tell which sites are next to others). The final two figures of the section (`r figRef("nsiteMap.diffScale")` and `r figRef("nsiteMap.sameScale")`)  are similar to the previous figure, except that spatial relationship among points is retained via a heatmap representation.  
+#' Estimates of richness ($R$) can be made spatially or temporally explicit (or neither, or both). In the following figures, different levels of aggregation are performed – for most figures $R$ is split by year (this is true for all figures but [`r figRef("boxplots")`](#richness-boxplots)). [`r figRef("timeSeries")`](#richness-time-series) emphasizes temporal dynamics and keeps replicates separated, but aggregates over space (the $j$ sites). [`r figRef("nsite.scatter")`](#scatter-plots-of-nsite-split-by-year) doesn't aggregate over space or time, but it does aggregate over "replicate" observations; importantly, while the figure does present any spatial aggregation, it does not retain the spatial relationship (you can't tell which sites are next to others). The final two figures of the section ([`r figRef("nsiteMap.diffScale")` and `r figRef("nsiteMap.sameScale")`](#maps-of-richness-space-and-time))  are similar to the previous figure, except that spatial relationship among points is retained via a heatmap representation.  
 #'   
 #' None of these estimates of richness include the `r n0s` species that were part of the "data augmented"/ "adding 0's" process. Richness values can either be true (true simulated NDGP; $R^{true}$), observed (true simulated human observation of NDGP; $R^{obs}$), or MSOM estimates of one of those two ($\hat{R}^{true}$ or $\hat{R}^{obs}$).
 #'   
 #'   
 #'   
 #'   
-#' ***  
+#' ***
 #'   
 #'   
 #'   
@@ -358,7 +358,7 @@ centralT <- c("mean","median")[2]
 #' These estimates of species richness only distinguish between replicates and years. They do not contain any site-specific information.
 #'   
 #' ####Richness Boxplots
-#' With the boxplots we're mostly looking to see if the estimates of richness vary with the mean [probability of detection, $p$](#definition-of-p). In the empirical data, we know that taxonomic identification changed over time (it improved; generally, more species were ID'd in later years). We also suspect that gear might change, which affects the probability of observing a species. The "Fraction Capable of Being ID'd" category in the boxplots is essentially the cross-species average of $p$.
+#' With the boxplots we're mostly looking to see if the estimates of richness vary with the mean [probability of detection, $p$](#definition-of-p). In the empirical data, we know that taxonomic identification changed over time (it improved; generally, more species were ID'd in later years). We also suspect that gear might change, which affects the probability of observing a species. The "Average Detection Probability" category in the boxplots is the cross-species average of $p$ (which with large sample size approach the hyperparameter $p_{\mu}$).
 
 
 # =========================================
@@ -377,7 +377,6 @@ for(i in 2:length(simR0)){
 
 R <- data.frame(simR)
 taxChance <- c(sapply(big.out.obs, function(x)rowMeans((attributes(x)$obs.params)$tax.chance)))
-
 mu.p0 <- lapply(sim.rich.cov, function(x)t(c(plogis(x[[centralT]]$v.a0))*t(x[[centralT]]$Z)))
 mu.p <- apply(sapply(mu.p0, function(x)apply(x,2,pTot)),2,sum)
 
@@ -402,7 +401,7 @@ boxplot(Z~taxChance, data=R, ylab="", names=tC.names)
 mtext("Estimated", side=3, line=0.1, font=2)
 boxplot(rich.obs~taxChance, data=R, ylab="Observed Richness", names=tC.names)
 boxplot(mu.p~taxChance, data=R, ylab="", names=tC.names)
-mtext("Fraction Capable of Being ID'd", side=1, line=-1, outer=TRUE)
+mtext("Average Detection Probability", side=1, line=-1, outer=TRUE)
 
 
 # ================================================
@@ -412,7 +411,7 @@ mtext("Fraction Capable of Being ID'd", side=1, line=-1, outer=TRUE)
 #'   
 #'   
 #'   
-#' ***  
+#' ***
 #'   
 #'   
 #'   
@@ -473,7 +472,7 @@ lines(R.mu("mu.p"), type="l", lwd=2, col="blue")
 #'   
 #'   
 #'   
-#' ***   
+#' *** 
 #'   
 #'   
 #'   
@@ -546,7 +545,7 @@ Nsite_spaceTime <- function(j){
 		my.image(Nsite.true[,,i], ylim=ylim, zlim=zlim.true)
 		par(mar=c(0.25,0.25,0.15,0), ps=6, mgp=c(0,0,0), tcl=-0.15, cex=1)
 		if(i==1){text("",x=-0,y=0.5, xpd=T,srt=90, cex=1, ps=10)} # this is so weird ... why do I have to do this?
-		if(i==1){text("True",x=-0.2,y=0.5, xpd=NA,srt=90, cex=1.25)}
+		if(i==1){text("True",x=-0.15,y=0.5, xpd=NA,srt=90, cex=1.25)}
 	}
 
 	# Plot obs richness
@@ -554,7 +553,7 @@ Nsite_spaceTime <- function(j){
 		my.image(Nsite.obs.mu[,,i], zlim=zlim.obs, ylim=ylim)
 		par(mar=c(0.25,0.25,0.15,0), ps=6, mgp=c(0,0,0), tcl=-0.15, cex=1)
 		if(i==1){text("",x=-0,y=0.5, xpd=T,srt=90, cex=1, ps=10)}
-		if(i==1){text("Observed",x=-0.2,y=0.5, xpd=NA,srt=90, cex=1.25)}
+		if(i==1){text("Observed",x=-0.15,y=0.5, xpd=NA,srt=90, cex=1.25)}
 	}
 
 	# Plot msom estimates of richness
@@ -562,7 +561,7 @@ Nsite_spaceTime <- function(j){
 		my.image(Nsite.msom.mu[,,i], zlim=zlim.msom, ylim=ylim)
 		par(mar=c(0.25,0.25,0.15,0), ps=6, mgp=c(0,0,0), tcl=-0.15, cex=1)
 		if(i==1){text("",x=-0,y=0.5, xpd=T,srt=90, cex=1, ps=10)}
-		if(i==1){text("MSOM",x=-0.2,y=0.5, xpd=NA,srt=90, cex=1.25)}
+		if(i==1){text("MSOM",x=-0.15,y=0.5, xpd=NA,srt=90, cex=1.25)}
 		# text(i,x=0.5,y=-0.1, xpd=T,srt=90, cex=1.25)
 		text("",x=0.5,y=1.15, xpd=T,srt=0, cex=1.25)
 		text(paste0("t=",i),x=0.5,y=1.15, xpd=NA,srt=0, cex=1.25)
@@ -582,7 +581,7 @@ nsiteScatter.cap <- figRef("nsite.scatter", "Site-specific richness (`Nsite`, $N
 # = Plot Nsite Scatter =
 # ======================
 #' ####Scatter Plots of `Nsite` Split by Year
-#+ compareNsite-scatter, fig.width=6, fig.height=2.5, fig.cap=nsiteScatter.cap
+#+ compareNsite-scatter, fig.width=5, fig.height=2.5, fig.cap=nsiteScatter.cap
 par(mfcol=c(2,grid.t), mar=c(0.5,0.5,0.15,0), ps=6, mgp=c(1,0.0,0), tcl=-0.15, cex=1, oma=c(1,0.65,0.25,0))
 ylim <- range(c(Nsite.true,Nsite.obs.mu,Nsite.msom.mu))
 col <- adjustcolor("black",alpha.f=0.25)
@@ -609,7 +608,7 @@ mtext("True", side=1, line=0, outer=TRUE, font=2, cex=1)
 #'   
 #'   
 #'   
-#' ***  
+#' ***
 #'   
 #'   
 #'   
@@ -627,17 +626,8 @@ nsiteMap.diffScale.cap <- figRef("nsiteMap.diffScale", "Maps of site- and year-s
 # ======================================
 # = Plot Nsite Space-Time (diff scale) =
 # ======================================
-#+ plotNsite-spaceTime-diffScale, fig.width=6, fig.height=3.5, fig.cap=nsiteMap.diffScale.cap
+#+ plotNsite-spaceTime-diffScale, fig.width=5.75, fig.height=3.5, fig.cap=nsiteMap.diffScale.cap
 Nsite_spaceTime(j=1)
-#'   
-#'   
-#'   
-#'  
-#' ***  
-#'   
-#'   
-#'   
-#'   
 
 
 # =========================================
@@ -650,7 +640,7 @@ nsiteMap.sameScale.cap <- figRef("nsiteMap.sameScale", "Same as previous figure,
 # ======================================
 # = Plot Nsite Space-Time (same scale) =
 # ======================================
-#+ compareNsite-spaceTime-sameScale, fig.width=6, fig.height=3.5, fig.cap=nsiteMap.sameScale.cap
+#+ compareNsite-spaceTime-sameScale, fig.width=5.75, fig.height=3.5, fig.cap=nsiteMap.sameScale.cap
 Nsite_spaceTime(j=2)
 
 
@@ -663,7 +653,7 @@ Nsite_spaceTime(j=2)
 #'   
 #'   
 #'   
-#' ***  
+#' ***
 #'   
 #'   
 #'   
@@ -687,7 +677,7 @@ Nsite_spaceTime(j=2)
 #'   
 #'   
 #'   
-#' ***  
+#' ***
 #'   
 #'   
 #'   
@@ -760,18 +750,20 @@ abline(a=0, b=1, lwd=1, col="black")
 # = Explain Psi Agg =
 # ===================
 #' In a general sense, the MSOM can distinguish between instances (sites/ years) when a species is likely to be present, and when it's not (`r figRef("psiAggFig")`). However, in every simulation I've done (varying many parameters that aren't compared in this document), `r figRef("psiAggFig")` always makes it apparent that  
-#'   1. There is a lot of variability around the 1:1 line
-#'   2. The residuals are not normal, and they are not independent
-#'     i. In general, I've found that $\hat{\psi}$ exhibits an upward bias, overestimating $\psi^{true}$
-#'     ii. Smoothly-curving excursions from the 1:1 line often prominent
-#' These patterns are somewhat concerning. The curve-like sequence of residuals is probably a byproduct of slightly incorrect estimates of the parameters in the logistic regression ($[a_0, a_1, a_2]$), resulting in estimated (response curves)[#occupancy-response-curves] that deviate non-randomly from the true response curve. For a heuristic of how these smoothe excursions can occur, in R try something as simply as `d <- rnorm(100); plot(dnorm(d), dt(d, 1))` to see the relationship between the density estimate from the correct distribution and that from the wrong distrubtion (the density is analogous to $\psi$); or for really crazy patterns, try `d <- rnorm(100); plot(dnorm(d), do.call(approxfun, density(d)[c("x","y")])(d))`. So the curves are explainable, but I cannot explain the consistent overestimation; I could understand how underestimating detectability ($p$) would result in overestimating $\psi$, but the MSOM appears to recover true $p$ values rather well (e.g., see `r figRef("pPlot.fullScatter")`), so that's not a satistfying explanation.
+#'   
+#'   1. There is a lot of variability around the 1:1 line  
+#'   2. The residuals are not normal, and they are not independent  
+#'     i. In general, I've found that $\hat{\psi}$ exhibits an upward bias, overestimating $\psi^{true}$  
+#'     ii. Smoothly-curving excursions from the 1:1 line often prominent  
+#'   
+#' These patterns are somewhat concerning. The curve-like sequence of residuals is probably a byproduct of slightly incorrect estimates of the parameters in the logistic regression ($[a_0, a_1, a_2]$), resulting in estimated [response curves](#occupancy-response-curves) that deviate non-randomly from the true response curve. For a heuristic of how these smoothe excursions can occur, in R try something as simply as `d <- rnorm(100); plot(dnorm(d), dt(d, 1))` to see the relationship between the density estimate from the correct distribution and that from the wrong distrubtion (the density is analogous to $\psi$); or for really crazy patterns, try `d <- rnorm(100); plot(dnorm(d), do.call(approxfun, density(d)[c("x","y")])(d))`. So the curves are explainable, but I cannot explain the consistent overestimation; I could understand how underestimating detectability ($p$) would result in overestimating $\psi$, but the MSOM appears to recover true $p$ values rather well (e.g., see `r figRef("pPlot.fullScatter")`), so that's not a satistfying explanation.
 #'   
 #' In the next section I drill into $\psi$ a bit more to try and understand what causes the largest deviations from true values.  
 #'   
 #'   
 #'   
 #'   
-#' ***  
+#' ***
 #'   
 #'   
 #'   
@@ -783,13 +775,13 @@ abline(a=0, b=1, lwd=1, col="black")
 # =============================
 #' ##Scatter Plot of $\hat{\psi}$ vs $\psi_{true}$, split by year and replicate
 #+ psiPlot-splitScatter.cap
-psiPlot.splitScatter.cap <- figRef("psiPlot.splitScatter", "True (horizontal axes) and MSOM estimates (vertical axes) of occupancy probabilities ($\\psi_{j,i,t,r}$) of species *i* occupying a location *j*. Years ($t$) are separated by rows, replicates ($r$) are separated by columns. The border color of each panel indicates the community-level mean probability of detection ($p_{\\mu}$; where ($p_{i} \\sim \\mathcal{N}(p_{\\mu},\\sigma^2)$)[#definition-of-p]), with warm colors indicating high detectability, and cool colors low. The species-specific detectabilities are **not** re-randomized among replicates, but even when the probabilities associated with the observation process do not change, the outcome of the process can change. The year *t* of the simulated true process changes across the rows of panels, and the simulated replicate observation *r* changes across columns.")
+psiPlot.splitScatter.cap <- figRef("psiPlot.splitScatter", "True (horizontal axes) and MSOM estimates (vertical axes) of occupancy probabilities ($\\psi_{j,i,t,r}$) of species *i* occupying a location *j*. Years ($t$) are separated by rows, replicates ($r$) are separated by columns. The border color of each panel indicates the community-level mean probability of detection ($p_{\\mu}$; where [$p_{i} \\sim \\mathcal{N}(p_{\\mu},\\sigma^2)$](#definition-of-p)), with warm colors indicating high detectability, and cool colors low. The species-specific detectabilities are **not** re-randomized among replicates, but even when the probabilities associated with the observation process do not change, the outcome of the process can change. The year *t* of the simulated true process changes across the rows of panels, and the simulated replicate observation *r* changes across columns.")
 
 
 # ==========================
 # = Plot Psi Split Scatter =
 # ==========================
-#+ psiPlot-splitScatter, fig.width=10, fig.height=6, fig.cap=psiPlot.splitScatter.cap
+#+ psiPlot-splitScatter, fig.width=7, fig.height=3.5, fig.cap=psiPlot.splitScatter.cap
 cols2ramp <- tim.colors(8)[-c(1,8)]
 box.cols.index <- as.numeric(as.factor(c(t(matrix(taxChance, nrow=grid.t)))))
 box.cols <- colorRampPalette(cols2ramp)(lu(taxChance))[box.cols.index]
@@ -829,7 +821,7 @@ for(j in 1:dim(psi.true)[3]){
 #'   
 #'   
 #'   
-#' ***  
+#' ***
 #'   
 #'   
 #'   
@@ -950,9 +942,9 @@ for(j in 1:grid.t){
 # =========================================
 # = Explain Estimated Psi Response Curves =
 # =========================================
-#' ($min(X)=`r round(range.X[1],1)`$, and $max(X)=`r round(range.X[2],1)`$)
-#' (<span style='color:red'>red</span>; $p_{max}=$ `r round(max(taxChance),2)`)
-#' (<span style='color:blue'>blue</span>; $p_{min}=$ `r round(min(taxChance),2)`)
+#' ($min(X)=`r round(range.X[1],1)`$, and $max(X)=`r round(range.X[2],1)`$)  
+#' (<span style='color:red'>red</span>; $p_{max}=$ `r round(max(taxChance),2)`)  
+#' (<span style='color:blue'>blue</span>; $p_{min}=$ `r round(min(taxChance),2)`)  
 #' 
 #' 
 #' 
@@ -987,17 +979,17 @@ format_t.noID.mus <- gsub(", (?=[0-9]{1}$)", ", and ", paste(t.noID.mus, collaps
 #' 	+ $Y_{j,i} \sim Bern(p_i \times Z_{j,i})$.  
 #' 	    + *Note: Because $p$ is actually subscripted to $k$, the $Y$ are also actually subscripted to $k$. Maybe leaving these subscripts out is making things more confusing. I've only excluded them to emphasize how parameters are estimated.*
 #' 	+ Our data about species presence/ absence correspond to $Y_{j,i}$. So it might be useful to think of the MSOM as estimating $\hat{Y}_{j,i}$, which is compared to the observed data $Y_{j,i}^{obs}$.
-#' 
-#' 
+#'   
+#'   
 #'   
 #'  
 #'   
-#'  
-#' ***  
+#'    
+#' ***
 #'   
-#'  
 #'   
-#'  
+#'   
+#'   
 
 
 # ==================================
@@ -1089,7 +1081,7 @@ p.hat <- get.pHat(sim.rich.cov, use.logit.p, agg.p)
 # =================================
 #' ##Scatter Plot of $\hat{p}$ vs $p_{true}$
 #+ pPlot-fullScatter-cap
-pPlot.fullScatter.cap <- figRef("pPlot.fullScatter", "MSOM estimates (vertical axis) and true values of $p_i$, the species-specific ($i$) detection probability. Each point is subscripted by species $i$`r ifelse(agg.p, 'and', ',')` year $t$, `r ifelse(agg.p, paste0('but are averaged among the $r=',n.obs.reps, '$ observation replicates'), 'and observation replicate $r$')`.")
+pPlot.fullScatter.cap <- figRef("pPlot.fullScatter", "MSOM estimates (vertical axis) and true values of $p_i$, the species-specific ($i$) detection probability. Each point is subscripted by species $i$, year $t$, and observation replicate $r$.")
 
 
 # =========================
@@ -1118,13 +1110,11 @@ abline(a=0, b=1, lwd=0.5, col="black")
 # ============================
 # = Explain Agg Scatter of P =
 # ============================
-#'  
-#'  
-#'  
-#'  
-#'  
-#' ***  
 #'   
+#'   
+#'   
+#'    
+#' ***
 #'   
 #'   
 #'   
@@ -1150,15 +1140,15 @@ text(1,1, labels="place holder!")
 # = Explain P Split Scatter =
 # ===========================
 #'   
-#' Text explanation goes here
-#'  
-#'  
-#'  
-#'  
+#' Text explanation goes here  
+#'   
+#'   
+#'   
+#'   
 #' ***
-#'  
-#'  
-#'  
+#'   
+#'   
+#'   
 
 
 # ===============
@@ -1229,17 +1219,17 @@ Anova(blah.mod)
 #'   
 #'   
 #'   
-#' ***  
+#' ***
 #'   
 #'   
 #'   
-#'  
+#'   
 
 
 # ==========================================
 # = Report Generation Checks, Summary Info =
 # ==========================================
-#' #Report Generation Notes
+#' #<u>Report Generation Notes</u>
 
 
 # ===============================
@@ -1274,5 +1264,11 @@ sessionInfo()
 #' ##Date Document Last Compiled
 #+ dateCompiled, include=TRUE, echo=F
 cat("Last compiled on: ",as.character(Sys.Date()),"\n\n")
-
-
+#'   
+#'   
+#'   
+#'    
+#' ***
+#'   
+#'   
+#'   
