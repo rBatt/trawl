@@ -781,7 +781,7 @@ psiPlot.splitScatter.cap <- figRef("psiPlot.splitScatter", "True (horizontal axe
 # ==========================
 # = Plot Psi Split Scatter =
 # ==========================
-#+ psiPlot-splitScatter, fig.width=7, fig.height=3.5, fig.cap=psiPlot.splitScatter.cap
+#+ psiPlot-splitScatter, fig.width=8*(n.obs.reps/8), fig.height=3.5, fig.cap=psiPlot.splitScatter.cap
 cols2ramp <- tim.colors(8)[-c(1,8)]
 box.cols.index <- as.numeric(as.factor(c(t(matrix(taxChance, nrow=grid.t)))))
 box.cols <- colorRampPalette(cols2ramp)(lu(taxChance))[box.cols.index]
@@ -891,7 +891,7 @@ responseCurve.msom.cap <- figRef("responseCurve.msom", " Response curves of spec
 # =====================================
 # = Plot Estimated Psi Response Curve =
 # =====================================
-#+ responseCurve-msom, include=TRUE, fig.height=3.5, fig.width=7, fig.cap=responseCurve.msom.cap
+#+ responseCurve-msom, include=TRUE, fig.height=3.5, fig.width=8*(n.obs.reps/8), fig.cap=responseCurve.msom.cap
 range.X <- range(values(grid.X))
 pred.X <- seq(range.X[1], range.X[2], length.out=100)
 u.a0.hat <- sapply(sim.rich.cov, function(x)x[[centralT]]$u.a0[1:ns])
@@ -1131,7 +1131,7 @@ pPlot.splitScatter.cap <- figRef("pPlot.splitScatter", "Caption goes here.")
 # ========================
 # = Plot P Split Scatter =
 # ========================
-#+ pPlot-splitScatter, fig.height=3.5, fig.width=7, fig.cap=pPlot.splitScatter.cap
+#+ pPlot-splitScatter, fig.height=3.5, fig.width=8*(n.obs.reps/8), fig.cap=pPlot.splitScatter.cap
 plot(1, type="n")
 text(1,1, labels="place holder!")
 
