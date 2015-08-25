@@ -93,17 +93,17 @@ sim.spp.proc <- function(grid.X, ns=200, niche.bias, dynamic=TRUE){
 	
 
 	# parent means
-	mu.u.a0 <- -1
-	mua3 <- 0.001
+	mu.u.a0 <- 0.5
+	mua3 <- 0.00
 	mua4 <- -0.025
 
 	# precisions (all species share a precision)
 	# I'm additionally assuming all of these parameters have the same
 	# precision, but that might not be true
 	# (this constraint does not exist in the msom)
-	tau.u.a0 <- 1/0.75^2
+	tau.u.a0 <- 1/0.5^2
 	tau.a3 <- 1/0.21^2
-	tau.a4 <- 1/0.01^2
+	tau.a4 <- 1/0.008^2
 
 	# species-specific means of logistic regression parameters
 	u.a0 <- rnorm(ns, mu.u.a0, sqrt(1/tau.u.a0))
