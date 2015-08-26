@@ -57,6 +57,7 @@ library(rmarkdown)
 library(xtable)
 library(kfigr)
 library(stargazer)
+library(texreg)
 
 # Other
 library(rbLib) # library(devtools); install_github("rBatt/rbLib")
@@ -65,7 +66,7 @@ library(rbLib) # library(devtools); install_github("rBatt/rbLib")
 # ================
 # = Report Setup =
 # ================
-o_f <- c("html_document", "pdf_document")[2]
+o_f <- c("html_document", "pdf_document")[1]
 
 opts_chunk$set(
 	fig.path = '../../Figures/Simulation/assess.sim.basic/', 
@@ -190,7 +191,7 @@ print.xtable.booktabs <- function(x){
 #' #<u>Conventions and Settings</u>
 #' In this section I outline the subscripting and notation used in the MSOM analysis and for the simulation. I also outline various settings (number of species simulated, replicates, etc.). Most of the numbers you see (and some of the text) is dynamically generated based on the code that produced the statistics and figures. Therefore, you can refer back to these sections to see what settings may have changed since the last version of this document.  
 #'   
-#'   ***Note:** I've often found myself having to get creative with subscripts and superscripts. I've tried to be clear an consistent, but small inconsistencies likely exist, so don't be confused by them. For example, if you see $max(Z)$ and $Z_{max}$ in two different sections, they are probably referring to the same thing. If you see something confusing, let me know (preferably by (creating an issue on GitHub)[https://github.com/rBatt/trawl/issues]), and I'll fix it.*
+#'   ***Note:** I've often found myself having to get creative with subscripts and superscripts. I've tried to be clear an consistent, but small inconsistencies likely exist, so don't be confused by them. For example, if you see $max(Z)$ and $Z_{max}$ in two different sections, they are probably referring to the same thing. If you see something confusing, let me know (preferably by [creating an issue on GitHub](https://github.com/rBatt/trawl/issues)), and I'll fix it.*
 #'   
 #'   
 
@@ -207,26 +208,26 @@ print.xtable.booktabs <- function(x){
 #' ####Summary
 #+ dimensionConventions, indent="    "
 #'   
-#' 1. Site ($j=1, 2, \dots, j_{max}= `r grid.h` \times `r grid.w` = `r grid.w*grid.h`$)  
-#' 	+ Sites are unique combinations of latitude and longitude  
-#' 	+ The spatial arrangement of sites is *not* arbitrary, although importance depends on settings (see `dynamic` below)  
+#' 1. Site ($j=1, 2, \dots, j_{max}= `r grid.h` \times `r grid.w` = `r grid.w*grid.h`$)
+#' 	+ Sites are unique combinations of latitude and longitude
+#' 	+ The spatial arrangement of sites is *not* arbitrary, although importance depends on settings (see `dynamic` below)
 #' 	+ The environmental variable $X$ varies among sites (and years, below)
-#' 2. Sub-sites ($k=1, 2, ...$)  
+#' 2. Sub-sites ($k=1, 2, ...$)
 #' 	+ Sub-sites are only relevant to the "observation" process
 #' 	+ Each site has the same number of possible sub-sites, but the number of sub-sites observed can vary
-#' 	+ In this simulation, $k_{max}=`r n.ss`$, $k_{min}^{observed}=`r rangeK[1]`$, and $k_{max}^{observed}=`r rangeK[2]`$  
+#' 	+ In this simulation, $k_{max}=`r n.ss`$, $k_{min}^{observed}=`r rangeK[1]`$, and $k_{max}^{observed}=`r rangeK[2]`$
 #' 	+ Substrata are are primarily useful for determining $p$, the [detection probability](#definition-of-p)  
-#' 3. Species ($i=1, 2, \dots i_{max}=R=`r ns`$)  
+#' 3. Species ($i=1, 2, \dots i_{max}=R=`r ns`$)
 #' 	+ Does not include "augmented" species
-#' 	+ For this MSOM analysis, the species array was padded with `r n0s` 0's
-#' 4. Time ($t=1, 2, \dots `r grid.t`$)  
+#' 	+ For this MSOM analysis, the species array was padded with `r n0s` 0's  
+#' 4. Time ($t=1, 2, \dots `r grid.t`$)
 #' 	+ Time is primarily used to vary the parameters controlling the "true" process
 #' 	+ When those parameters don't change, time provides independent$^*$realizations of the same "true" process
-#' 		* $^*$*Note: only when `dynamic=FALSE` in `sim.spp.proc`*
+#' 		* $^*$*Note: only when `dynamic=FALSE` in `sim.spp.proc`*  
 #' 5. Replicates ($r=`r n.obs.reps`$)
 #' 	+ Replicates are *simulated* repeated human observations of the same *realization* of the "true" process at $\text{Time}_t$
 #' 	+ Replicates are used to vary the parameters that control the "observation" process
-#' 	+ When those parameters don't change, each replicate provides an independent$^*$realization of the same "observation" process
+#' 	+ When those parameters don't change, each replicate provides an independent$^*$realization of the same "observation" process  
 #'   
 
 
@@ -957,17 +958,16 @@ format_t.noID.mus <- gsub(", (?=[0-9]{1}$)", ", and ", paste(t.noID.mus, collaps
 #' The probability of detection ($p$), is a species specific parameter in the MSOM model. The MSOM analyzes all years ($t$) and replicates ($r$) separately, so I am going to leave those subscripts out of this description. In the simulation, the probability of observing a species is a function of two independent factors:
 #' 
 #'   1. The probability that site $j$ is occupied by species $i$; this is $\psi_{j,i}$
-#' 	+ $\psi_{j,i}$ is a function of species-specific niche and an environmental variable that changes over space and time  
+#' 	+ $\psi_{j,i}$ is a function of species-specific niche and an environmental variable that changes over space and time
 #' 	+ $Z_{j,i}$ is the species- and site-specific richness, which is a function of $\psi$ (given that we're only talking about species that are in the pool of possible species, determined by $w_i$)  
-#'   
-#'   2. A species-specific ($i$) chance of being identified (`taxChance`), given that it is present in a location that was sampled (i.e., detectability does not reflect the probability of sampling a place); this detectability parameter is $p_{i}$  
+#'   2. A species-specific ($i$) chance of being identified (`taxChance`), given that it is present in a location that was sampled (i.e., detectability does not reflect the probability of sampling a place); this detectability parameter is $p_{i}$
 #' 	+ Detectability changed between years.
 #' 	+ In a given year, $logit(p_i) \sim \mathcal{N}(p_{\mu},\sigma^2)$. $p_{\mu}$ changed between years (taking on values of `r format_t.noID.mus`), $\sigma^2=`r t.noID.sd`$ in all years.
 #' 	+ The value of $p$ only changes between species (and years), but the observation process occurs at the substratum ($k$) level. Thus, the parameter is really $p_{j,k,i}$, but for a given $i$, all $p_{j,k}$ are constant. I represent this probability as $p_i$ with the understanding that this value is repeated over space.
 #' 	+ $Y_{j,i}$ is the observed version of $Z_{j,i}$.
-#' 	+ $Y_{j,i} \sim Bern(p_i \times Z_{j,i})$.  
+#' 	+ $Y_{j,i} \sim Bern(p_i \times Z_{j,i})$.
 #' 	    + *Note: Because $p$ is actually subscripted to $k$, the $Y$ are also actually subscripted to $k$. Maybe leaving these subscripts out is making things more confusing. I've only excluded them to emphasize how parameters are estimated.*
-#' 	+ Our data about species presence/ absence correspond to $Y_{j,i}$. So it might be useful to think of the MSOM as estimating $\hat{Y}_{j,i}$, which is compared to the observed data $Y_{j,i}^{obs}$.
+#' 	+ Our data about species presence/ absence correspond to $Y_{j,i}$. So it might be useful to think of the MSOM as estimating $\hat{Y}_{j,i}$, which is compared to the observed data $Y_{j,i}^{obs}$.  
 #'   
 #'   
 #'   
@@ -1204,7 +1204,7 @@ dat.p.hat <- reshape2:::melt.array(
 )
 
 # n.hauls
-n.hauls <- sapply(big.out.obs, function(x)attributes(x)$n.haul) # same across all years within a n.obs.rep
+n.hauls <- sapply(big.out.obs, function(x)attributes(x)$n.haul)
 n.hauls.dim <- c(grid.w*grid.h, n.obs.reps, ns, grid.t)
 dat.n.hauls <- reshape2:::melt.array(
 	aperm(array(n.hauls, dim=n.hauls.dim), c(1,3,4,2)), 
@@ -1225,7 +1225,9 @@ dat.temp <- reshape2:::melt.array(
 )
 
 # tax chance
-tax.chance <- simplify2array(lapply(big.out.obs, function(x)(attributes(x)$obs.params)$tax.chance))
+tax.chance <- simplify2array(
+	lapply(big.out.obs, function(x)(attributes(x)$obs.params)$tax.chance)
+)
 tax.chance.dim <- c(grid.t, ns, n.obs.reps, grid.w*grid.h)
 dat.tax.chance <- reshape2:::melt.array(
 	aperm(array(tax.chance, dim=tax.chance.dim), c(4,2,1,3)), 
@@ -1256,64 +1258,56 @@ mod.dat$rep <- as.factor(mod.dat$rep)
 # ====================
 # = Do LMER Analysis =
 # ====================
-mod1 <- lmer(psi.error~temp-1+(1|spp)+(1|site), data=mod.dat)
-mod2 <- lmer(psi.error~n.hauls-1+(1|spp)+(1|site), data=mod.dat)
-mod3 <- lmer(psi.error~p.error-1+(1|spp)+(1|site), data=mod.dat)
+mod1 <- lmer(psi.error~temp+(1|spp)+(1|site), data=mod.dat)
+mod2 <- lmer(psi.error~n.hauls+(1|spp)+(1|site), data=mod.dat)
+mod3 <- lmer(psi.error~p.error+(1|spp)+(1|site), data=mod.dat)
 # mod4 <- lmer(psi.error~n.hauls-1+(1|spp)+(n.hauls-1|spp)+(1|site), data=mod.dat)
-mod4 <- lmer(psi.error~temp-1+(1|spp)+(temp-1|spp)+(1|site), data=mod.dat)
-mod5 <- lmer(psi.error~p.error-1+(1|spp)+(p.error-1|spp)+(1|site), data=mod.dat)
-mod6 <- lmer(psi.error~p.error+temp-1+(p.error+temp|spp)+(1|site), data=mod.dat)
+mod4 <- lmer(psi.error~temp+(1|spp)+(temp-1|spp)+(1|site), data=mod.dat)
+mod5 <- lmer(psi.error~p.error+(1|spp)+(p.error-1|spp)+(1|site), data=mod.dat)
+mod6 <- lmer(psi.error~p.error+(p.error|spp)+(1|site), data=mod.dat)
 
-# Site as a random effect
-# test.siteRE <- list(
-# 	lmer(psi.hat~psi.true+(1|spp), data=mod.dat),
-# 	lmer(psi.hat~psi.true+(1|spp)+(1|site), data=mod.dat)
-# 	)
-# site.RE <- do.call(anova, test.siteRE)
-# #' Site is an important random effect
+# Calculate covariance matrix (for spp)
+mod6.varcor.spp <- attr(summary(mod6)$varcor$spp, "correlation")
+mod6.varcor.spp <- format(mod6.varcor.spp, digits=2)
+mod6.varcor.spp[!lower.tri(mod6.varcor.spp)] <- ""
 
-
-# n.hauls as a main effect
-# test.nhaulsME1 <- list(
-# 	lmer(psi.hat~psi.true+(1|spp), data=mod.dat),
-# 	lmer(psi.hat~psi.true+n.hauls+(1|spp), data=mod.dat)
-# )
-# n.haulsME1 <- do.call(anova, test.nhaulsME1)
-# chi <- format(n.haulsME1[["Chisq"]][2], digits=2)
-# chidf <- format(n.haulsME1[["Chi Df"]][2], digits=2)
-# pval <- format(n.haulsME1[["Pr(>Chisq)"]][2], digits=2)
-#texreg(test.nhaulsME1)
-# #' A model that includes `n.hauls` as a main effect provides a marginal significance/ improvement over the base model ($\mathcal{X}^2_{`r chidf`}=`r chi`; p=`r pval`$).
-#
-# test.nhaulsME2 <- list(
-# 	lmer(psi.hat~psi.true+(1|spp)+(1|site), data=mod.dat),
-# 	lmer(psi.hat~psi.true+n.hauls+(1|spp), data=mod.dat),
-# 	lmer(psi.hat~psi.true+n.hauls+(1|spp)+(1|site), data=mod.dat)
-# )
-# n.haulsME2 <- do.call(anova, test.nhaulsME2)
-# chi <- format(n.haulsME2[["Chisq"]][2], digits=2)
-# chidf <- format(n.haulsME2[["Chi Df"]][2], digits=2)
-# pval <- format(n.haulsME2[["Pr(>Chisq)"]][2], digits=2)
-# #' However, we can see that most of the explanatory power of n.hauls was wrapped up in its ability to distinguish among sites; the `site` random effect appears to explain all of the variance that could be exlained by `n.hauls`, and more.
-
-
-# mod.sumry <- list(
-# 	list(mod1, mod2),
-# 	list(
-# 		data.frame(summary(mod1)$varcor),
-# 		data.frame(summary(mod2)$varcor)
-# 	)
-# )
-mod.cap <- c("Mixed effect models assessing sensitivity of $\\hat{\\psi}$ to simulation conditions")
+mod.cap <- c(
+	"Mixed effect models assessing sensitivity of $\\psi_{\\epsilon}$ to simulation conditions"
+)
 
 #+ lmer-table, results="asis"
-# sg <- stargazer(mod.sumry[[1]], summary=c(FALSE), title=mod.sumry.title, header=FALSE)
-texreg(list(mod1, mod2, mod3, mod4, mod5, mod6), booktabs=TRUE, caption.above=TRUE, caption=mod.cap, sideways=F, digits=3)
+# table for the models
+texreg(list(mod1, mod2, mod3, mod4, mod5, mod6), booktabs=TRUE, caption.above=TRUE, caption=mod.cap, sideways=F, digits=3, use.packages=FALSE)
+
+# print.xtable.booktabs(mod6.varcor.spp) # table for the covariance matrix
 
 
 # ================
 # = Explain LMER =
 # ================
+#' The goal with the mixed effects models was to understand what causes errors in $\psi$. I focused on $\psi$ because it has all the information needed to understand variability in richness, but it has more information than the actual richness (richness is a community level statistic, $\psi$ is species-specific). In these models, the response variable is $\hat{\psi} - \psi^{true}$, which we'll call $\psi_{\epsilon}$. If we understand the source of variability in $\psi_{\epsilon}$, then we can understand what leads to inaccuracies in our model.  
+#'   
+#' When analyzing the trawl data, we will not know $\psi_{\epsilon}$ -- we can obtain model residuals, but these are distinct from $\psi_{\epsilon}$, because calculating $\psi_{\epsilon}$ requires knowing $\psi^{true}$ which is a latent, unobserved variable. An empirical analysis would also lack some of the explantory variables made available to us in the simulation. However, if we can explain variability in $\psi_{\epsilon}$ using simulated information that will also be available to the trawl analysis, then we can build intuition about the sources of error in our estimate of species richness even when we don't know the true value. And that is the fundamental goal of this document.  
+#'   
+#' I'll highlight some of the things I learned from this analysis:  
+#'   
+#'   1. Neither the environmental variable (`temp`) nor the number of subsites sampled per site (`n.hauls`) were strongly related to $\psi_{\epsilon}$
+#'     i. But `temp` might be a better predictor if transformed into an absolute value
+#'     ii. When the model does not contain a site-specific random intercept (not shown here), `n.hauls` acounts for more variability  
+#'   2.  The `spp` random intercept explains much more variability than `site` equivalent  
+#'   2. `p.error` explains a ton of variability
+#'     i. inversely related to $\psi_{\epsilon}$; intuition: if you have perfect detectability but you think it's terrible, you'll overestimate the true value
+#'      ii. model 6 is a worse fit than model 5, meaning that adding covariance structure between `spp`-specific intercept and `spp`-specific `p.error` does not explain much variability
+#'   
+#'   As stated above, a lot of variance is explained by the model term `(p.error|spp)`, which allows the parameter associated with `p.error` and the intercept (both fixed effects) to vary randomly among species. The interpretation of these model terms is that  
+#'   
+#'   + Each species gets to draw it's own intercept ("Variance: spp.1.(Intercept)" in the table) from a parent distribution of intercepts
+#'   + A unit of error in the estimate of $p$ has an influence on $\psi_{\epsilon}$ that, similar to the intercept, varies among species ("Variance: spp.p.error" in the table).
+#'   
+#' Therefore, the effect that a bad estimate of $p$ has on $\psi_{\epsilon}$ is not the same among species. It is not clear what causes some species to be more sensitive to a poorly estimated $p$ than others; one possibility is that $p$ is poorly estimated for species that have not been observed much, and it is this lack of observation that is also responsible for generating uncertainty in $\hat{\psi}$. Regardless, a bad (good) estimate of $p$ is a good predictor of a bad (good) estimate of $\hat{\psi}$.  
+#'   
+#'   
+#'   
 #'   
 #'   
 #'   
