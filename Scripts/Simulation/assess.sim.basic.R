@@ -67,7 +67,7 @@ library(rbLib) # library(devtools); install_github("rBatt/rbLib")
 # ================
 # = Report Setup =
 # ================
-o_f <- c("html_document", "pdf_document")[1]
+o_f <- c("html_document", "pdf_document")[2]
 
 # render!
 # rmarkdown::render(
@@ -127,7 +127,9 @@ print.xtable.booktabs <- function(x){
 
 
 #' \FloatBarrier   
+#' 
 #' ***   
+#' 
 
 
 # ================
@@ -173,7 +175,9 @@ print.xtable.booktabs <- function(x){
 
 
 #' \FloatBarrier   
+#' 
 #' ***   
+#' 
 
 
 # ============================
@@ -235,7 +239,9 @@ print.xtable.booktabs <- function(x){
 
 
 #' \FloatBarrier   
+#' 
 #' ***   
+#' 
 
 
 # ============
@@ -259,7 +265,9 @@ big.out.obs[[1]] # Dimensions of the simulation (and basic richness info)
 
 
 #' \FloatBarrier   
+#' 
 #' ***   
+#' 
 
 
 # ==========================
@@ -277,7 +285,9 @@ centralT <- c("mean","median")[2]
 
 
 #' \FloatBarrier   
+#' 
 #' ***   
+#' 
 
 
 # ====================
@@ -299,7 +309,9 @@ centralT <- c("mean","median")[2]
 
 
 #' \FloatBarrier   
+#' 
 #' ***   
+#' 
 
 
 # =====================
@@ -368,7 +380,9 @@ mtext("Average Detection Probability", side=1, line=-1, outer=TRUE)
 
 
 #' \FloatBarrier   
+#' 
 #' ***   
+#' 
 
 
 # ================================
@@ -433,7 +447,9 @@ lines(R.mu("mu.p"), type="l", lwd=2, col="blue")
 
 
 #' \FloatBarrier   
+#' 
 #' ***   
+#' 
 
 
 # ==========================
@@ -565,26 +581,53 @@ mtext("True", side=1, line=0, outer=TRUE, font=2, cex=1)
 
 
 #' \FloatBarrier   
+#' 
 #' ***   
+#' 
 
 
 # ===============================
 # = Prepare Nsite Scatter Split =
 # ===============================
 #+ nsiteScatter-split-cap
-nsiteScatter.split.cap <- "Caption"
+nsiteScatter.split.cap <- "Scatter plots of MSOM-estimated species richness (y-axis) and the true species richness (x-axis), with each panel representing a particular year-replicate combination. The color of the panel border indicates the value of $p_{\\mu}$, the community-wide mean detectability."
 
 
 # ============================
 # = Plot Nsite Scatter Split =
 # ============================
-#+ nsiteScatter-split
+#+ nsiteScatter-split, fig.width=8*(n.obs.reps/8), fig.height=3.5, fig.cap=nsiteScatter.split.cap
 cols2ramp <- tim.colors(8)[-c(1,8)]
 box.cols.index <- as.numeric(as.factor(c(t(matrix(taxChance, nrow=grid.t)))))
 box.cols <- colorRampPalette(cols2ramp)(lu(taxChance))[box.cols.index]
 col <- adjustcolor("black",alpha.f=0.15)
 
+par(mfrow=c(grid.t,n.obs.reps), mar=c(0.5,0.5,0.1,0.1), ps=6, mgp=c(0.75,0.05,0), tcl=-0.15, cex=1, oma=c(1,1.25,0.5,0))
+ylim <- range(c(Nsite.true,Nsite.msom))
+col <- adjustcolor("black",alpha.f=0.25)
+for(i in 1:grid.t){
+	for(j in 1:n.obs.reps){
+		
+		counter <- i + (j-1)*dim(psi.true)[4]
 
+		yaxt <- ifelse(j==1, "s", "n")
+		xaxt <- ifelse(i==grid.t, "s", "n")
+		
+		plot(Nsite.true[,,i], Nsite.msom[,,i,j], xaxt=xaxt, xlab="", yaxt=yaxt, ylab="", ylim=ylim, xlim=ylim, pch=20,col=col, bty="n")
+		
+		# axis(side=1, labels=F)
+		abline(a=0,b=1)
+		axis(side=1, labels=F)
+		axis(side=2, labels=F)
+		box(col=box.cols[counter], lwd=2)
+		
+		if(j==1){mtext(paste0("t = ",i), side=2, line=0.5, font=2, cex=1)}
+		if(i==1){mtext(paste0("rep = ",j), side=3, line=-0.1, font=2, cex=1, adj=0)}
+	}
+
+}
+mtext("True", side=1, line=0.1, outer=TRUE, font=2, cex=1)
+mtext("MSOM", side=2, line=0.65, outer=TRUE, font=2, cex=1)
 
 
 # =========================================
@@ -621,11 +664,13 @@ Nsite_spaceTime(j=2)
 # =================================
 #' In these maps, the environmental variable $X$ changes linearly across the y-axis, and randomly (and much less) across the x-axis. The different columns represent separate years. The environmental variable changes linearly among years (the rate of change is the same for all x-y locations), and in this basic simulation that rate of change is actually just 0 units/year.  
 #'   
-#' Because so many things are static in this simulation the maps of `Nsite` are not much more informative than the scatter plots of `Nsite`. However, makign the spatial aspect of richness visually explicit does emphasize that richness is highly dependent on the envionrmental variable ---
+#' Because so many things are static in this simulation the maps of `Nsite` are not much more informative than the scatter plots of `Nsite`. However, making the spatial aspect of richness visually explicit does emphasize that richness is highly dependent on the envionrmental variable --- looking at the occupancy response curves below indicates that for the community as a whole the probability of occypancy is highest in the middle of the environmental gradient, which also happens to be the middle of the "latitudinal" gradient in this figure. Within a latitudinal band, the MSOM doesn't do as good a job of parsing the variability in richness.
 
 
 #' \FloatBarrier   
+#' 
 #' ***   
+#' 
 
 
 
@@ -646,19 +691,23 @@ Nsite_spaceTime(j=2)
 #' \left( \begin{array}{ccc}a_{0,i} \\a_{3,i} \\a_{4,i} \end{array} \right)
 #' $$  
 #' and 
-#' $$ \begin{multline}
+#' $$ \begin{array}{c}
 #' a_{0,i} \sim \mathcal{N}(\mu_{a0},\sigma^2_ {a0})
-#' \\ a_{3,i} \sim \mathcal{N}(\mu_{a3},\sigma^2_ {a3})
-#' \\ a_{4,i} \sim \mathcal{N}(\mu_{a4},\sigma^2_ {a4})
-#' \end{multline}
+#' \\a_{3,i} \sim \mathcal{N}(\mu_{a3},\sigma^2_ {a3})
+#' \\a_{4,i} \sim \mathcal{N}(\mu_{a4},\sigma^2_ {a4})
+#' \end{array}
 #' $$
 #' Thus, the parameters are hierarchical, and for this reason the response curves vary but are somewhat clustered around a central value.  
+#'   
 #' In my mind, $\psi$ is the Holy Grail of parameters to recover. It tells us the odds that a species will be in a certain place at a certain time. If I could know this perfectly, I would be very pleased (and we'd all be very famous).  
+#'   
 #' When this analysis (using an MSOM on the trawl data) was originally crafted, $\psi$ was more of a means to an end than it was the objective -- $\psi$ lets us get at richness, and we have hypotheses about how richness should change with climate that we'd like to test. But if you know what controls $\psi$, you know what controls richness.  
 
 
 #' \FloatBarrier   
+#' 
 #' ***   
+#' 
 
 
 # ===================
@@ -739,7 +788,9 @@ abline(a=0, b=1, lwd=1, col="black")
 
 
 #' \FloatBarrier   
+#' 
 #' ***   
+#' 
 
 
 # =============================
@@ -795,7 +846,9 @@ for(j in 1:dim(psi.true)[3]){
 
 
 #' \FloatBarrier   
+#' 
 #' ***   
+#' 
 
 
 # ==============================
@@ -914,7 +967,9 @@ for(j in 1:grid.t){
 # = Explain Estimated Psi Response Curves =
 # =========================================
 #' It is rather evident in these figures that the estimated response curves look less like the true response curves for low detection probabilities (low $p_{\mu}$). It is important to remember this effect when evaluate the esimates of `Nsite`, and especially when looking at the heat maps of `Nsite` in  [Figures 4 and 5](#site-specific-richness-nsite) because in those figures each grid cell represents the richness averaged over replicates, and the value of $p_\mu$ varies among replicates. Furthermore, the inaccurate response curves at low $p_{\mu}$ are consistent with the relationships between $\hat{\psi}$ and $\psi^{true}$ in [Figure 7](#scatter-plots-for-each-psi_t-r).  
+#'   
 #' It is my suspicion that, at a large enough sample size of both preseneces and abseneces across a full gradient of temperatures, these deficiencies will diminish. However, this analysis, in its basic form, was not designed to test the influence of sample size (I've run separate versions of this model, not presented here, and can informally confirm my suspicion -- sample size matters a lot). Furthermore, most regions in the trawl data set have a few dozen sites (site being defined on a $1^{\circ}$ grid), so the $`r grid.h` \times `r grid.w`$ grid simulated here is approximately the spatial sample size we'd have to work with in the empirical analysis.  
+#'   
 #' Two ways to change the sample size in the empirical analysis would be to  
 #'   
 #'   1. reduce grid size to increase the number of sites  
@@ -928,7 +983,9 @@ for(j in 1:grid.t){
 
 
 #' \FloatBarrier   
+#' 
 #' ***   
+#' 
 
 
 # ===================================
@@ -954,7 +1011,9 @@ format_t.noID.mus <- gsub(", (?=[0-9]{1}$)", ", and ", paste(t.noID.mus, collaps
 
 
 #' \FloatBarrier   
+#' 
 #' ***   
+#' 
 
 
 # ==================================
@@ -992,7 +1051,9 @@ abline(h=plogis(t.noID.mus)[1]) # horizontal line at mean chance
 
 
 #' \FloatBarrier   
+#' 
 #' ***   
+#' 
 
 
 # ======================================
@@ -1083,7 +1144,9 @@ abline(a=0, b=1, lwd=0.5, col="black")
 
 
 #' \FloatBarrier   
+#' 
 #' ***   
+#' 
 
 
 # ===========================
@@ -1137,7 +1200,9 @@ for(j in 1:dim(psi.true)[3]){
 
 
 #' \FloatBarrier   
+#' 
 #' ***   
+#' 
 
 
 # ===============
@@ -1306,7 +1371,9 @@ texreg(list(mod1, mod2, mod3, mod4, mod5, mod6), booktabs=TRUE, caption.above=TR
 #' Therefore, the effect that a bad estimate of $p$ has on $\psi_{\epsilon}$ is not the same among species. It is not clear what causes some species to be more sensitive to a poorly estimated $p$ than others; one possibility is that $p$ is poorly estimated for species that have not been observed much, and it is this lack of observation that is also responsible for generating uncertainty in $\hat{\psi}$. Regardless, a bad (good) estimate of $p$ is a good predictor of a bad (good) estimate of $\hat{\psi}$.  
 
 #' \FloatBarrier   
+#' 
 #' ***   
+#' 
 
 
 # ==============
@@ -1316,7 +1383,7 @@ texreg(list(mod1, mod2, mod3, mod4, mod5, mod6), booktabs=TRUE, caption.above=TR
 #'   
 #' ##Discussion of Results
 #'  Overall, the MSOM performed well. It is definitely data-hungry in the sense that it needs to observe 1's and 0's for each species in many places under different conditions. This may seem counter to the goal of the MSOM -- to make efficient use of hard-won data. Would other richness methods be better? But remember, what we're getting is site-specific richness, and even species-specific presences and absences. Also, we don't have the "replicates" in the trawl data set needed for the other richness methods.  
-#' This seems obvious in retrospect, but Figure 1 (Boxplots) shows us that the sensitivity of our richness estimates to detectability is highly nonlinear. It'll be important to gauge where we think we are along that spectrum.  Regardless, we were never too far off the real richness --- when 29 species exist, we estimate 24  
+#' This seems obvious in retrospect, but Figure 1 (Boxplots) shows us that the sensitivity of our richness estimates to detectability is highly nonlinear. It'll be important to gauge where we think we are along that spectrum.  Regardless, we were never too far off the real richness --- e.g., when 29 species exist, we estimate 24. On the upside, we're not *too* much worse off if we want to know $\psi$ instead of just R. Of greater concern is the tendency to overestimate R or $\psi$ when $p$ is low However, these low values for $p$ might be *really* low, so perhaps that "problem" is not in a relevant region of parameter space.
 #'   
 #' ##Next Steps
 #' I think the next important step is to decide if we want to analyze all of the years together. It'll require a more complicated model, but it'll give a lot more statistical power (and better estimates). I'm leaning towards doing this.  
@@ -1333,7 +1400,9 @@ texreg(list(mod1, mod2, mod3, mod4, mod5, mod6), booktabs=TRUE, caption.above=TR
 #'   
 
 #' \FloatBarrier   
+#' 
 #' ***   
+#' 
 
 
 # ==========================================
