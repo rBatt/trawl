@@ -169,7 +169,8 @@ nThin <- ((nIter/2)*nChains)/nSamples #40 # max(1, floor((nIter - floor(nIter/2)
 # =================================
 # Simulate environment
 # env <- sim.env(grid.w=grid.w, grid.h=grid.h, grid.t=grid.t, X.slope=0.75*(12/grid.t))
-env <- sim.env(grid.w=grid.w, grid.h=grid.h, grid.t=grid.t, X.slope=0)
+X.slope <- 0
+env <- sim.env(grid.w=grid.w, grid.h=grid.h, grid.t=grid.t, X.slope=X.slope)
 
 # Simulate Species
 out <- sim.spp.proc(env, ns=ns, dynamic=FALSE)
