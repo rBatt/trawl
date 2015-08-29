@@ -35,3 +35,6 @@ HadISST_trajectories.RData
 # Log files
 *.out
 *.Rout
+
+# Report Caches
+/Reports/assess.sim.basic/assess.sim.basic_cache2/*
