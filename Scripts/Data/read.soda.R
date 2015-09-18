@@ -105,9 +105,10 @@ get.soda <- function(file){
 # ===============================================
 # = Read in the SODA Files, Get Bottom For Each =
 # ===============================================
-soda1 <- get.soda(soda.files[1])
-soda2 <- get.soda(soda.files[2])
-soda3 <- get.soda(soda.files[3])
+soda.list <- vector("list", length(soda.files))
+for(i in 1:length(soda.files)){
+	soda.list[[i]] <- get.soda(soda.files[i])
+}
 
 
 # =================================================
@@ -121,13 +122,16 @@ fixExtent <- function(x){
 	
 	x
 }
-soda1 <- fixExtent(soda1)
+
+for(i in 1:length(soda.files)){
+	soda.list[[i]] <- fixExtent(soda.list[[i]])
+}
 
 
 # ====================
 # = Combine All SODA =
 # ====================
-soda <- addLayer(soda1, soda2, soda3)
+soda <- do.call(addLayer, soda.list)
 soda.years <- regmatches(names(soda),regexpr("[0-9]{4}", names(soda)))
 
 
