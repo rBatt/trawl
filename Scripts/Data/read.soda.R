@@ -40,8 +40,8 @@ soda.files <- c(
 # 	"./trawl/Data/SODA/soda_temp_160E-20W_0N-90N_1958-1968.nc",
 # 	"./trawl/Data/SODA/soda_temp_160E-20W_0N-90N_1969-1979.nc",
 # 	"./trawl/Data/SODA/soda_temp_160E-20W_0N-90N_1980-1990.nc",
-# 	"./trawl/Data/SODA/soda_temp_180W-20W_10N-85N_1991-2001.nc",
-# 	"./trawl/Data/SODA/soda_temp_180W-20W_10N-85N_2002-2008.nc"
+# 	"./trawl/Data/SODA/soda_temp_160E-20W_0N-90N_1991-2001.nc",
+# 	"./trawl/Data/SODA/soda_temp_160E-20W_0N-90N_2002-2008.nc"
 # )
 
 
