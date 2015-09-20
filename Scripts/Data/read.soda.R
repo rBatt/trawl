@@ -36,12 +36,20 @@ invisible(sapply(paste(stat.location, list.files(stat.location), sep="/"), sourc
 # 	"./trawl/Data/SODA/soda_temp_180W-20W_10N-85N_2000-2008.nc",
 # )
 
+# soda.files <- c(
+# 	"./trawl/Data/SODA/soda_temp_160E-20W_0N-90N_1958-1968.nc",
+# 	"./trawl/Data/SODA/soda_temp_160E-20W_0N-90N_1969-1979.nc",
+# 	"./trawl/Data/SODA/soda_temp_160E-20W_0N-90N_1980-1990.nc",
+# 	"./trawl/Data/SODA/soda_temp_160E-20W_0N-90N_1991-2001.nc",
+# 	"./trawl/Data/SODA/soda_temp_160E-20W_0N-90N_2002-2008.nc"
+# )
+
 soda.files <- c(
-	"./trawl/Data/SODA/soda_temp_160E-20W_0N-90N_1958-1968.nc",
-	"./trawl/Data/SODA/soda_temp_160E-20W_0N-90N_1969-1979.nc",
-	"./trawl/Data/SODA/soda_temp_160E-20W_0N-90N_1980-1990.nc",
-	"./trawl/Data/SODA/soda_temp_160E-20W_0N-90N_1991-2001.nc",
-	"./trawl/Data/SODA/soda_temp_160E-20W_0N-90N_2002-2008.nc"
+	"./trawl/Data/SODA/soda_temp_200W-20E_0N-90N_1958-1968.nc",
+	"./trawl/Data/SODA/soda_temp_200W-20E_0N-90N_1969-1979.nc",
+	"./trawl/Data/SODA/soda_temp_200W-20E_0N-90N_1980-1990.nc",
+	"./trawl/Data/SODA/soda_temp_200W-20E_0N-90N_1991-2001.nc",
+	"./trawl/Data/SODA/soda_temp_200W-20E_0N-90N_2002-2008.nc"
 )
 
 
@@ -144,11 +152,11 @@ soda.years <- regmatches(names(soda),regexpr("[0-9]{4}", names(soda)))
 # = Aggregate 1 =
 # ===============
 # Take annual maximum of the monthly means
-soda.annMax <- stackApply(soda, as.numeric(as.factor(soda.years)), max)
+soda.annMax <- stackApply(soda, as.numeric(as.factor(soda.years)), max, na.rm=TRUE)
 names(soda.annMax) <- unique(soda.years)
 
 # Take annual mean of the monthly means
-soda.annMean <- stackApply(soda, as.numeric(as.factor(soda.years)), mean)
+soda.annMean <- stackApply(soda, as.numeric(as.factor(soda.years)), mean, na.rm=TRUE)
 names(soda.annMean) <- unique(soda.years)
 
 
@@ -169,8 +177,8 @@ blah <- calc(soda.annMax, timeSlope)
 # save(soda.annMax, soda.annMax.mu, file="./trawl/Data/SODA/soda.annMax_180W-20W_10N-85N_1958-2008.RData")
 # save(soda.annMean, soda.annMean.mu, file="./trawl/Data/SODA/soda.annMean_180W-20W_10N-85N_1958-2008.RData")
 
-save(soda, file="./trawl/Data/SODA/soda_160E-20W_0N-90N_1958-2008.RData")
-save(soda.annMax, soda.annMax.mu, file="./trawl/Data/SODA/soda.annMax_160E-20W_0N-90N_1958-2008.RData")
-save(soda.annMean, soda.annMean.mu, file="./trawl/Data/SODA/soda.annMean_160E-20W_0N-90N_1958-2008.RData")
+save(soda, file="./trawl/Data/SODA/soda_200W-20E_0N-90N_1958-2008.RData")
+save(soda.annMax, soda.annMax.mu, file="./trawl/Data/SODA/soda.annMax_200W-20E_0N-90N_1958-2008.RData")
+save(soda.annMean, soda.annMean.mu, file="./trawl/Data/SODA/soda.annMean_200W-20E_0N-90N_1958-2008.RData")
 
 
