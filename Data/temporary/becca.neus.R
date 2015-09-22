@@ -54,6 +54,10 @@ neus[, depth:=mean(depth, na.rm=TRUE), by=c("year", "stratum")]
 neus[,c("correctSpp","taxLvl"):=NULL]
 
 
+
+neus[,c("lat","lon"):=list(as.numeric(lat), as.numeric(lon))]
+
+
 # ========
 # = Save =
 # ========
