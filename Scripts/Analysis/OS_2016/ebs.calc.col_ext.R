@@ -111,6 +111,8 @@ ebs5 <- ebs3[ebs4]
 # = Save EBS with colonization/ extinction as 'ebs' =
 # ===================================================
 ebs <- ebs5
+ebs[,c("lon","lat"):=list(as.numeric(lon), as.numeric(lat))]
+setorder(ebs, lat, lon, stratum, spp, year)
 save(ebs, file="./trawl/Data/OS_2016/ebs.RData", compress="xz")
 
 
@@ -164,10 +166,4 @@ plot(1,1, type="n", ylim=ylim, xlim=xlim, ylab="", xlab="")
 loc.N[,j={
 	lines(year, N, col=adjustcolor("black", alpha.f=0.25))
 },by="stratum"]
-
-
-
-
-
-
 
