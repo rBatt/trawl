@@ -58,7 +58,35 @@ neus[,c("correctSpp","taxLvl"):=NULL]
 neus[,c("lat","lon"):=list(as.numeric(lat), as.numeric(lon))]
 
 
+# =====================
+# = get the PA object =
+# =====================
+# from https://gist.github.com/rBatt/b4bfba056e7cf1bec55a
+pa <- neus[,list(stratum, lon, lat, pa=1)]
+pa <- pa[!duplicated(stratum)]
+setkey(pa, lon, lat)
+pa0 <- copy(pa)
+pa[,stratum:=NULL]
+
+
+skeleton <- pa[,expand.grid(lon=seq(min(lon),max(lon),by=0.1), lat=seq(min(lat),max(lat),by=0.1))]
+skeleton <- as.data.table(skeleton)
+setkey(skeleton, lon, lat)
+pa <- pa[skeleton]
+
+pa[is.na(pa), pa:=0]
+
+
+pa[paste(roundGrid(lon), roundGrid(lat))%in%pa0[,stratum], pa:=1]
+
+pa.cast <- reshape2:::acast(pa, lat~lon)
+
+# pa2 <- as.data.frame(pa)
+# pa2[is.na(pa2[,"pa"])] <- 0
+
 # ========
 # = Save =
 # ========
 save(neus, file="./trawl/Data/Temporary/neus.RData")
+save(pa, file="./trawl/Data/Temporary/pa.RData")
+save(pa.cast, file="./trawl/Data/Temporary/pa.cast.RData")
