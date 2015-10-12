@@ -15,3 +15,6 @@
 *.doc filter=lfs diff=lfs merge=lfs -text
 *.docx filter=lfs diff=lfs merge=lfs -text
 *.fwf filter=lfs diff=lfs merge=lfs -text
+HadISST*.txt filter=lfs diff=lfs merge=lfs -text
+Data/raw_data/HadISST/HadISST*.txt filter=lfs diff=lfs merge=lfs -text
+Data/raw_data/HadISST/* filter=lfs diff=lfs merge=lfs -text
