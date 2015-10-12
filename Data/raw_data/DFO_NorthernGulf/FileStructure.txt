@@ -1,0 +1,23 @@
+Put 
+    Source ";"     /* Data source, Alfred Needler=6, Teleost=16 */
+    No_Rel ";"     /* Survey number */
+    Year ";"       /* Year part of trawl's date */
+    Month ";"      /* Month part of trawl's date */
+    Day ";"        /* Day part of trawl's date */
+    No_Stn ";"     /* Set number */
+    EngGen ";"     /* Gear type, 47 stand for URI trawl, 7 for Campellan */
+    Opening ";"    /* Width of trawl opening, unit=meter */
+    No_Str ";"     /* Stratum number id. */
+    Temp ";"       /* Bottom temperature, unit= ºC */
+    Salinity ";"   /* Bottom salinity, unit=psu */
+    EspGen ";"     /* Species code */
+    N_EspSci ";"   /* Species scientific name */
+    StarTime ";"   /* Time at beginning of tow */
+    StartLat ";"   /* Latitude at beginning of tow, unit=dd.%%%% , north */
+    StartLon ";"   /* Longitude at the beginning of tow, unit=dd.%%%%, west */
+    EndLat ";"     /* Latitude at the end of tow, unit=dd.%%%% , north */
+    EndLon ";"     /* Longitude at the end of tow, unit=dd.%%%%, west */
+    Depth ";"      /* Depth at beginning of tow, unit=m */
+    WCapOri ";"    /* Weight of capture, unit=kg */
+    Number ";";    /* Number individual caught */
+Run;
