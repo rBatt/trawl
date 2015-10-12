@@ -10,12 +10,12 @@
 *.aux
 
 
-/Data/**/*.txt
-/Data/**/*.csv
-/Data/**/*.DAT
-/Data/**/*.nc
-/Data/**/*.fwf
-/Data/**/*.zip
+# /Data/**/*.txt
+# /Data/**/*.csv
+# /Data/**/*.DAT
+# /Data/**/*.nc
+# /Data/**/*.fwf
+# /Data/**/*.zip
 !/Data/trophicTrawl/*
 
 *.xlsx
