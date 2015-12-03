@@ -9,7 +9,8 @@
 plot_simResp <- function(X, ...){
 	stopifnot("spp"%in%class(X))
 	
-	
+	dims <- attr(X, "dims")
+	ns <- dims["ns"]
 	spp.densX <- attr(X, "spp.densX")
 	
 	# Plot Temperature Distributions for the Whole Community
