@@ -16,6 +16,7 @@ plot_env_bio <- function(X, n.steps=6, spp.id, ...){
 	dims <- attr(X, "dims")
 	grid.t <- dims["grid.t"]
 	ns <- dims["ns"]
+	grid.h <- dims["grid.h"]
 	spp.bio <- attr(X, "spp.bio")
 	grid.X <- attr(X, "grid.X")
 	
