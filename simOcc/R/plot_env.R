@@ -23,6 +23,6 @@ plot_env <- function(X, ...){
 	smplt <- c(0.89,0.95, 0.2,0.8)
 	bgplt <- c(0.15,0.85,0.12,0.95)
 	axargs <- list(mgp=c(0.75,0.25,0), tcl=-0.15)
-	plot(env, zlim=c(temp.range[1], temp.range[2]), col=tim.colors(), smallplot=smplt, bigplot=bgplt, axis.args=axargs, nc=5,mgp=c(0.75,0.25,0), tcl=-0.15)
+	plot(grid.X, zlim=c(temp.range[1], temp.range[2]), col=tim.colors(), smallplot=smplt, bigplot=bgplt, axis.args=axargs, nc=5,mgp=c(0.75,0.25,0), tcl=-0.15)
 }
 
