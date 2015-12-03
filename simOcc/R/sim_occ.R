@@ -9,11 +9,13 @@
 #' @param n.obs.reps how many times to repeat the observation process, while holding the true process outcome the same, and holding the observation parameters the same (but perhaps changing which years get which detectability parameters)
 #' 
 #' @details
+#' stuff
 #' 
 #' @return
+#' a list of spp objects
 #' 
 #' @examples
-# sim_occ(ns=20)
+#' sim_occ(ns=20)
 #' 
 #' @export
 sim_occ <- function(..., detect.mus=0, detect.sd=0.1, format.msom=c("none","jags","stan"), n0s=5, n.obs.reps=1){

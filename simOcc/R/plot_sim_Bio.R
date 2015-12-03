@@ -7,7 +7,7 @@
 #' @param ... not used
 #' 
 #' @export
-plot_sim_Bio_t <- function(X, time=1, ...){
+plot_sim_bio_t <- function(X, time=1, ...){
 	stopifnot("spp"%in%class(X))
 	stopifnot(length(time)==1)
 	
