@@ -13,6 +13,12 @@ plot_env_bio <- function(X, n.steps=6, spp.id, ...){
 	stopifnot("spp" %in% class(X))
 	stopifnot(length(n.steps)==1)
 	
+	dims <- attr(X, "dims")
+	grid.t <- dims["grid.t"]
+	ns <- dims["ns"]
+	spp.bio <- attr(X, "spp.bio")
+	grid.X <- attr(X, "grid.X")
+	
 	if(missing(spp.id)){
 		spp.id <- sample(1:ns, 1)
 	}
@@ -22,11 +28,7 @@ plot_env_bio <- function(X, n.steps=6, spp.id, ...){
 	bgplt <- c(0.05,0.82,0.15,0.95)
 	axargs <- list(mgp=c(0.5,0.15,0))
 	
-	dims <- attr(X, "dims")
-	grid.t <- dims["grid.t"]
-	ns <- dims["ns"]
-	spp.bio <- attr(X, "spp.bio")
-	grid.X <- attr(X, "grid.X")
+
 	
 
 
