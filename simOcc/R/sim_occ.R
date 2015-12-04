@@ -54,11 +54,11 @@ sim_occ <- function(..., detect.mus=0, detect.sd=0.1, format.msom=c("none","jags
 			out.obs <- local.obs.spp(..., x=out, t.noID=t.noID[,,i])
 			formatted <- spp2msom(out.obs)
 			new.simDat <- formatted$simDat 
-			simCov <- formatted$simCov 
-			simCov.NA <- formatted$simCov.NA 
-			simCov.precs <- formatted$simCov.precs 
-			simCov.precs.bad <- formatted$simCov.precs.bad 
-			sim.cov.names <- formatted$sim.cov.names
+			# simCov <- formatted$simCov
+			# simCov.NA <- formatted$simCov.NA
+			# simCov.precs <- formatted$simCov.precs
+			# simCov.precs.bad <- formatted$simCov.precs.bad
+			# sim.cov.names <- formatted$sim.cov.names
 	
 			big.out.obs <- list(out.obs)
 	
@@ -73,7 +73,7 @@ sim_occ <- function(..., detect.mus=0, detect.sd=0.1, format.msom=c("none","jags
 	}
 	
 	if(format.msom!="none"){
-		return(list(big.simDat=big.simDat, formatted=formatted))
+		return(list(big.out.obs=big.out.obs, big.simDat=big.simDat, formatted=formatted))
 	}else{
 		return(big.out.obs)
 	}
