@@ -6,6 +6,13 @@
 #' 
 #' @export
 spp2msom <- function(sim.obs){
+	stopifnot("spp"%in%class(sim.obs))
+	
+	as.padChar <- function(x){
+		mnc <- max(sapply(unique(x), nchar))
+		formatC(x, width=mnc, format="d", flag="0")
+	}
+	
 	n.substrat <- dim(attributes(sim.obs)$X.obs)[2]
 	n.strat <- nrow(sim.obs)
 	ns <- attr(sim.obs, "dims")["ns"]
@@ -42,10 +49,11 @@ spp2msom <- function(sim.obs){
 	# list elements are years
 	names(output.array) <- paste0("year",1:grid.t)
 
+
 	# dim should have names c("stratum", "K", "spp")
-	strat.names <- as.character(stratID0) # Dimension 1 ("stratum") has integer names
-	K.names <- as.character(1:n.substrat) # Dimension 2 ("K") has integer names
-	spp.names <- paste0("critter",1:ns) # Dimension 3 ("spp") has contrived character names (e.g., "critter1")
+	strat.names <- stratID0 # Dimension 1 ("stratum") has integer names
+	K.names <- 1:n.substrat # Dimension 2 ("K") has integer names
+	spp.names <- paste0("critter",as.padChar(1:ns)) # Dimension 3 ("spp") has contrived character names (e.g., "critter1")
 	name.arrays.in.list <- function(x){ # function to apply names within list
 		dimnames(x) <- list("stratum"=c(strat.names), "K"=c(K.names), "spp"=c(spp.names))
 		x
