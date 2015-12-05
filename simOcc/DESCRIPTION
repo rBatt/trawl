@@ -1,0 +1,21 @@
+Package: simOcc
+Title: Simulate Data Suitable for Testing Multispeices Occupancy Models
+Version: 0.0.0.9000
+Authors@R: person("Ryan", "Batt", email = "battrd@gmail.com", role = c("aut", "cre"))
+Description: Simulates species occurrences based on an environmental gradient.
+    Simulation can be over multiple years, and the years can be truly independent,
+    or they can represent a dynamic occupancy. The environmental gradient can
+    similarly be given a linear slope. Given a true occpancy state, species can
+    then be observed. Observed occupancy can vary among species, and over time. For
+    a given true occpancy and observed occupancy process, replicate sequences of
+    observations can also be generated.
+Depends: 
+    R (>= 3.1.3),
+    raster,
+    fields
+License: GPL-3
+LazyData: true
+RoxygenNote: 5.0.0.9000
+Suggests: trawlData,
+    rbLib,
+    trawlDiversity
