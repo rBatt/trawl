@@ -11,7 +11,7 @@
 plot_rich_st <- function(X, time=1, ...){
 	stopifnot("spp"%in%class(X))
 	
-	grid.X < attr(X, "grid.X")
+	grid.X <- attr(X, "grid.X")
 	grid.t <- attr(X, "dims")["grid.t"]
 	grid.h <- attr(X, "dims")["grid.h"]
 	spp.bio <- attr(X, "spp.bio")
