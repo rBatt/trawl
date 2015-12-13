@@ -8,6 +8,14 @@ colonize(temps, spp.dens.temps, bio.mu, relative = FALSE, probs = NULL)
 }
 \arguments{
 \item{temps}{}
+
+\item{spp.dens.temps}{}
+
+\item{bio.mu}{}
+
+\item{relative}{Default FALSE; if TRUE, scale output so that maximum is 1}
+
+\item{probs}{}
 }
 \value{
 \code{suit.pers} is the probability that each element of \code{temps} is suitable for the species, i.e., the suitability of persistence (not a great name, I know)

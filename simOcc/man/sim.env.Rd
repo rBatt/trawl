@@ -4,8 +4,8 @@
 \alias{sim.env}
 \title{Simulate Environment}
 \usage{
-sim.env(grid.w = 5, grid.h = 7, grid.t = 12, X.slope = 0.75,
-  h.slope = 1, half.val = 0, w.sd = 1, t.sd = 0.1)
+sim.env(grid.w = 5, grid.h = 7, grid.t = 12, X.slope = 0, h.slope = 1,
+  half.val = 0, w.sd = 0.25, t.sd = 0.1)
 }
 \arguments{
 \item{grid.w}{width of environmental grid (e.g., columns, longitude)}
