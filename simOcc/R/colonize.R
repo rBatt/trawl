@@ -3,6 +3,10 @@
 #' Colonize a grid with species given the tempereatures on the grid, the densities (from density() ) of those species across a wide range of temperatures, and the mean biomass of those species.
 #' 
 #' @param temps 
+#' @param spp.dens.temps
+#' @param bio.mu
+#' @param relative Default FALSE; if TRUE, scale output so that maximum is 1
+#' @param probs 
 #'
 #' @details
 #' Function can be applied to 1 species or many species. If many, the length of bio.mu should be of length n.spp, where n.spp is the number of species, and spp.dens.temps should be a list of length n.spp of densities. \code{temps} would remain unchanged.
