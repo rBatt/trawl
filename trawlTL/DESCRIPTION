@@ -1,0 +1,8 @@
+Package: trawlTL
+Title: Dynamics of Trophic Level in Bottom Trawl Surveys
+Version: 0.0.0.9000
+Authors@R: c(person(given="Ryan D.", family="Batt", email="battrd@gmail.com", role=c("aut","cre")))
+Description: Estimates and describes changes in relative shape of North American demersal food webs over recent decades.
+Depends: R (>= 3.2.2)
+License: GPL-3
+LazyData: true
