@@ -6,17 +6,22 @@
 #' @param t_res trophic level resolution used in binning
 #' 
 #' @examples
-#' neus_ts <- trophic_shape("neus", t_res=0.5)
-#' 
-#' mass_l <- neus_ts$mass_l
-#' rich_l <- neus_ts$rich_l
-#' 
-#' library(fields)
-#' image.plot(x=mass_l$x, y=mass_l$y, z=mass_l$z, xlab="year", ylab="trophic level")
-#' lines(x=mass_l$x, y=mass_l$bulge, col="white", lwd=2)
-#' 
-#' image.plot(x=rich_l$x, y=rich_l$y, z=rich_l$z, xlab="year", ylab="trophic level")
-#' lines(x=rich_l$x, y=rich_l$bulge, col="white", lwd=2)
+neus_ts <- trophic_shape("shelf", t_res=0.5)
+
+mass_l <- neus_ts$mass_l
+rich_l <- neus_ts$rich_l
+
+# sum1_z <- scale_sum1(mass_l$z)
+# h <- sum1_z[1,] + mass_l$x[1]
+# barplot(h, horiz=T, space=0, border=NA, xlim=c(mass_l$x[1], max(h)))
+# lines(y=1:7, x=sum1_z[1,] , type="s")
+
+library(fields)
+image.plot(x=mass_l$x, y=mass_l$y, z=mass_l$z, xlab="year", ylab="trophic level")
+lines(x=mass_l$x, y=mass_l$bulge, col="white", lwd=2)
+
+image.plot(x=rich_l$x, y=rich_l$y, z=rich_l$z, xlab="year", ylab="trophic level")
+lines(x=rich_l$x, y=rich_l$bulge, col="white", lwd=2)
 
 trophic_shape <- function(reg, t_res=0.5){
 
@@ -39,6 +44,18 @@ trophic_shape <- function(reg, t_res=0.5){
 	Xa[,nAgg:=NULL]
 	Xa[,r:=1]
 	Xa[,datetime:=as.POSIXct(year, format="%Y")]
+	
+	# Xs <- Xa[tg=="2.5",reshape2::acast(.SD, year~spp, value.var="wtcpue", fill=0)]
+	# ss <- apply(Xs, 2, var)
+	# lcbd <- ss/sum(ss)
+	# sort(lcbd)
+	#
+	# plot(as.integer(rownames(Xs)), Xs[,1], type='l', ylim=range(Xs))
+	# for(i in 2:ncol(Xs)){
+	# 	lines(as.integer(rownames(Xs)), Xs[,i])
+	# }
+	
+	
 	Xa2 <- trawlAgg(Xa, bio_lvl="tg", time_lvl="year", space_lvl="reg", bioCols=c("nObs","r","m"), envCols=c("stemp","btemp","depth"), bioFun=sum, envFun=mean, metaCols="trophicLevel.se", meta.action="FUN", metaFun=function(x, ...)sum(x^2, ...))
 	setnames(Xa2, "time_lvl", "year")
 	setkey(Xa2, reg, year, tg)
@@ -53,8 +70,12 @@ trophic_shape <- function(reg, t_res=0.5){
 		z <- vv2
 
 		bulge <- c()
+		scale_sum1 <- function(x){
+			zero_min <- (x - min(x))
+			zero_min/sum(zero_min)
+		}
 		for(i in 1:length(x)){
-			bulge[i] <- weighted.mean(y, w=exp(z[i,]))
+			bulge[i] <- weighted.mean(y, w=scale_sum1(z[i,]))
 		}
 	
 		return(list(vv=vv, bulge=bulge, x=x, y=y, z=z))
