@@ -25,35 +25,33 @@ lines(x=rich_l$x, y=rich_l$bulge, col="white", lwd=2)
 
 trophic_shape <- function(reg, t_res=0.5){
 
-	X <- trawlTrim(reg, c.add=c("trophicLevel","trophicLevel.se"))[!is.na(trophicLevel)]
+	X <- trawlTrim(reg, c.add=c("trophicLevel","trophicLevel.se","sex"))[!is.na(trophicLevel)]
+	
+	if(reg=="neus"){
+		Xa <- trawlAgg(X, bio_lvl="sex", space_lvl="haulid", time_lvl="haulid", bioFun=meanna, envFun=meanna, metaCols=c("reg","datetime","year","common","trophicLevel","trophicLevel.se"), meta.action="unique1")
+		Xa[,time_lvl:=NULL]
+		
+		Xa <- trawlAgg(Xa, bio_lvl="spp", space_lvl="reg", time_lvl="year", bioFun=sumna, envFun=meanna, metaCols=c("common","trophicLevel","trophicLevel.se"), meta.action="unique1")
+		
+		setnames(Xa, "time_lvl", "year")
+		
+	}else{
+		Xa <- trawlAgg(X, bio_lvl="spp", space_lvl="reg", time_lvl="year", bioFun=meanna, envFun=meanna, metaCols=c("common","trophicLevel","trophicLevel.se"), meta.action="unique1")
+		setnames(Xa, "time_lvl", "year")
+	}
 
-	Xa <- trawlAgg(X, bio_lvl="spp", space_lvl="reg", time_lvl="year", bioFun=sum, envFun=mean, metaCols=c("common","trophicLevel","trophicLevel.se"), meta.action="unique1")
-	setnames(Xa, "time_lvl", "year")
 
 	setkey(Xa, reg, year, spp, common)
 
 	round_tl <- Xa[,floor(trophicLevel/t_res)*t_res]
 	cut_seq <- seq(min(round_tl), max(round_tl), by=t_res)
-	# cut_seq[1] <- cut_seq[1] - t_res
-	# cut_seq[length(cut_seq)] <- cut_seq[length(cut_seq)] + t_res
 	Xa[,tg:=as.character(cut(trophicLevel, breaks=cut_seq, labels=cut_seq[-1], include.lowest=TRUE))]
 	Xa[is.na(tg) & trophicLevel>=max(cut_seq), tg:=as.character(max(cut_seq))]
-	# Xa[,m:=sum(wtcpue, na.rm=TRUE), by=c("year","tg")]
 	Xa[,m:=wtcpue]
 	Xa[,nObs:=nAgg]
 	Xa[,nAgg:=NULL]
 	Xa[,r:=1]
 	Xa[,datetime:=as.POSIXct(year, format="%Y")]
-	
-	# Xs <- Xa[tg=="2.5",reshape2::acast(.SD, year~spp, value.var="wtcpue", fill=0)]
-	# ss <- apply(Xs, 2, var)
-	# lcbd <- ss/sum(ss)
-	# sort(lcbd)
-	#
-	# plot(as.integer(rownames(Xs)), Xs[,1], type='l', ylim=range(Xs))
-	# for(i in 2:ncol(Xs)){
-	# 	lines(as.integer(rownames(Xs)), Xs[,i])
-	# }
 	
 	
 	Xa2 <- trawlAgg(Xa, bio_lvl="tg", time_lvl="year", space_lvl="reg", bioCols=c("nObs","r","m"), envCols=c("stemp","btemp","depth"), bioFun=sum, envFun=mean, metaCols="trophicLevel.se", meta.action="FUN", metaFun=function(x, ...)sum(x^2, ...))
