@@ -92,7 +92,7 @@ t_var <- function(anomaly, tau){
 
 
 #' @describeIn t_moments Trophic skew
-skew <- function(anomaly, tau){
+t_skew <- function(anomaly, tau){
 	N <- length(tau)
 	X <- unname(cbind(1, tau))
 	XpX1 <- solve(t(X)%*%X)
@@ -111,7 +111,7 @@ skew <- function(anomaly, tau){
 
 
 #' @describeIn t_moments Trophic bulge
-bulge <- function(anomaly, tau){
+t_bulge <- function(anomaly, tau){
 	N <- length(tau)
 	X <- unname(cbind(1, -abs(tau-mean(tau))))
 	XpX1 <- solve(t(X)%*%X)
