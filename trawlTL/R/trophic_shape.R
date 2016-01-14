@@ -6,7 +6,7 @@
 #' @param t_res trophic level resolution used in binning
 #' 
 #' @examples
-neus_ts <- trophic_shape("neus", t_res=0.25)
+neus_ts <- trophic_shape("neus", t_res=0.5)
 
 mass_l <- neus_ts$mass_l
 rich_l <- neus_ts$rich_l
@@ -21,8 +21,9 @@ image.plot(x=mass_l$x, y=mass_l$y, z=mass_l$z, xlab="year", ylab="trophic level"
 lines(x=mass_l$x, y=mass_l$mid, col="white", lwd=2)
 
 sh <- getShape(skew=mass_l$sk, bulge=mass_l$bul)
-t_points(mass_l$x, mass_l$mid, shape=sh, inches=0.2, col="black", lwd=3)
-t_points(mass_l$x, mass_l$mid, shape=sh, inches=0.2, col="white", lwd=0.5)
+inch <- c(0.2, 0.1)[as.integer(sh=="rectangle")+1]
+t_points(mass_l$x, mass_l$mid, shape=sh, inches=inch, col="black", lwd=3)
+t_points(mass_l$x, mass_l$mid, shape=sh, inches=inch, col="white", lwd=0.5)
 
 image.plot(x=rich_l$x, y=rich_l$y, z=rich_l$z, xlab="year", ylab="trophic level")
 lines(x=rich_l$x, y=rich_l$mid, col="white", lwd=2)
