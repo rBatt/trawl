@@ -6,50 +6,33 @@
 #' @param t_res trophic level resolution used in binning
 #' 
 #' @examples
-neus_ts <- trophic_shape("neus", t_res=0.5)
-
-mass_l <- neus_ts$mass_l
-rich_l <- neus_ts$rich_l
+# neus_ts <- trophic_shape("neus", t_res=0.5)
+#
+# mass_l <- neus_ts$mass_l
+# rich_l <- neus_ts$rich_l
 
 # sum1_z <- scale_sum1(mass_l$z)
 # h <- sum1_z[1,] + mass_l$x[1]
 # barplot(h, horiz=T, space=0, border=NA, xlim=c(mass_l$x[1], max(h)))
 # lines(y=1:7, x=sum1_z[1,] , type="s")
 
-library(fields)
-image.plot(x=mass_l$x, y=mass_l$y, z=mass_l$z, xlab="year", ylab="trophic level")
-lines(x=mass_l$x, y=mass_l$mid, col="white", lwd=2)
-
-sh <- getShape(skew=mass_l$sk, bulge=mass_l$bul)
-inch <- c(0.2, 0.1)[as.integer(sh=="rectangle")+1]
-t_points(mass_l$x, mass_l$mid, shape=sh, inches=inch, col="black", lwd=3)
-t_points(mass_l$x, mass_l$mid, shape=sh, inches=inch, col="white", lwd=0.5)
-
-image.plot(x=rich_l$x, y=rich_l$y, z=rich_l$z, xlab="year", ylab="trophic level")
-lines(x=rich_l$x, y=rich_l$mid, col="white", lwd=2)
-
-
-
-Xa[spp=="Gadus morhua",plot(year, cntcpue, type="l")]
-Xa[spp=="Gadus morhua",j={par(new=T);plot(year, wtcpue, type="l", xaxt="n", yaxt='n', xlab="", ylab="", col="red");axis(side=4)}]
-
-
-Xa[spp=="Squalus acanthias",plot(year, cntcpue, type="l")]
-Xa[spp=="Squalus acanthias",j={par(new=T);plot(year, wtcpue, type="l", xaxt="n", yaxt='n', xlab="", ylab="", col="red");axis(side=4)}]
-
-Xa[,]
-
-par(rbLib::automfrow(Xa[,lu(tg)]))
-
-Xa2[,]
-
-
-
+# library(fields)
+# image.plot(x=mass_l$x, y=mass_l$y, z=mass_l$z, xlab="year", ylab="trophic level")
+# lines(x=mass_l$x, y=mass_l$mid, col="white", lwd=2)
+#
+# sh <- getShape(skew=mass_l$sk, bulge=mass_l$bul)
+# inch <- c(0.2, 0.1)[as.integer(sh=="rectangle")+1]
+# t_points(mass_l$x, mass_l$mid, shape=sh, inches=inch, col="black", lwd=3)
+# t_points(mass_l$x, mass_l$mid, shape=sh, inches=inch, col="white", lwd=0.5)
+#
+# image.plot(x=rich_l$x, y=rich_l$y, z=rich_l$z, xlab="year", ylab="trophic level")
+# lines(x=rich_l$x, y=rich_l$mid, col="white", lwd=2)
 
 
 trophic_shape <- function(reg, t_res=0.5){
 
 	X <- trawlTrim(reg, c.add=c("trophicLevel","trophicLevel.se","sex"))[!is.na(trophicLevel)]
+	
 	
 	if(reg=="neus"){
 		Xa <- trawlAgg(X, bio_lvl="sex", space_lvl="haulid", time_lvl="haulid", bioFun=meanna, envFun=meanna, metaCols=c("reg","datetime","year","common","trophicLevel","trophicLevel.se"), meta.action="unique1")
@@ -71,6 +54,7 @@ trophic_shape <- function(reg, t_res=0.5){
 	cut_seq <- seq(min(round_tl), max(round_tl), by=t_res)
 	Xa[,tg:=as.character(cut(trophicLevel, breaks=cut_seq, labels=cut_seq[-1], include.lowest=TRUE))]
 	Xa[is.na(tg) & trophicLevel>=max(cut_seq), tg:=as.character(max(cut_seq))]
+	Xa[is.na(tg) & trophicLevel<=min(cut_seq), tg:=as.character(min(cut_seq))]
 	Xa[,m:=wtcpue]
 	# Xa[,m:=cntcpue]
 	Xa[,nObs:=nAgg]
@@ -96,7 +80,14 @@ trophic_shape <- function(reg, t_res=0.5){
 
 	cast_tl <- function(xa, value.var){
 		vv <- reshape2::acast(xa, year~tg, value.var=value.var, fill=0)
-		vv2 <- apply(vv, 2, scale)
+		scale2 <- function(x){
+			x <- x - mean(x, na.rm=TRUE)
+			sd_x <- sd(x, na.rm=TRUE)
+			if(sd_x == 0){sd_x <- 1}
+			x <- x/sd_x
+			x
+		}
+		vv2 <- apply(vv, 2, scale2)
 
 		dimnames(vv2) <- dimnames(vv)
 		x <- as.numeric(rownames(vv2))
