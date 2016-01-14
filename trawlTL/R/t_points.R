@@ -1,5 +1,5 @@
 
-
+library(TeachingDemos)
 
 
 z1 <- function(xx){
@@ -82,6 +82,6 @@ t_points <- function(x, y, shape, ...){
 		
 	}
 	# plot(x,y, type="n")
-	mapply(my.symbols, x, y, symb=ms(shape), MoreArgs=list(...))
+	mapply(TeachingDemos::my.symbols, x, y, symb=ms(shape), MoreArgs=list(...))
 	
 }
