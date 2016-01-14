@@ -69,7 +69,7 @@ sh_dia <- function(){
 # my.symbols(5, 5, symb=sh_hourglass(), inches=0.3)
 
 
-t_points <- function(x, y, shape, ...){
+t_points <- function(x, y, shape, inches=0.2, ...){
 	shape <- match.arg(shape, c("downward_triangle", "upward_triangle", "rectangle", "diamond", "hourglass"), several.ok=TRUE)
 	ms <- function(shape){
 		lapply(shape, switch, 
@@ -82,6 +82,6 @@ t_points <- function(x, y, shape, ...){
 		
 	}
 	# plot(x,y, type="n")
-	mapply(TeachingDemos::my.symbols, x, y, symb=ms(shape), MoreArgs=list(...))
+	mapply(TeachingDemos::my.symbols, x, y, symb=ms(shape), inches=inches, MoreArgs=list(...))
 	
 }
