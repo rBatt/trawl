@@ -38,11 +38,17 @@ trophic_shape <- function(reg, t_res=0.5){
 		Xa <- trawlAgg(X, bio_lvl="sex", space_lvl="haulid", time_lvl="haulid", bioFun=meanna, envFun=meanna, metaCols=c("reg","datetime","year","common","trophicLevel","trophicLevel.se"), meta.action="unique1")
 		Xa[,time_lvl:=NULL]
 		
-		Xa <- trawlAgg(Xa, bio_lvl="spp", space_lvl="reg", time_lvl="year", bioFun=sumna, envFun=meanna, metaCols=c("common","trophicLevel","trophicLevel.se"), meta.action="unique1")
+		Xa <- trawlAgg(X, bio_lvl="spp", space_lvl="haulid", time_lvl="haulid", bioFun=sumna, envFun=meanna, metaCols=c("reg","datetime","year","common","trophicLevel","trophicLevel.se"), meta.action="unique1")
+		Xa[,time_lvl:=NULL]
+		
+		Xa <- trawlAgg(Xa, bio_lvl="spp", space_lvl="reg", time_lvl="year", bioFun=meanna, envFun=meanna, metaCols=c("common","trophicLevel","trophicLevel.se"), meta.action="unique1")
 		
 		setnames(Xa, "time_lvl", "year")
 		
 	}else{
+		Xa <- trawlAgg(X, bio_lvl="spp", space_lvl="haulid", time_lvl="haulid", bioFun=sumna, envFun=meanna, metaCols=c("reg","datetime","year","common","trophicLevel","trophicLevel.se"), meta.action="unique1")
+		Xa[,time_lvl:=NULL]
+		
 		Xa <- trawlAgg(X, bio_lvl="spp", space_lvl="reg", time_lvl="year", bioFun=meanna, envFun=meanna, metaCols=c("common","trophicLevel","trophicLevel.se"), meta.action="unique1")
 		setnames(Xa, "time_lvl", "year")
 	}
@@ -72,6 +78,9 @@ trophic_shape <- function(reg, t_res=0.5){
 	# for(i in 2:ncol(Xs)){
 	# 	lines(as.integer(rownames(Xs)), Xs[,i], col=i+1)
 	# }
+	
+	mtl_mass <- Xa[, list(mtl=sumna((wtcpue/sumna(wtcpue))*trophicLevel)),by=c("reg","year")][,mtl]
+	mtl_rich <- Xa[, list(mtl=sumna((1/sumna(lu(spp)))*trophicLevel)),by=c("reg","year")][,mtl]
 	
 	
 	Xa2 <- trawlAgg(Xa, bio_lvl="tg", time_lvl="year", space_lvl="reg", bioCols=c("nObs","r","m"), envCols=c("stemp","btemp","depth"), bioFun=sum, envFun=mean, metaCols="trophicLevel.se", meta.action="FUN", metaFun=function(x, ...)sum(x^2, ...))
@@ -116,10 +125,12 @@ trophic_shape <- function(reg, t_res=0.5){
 	}
 
 	mass_l <- cast_tl(Xa2, "m")
+	mass_l$mtl <- mtl_mass
 	# image.plot(x=mass_l$x, y=mass_l$y, z=mass_l$z, xlab="year", ylab="trophic level")
 	# lines(x=mass_l$x, y=mass_l$mid, col="white", lwd=2)
 
 	rich_l <- cast_tl(Xa2, "r")
+	rich_l$mtl <- mtl_rich
 	# image.plot(x=rich_l$x, y=rich_l$y, z=rich_l$z, xlab="year", ylab="trophic level")
 	# lines(x=rich_l$x, y=rich_l$mid, col="white", lwd=2)
 	
