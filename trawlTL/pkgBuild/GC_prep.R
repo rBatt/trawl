@@ -549,8 +549,8 @@ y_adj <- c()
 y_adj[1] <- -min(mid_rich[[1]])
 mid_rich_adj <- list()
 mid_rich_adj[[1]] <- mid_rich[[1]]+y_adj[1]
-dev.new(width=4, height=7)
-par(mar=c(2,2,0.1,0.1), mgp=c(1,0.1,0), tcl=-0.1, cex=1, ps=14)
+png(file="~/Documents/School&Work/Presentations/GC2016/Figures/richness_anomaly_series.png", width=5, height=8, units="in", res=300)
+par(mar=c(2.5,2.75,0.1,0.1), mgp=c(1.5,0.25,0), tcl=-0.25, cex=1, ps=18)
 plot(reg_ts[[1]]$rich_l$x, mid_rich_adj[[1]], xlim=year_lim, type="l", ylim=c(0,10), ylab="Richness-Weighted Trophic Level", xlab="Year", yaxt="n", col=pretty_col[1])
 text(1965, mid_rich_adj[[1]][1]-0.25, pretty_reg[regs[1]], cex=0.65, col=pretty_col[1], pos=4)
 for(i in 2:length(regs)){
@@ -559,6 +559,7 @@ for(i in 2:length(regs)){
 	lines(reg_ts[[i]]$rich_l$x, mid_rich_adj[[i]], col=pretty_col[i])
 	text(1965, mid_rich_adj[[i]][1]-0.3, pretty_reg[regs[i]], cex=0.65, col=pretty_col[i], pos=4)
 }
+dev.off()
 
 
 # ---- time series of MTL or mass_l$mid for each region ----
@@ -572,8 +573,9 @@ y_adj <- c()
 y_adj[1] <- -min(mid_mass[[1]])
 mid_mass_adj <- list()
 mid_mass_adj[[1]] <- mid_mass[[1]]+y_adj[1]
-dev.new(width=4, height=7)
-par(mar=c(2,2,0.1,0.1), mgp=c(1,0.1,0), tcl=-0.1, cex=1, ps=14)
+# dev.new(width=4, height=7)
+png(file="~/Documents/School&Work/Presentations/GC2016/Figures/biomass_anomaly_series.png", width=5, height=8, units="in", res=300)
+par(mar=c(2.5,2.75,0.1,0.1), mgp=c(1.5,0.25,0), tcl=-0.25, cex=1, ps=18)
 plot(reg_ts[[1]]$mass_l$x, mid_mass_adj[[1]], xlim=year_lim, type="l", ylim=c(0,11.2), ylab="Biomass-Weighted Trophic Level", xlab="Year", yaxt="n", col=pretty_col[1])
 text(1965, mid_mass_adj[[1]][1]-0.25, pretty_reg[regs[1]], cex=0.65, col=pretty_col[1], pos=4)
 for(i in 2:length(regs)){
@@ -582,6 +584,7 @@ for(i in 2:length(regs)){
 	lines(reg_ts[[i]]$mass_l$x, mid_mass_adj[[i]], col=pretty_col[i])
 	text(1965, mid_mass_adj[[i]][1]-0.5, pretty_reg[regs[i]], cex=0.65, col=pretty_col[i], pos=4)
 }
+dev.off()
 
 
 
@@ -649,11 +652,12 @@ anomaly_mr <- rbindlist(anomaly_mr_0, fill=TRUE)
 # 	abline(a=0, b=1)
 # }
 
-dev.new(width=4, height=4)
-par(mar=c(2,2,0.1,0.1), mgp=c(1,0.1,0), tcl=-0.1, ps=14, cex=1)
+png(file="~/Documents/School&Work/Presentations/GC2016/Figures/biomass_richness_anomaly_scatter.png", width=5, height=5, units="in", res=300)
+par(mar=c(2.75,2.75,0.1,0.1), mgp=c(1.55,0.5,0), tcl=-0.25, ps=18, cex=1)
 anomaly_mr[,plot(anomaly_r, anomaly_m, type='n', ylab="Biomass Anomaly", xlab="Richness Anomaly")]
 anomaly_mr[,abline(lm(anomaly_m~anomaly_r), lty="dashed", lwd=2)]
 anomaly_mr[,points(anomaly_r, anomaly_m, col=adjustcolor(pretty_col[reg], 0.35), pch=20)]
+dev.off()
 
 
 
@@ -719,16 +723,18 @@ names(contrib_venn) <- c("Biomass", "Richness")
 
 venn.diagram(
 	contrib_venn, 
-	filename="~/Documents/School&Work/pinskyPost/trawl/trawlTL/contrib_venn.tiff", 
+	filename="~/Documents/School&Work/Presentations/GC2016/Figures/contrib_venn.tiff", 
 	height=5, width=5, resolution=300, units="in",
-	main.fontfamily="sans",
+	cex=1.5, cat.cex=1.5, main.cex=1.5,
+	main.fontface=1,
+	main.fontfamily="sans", fontfamily="sans", cat.fontfamily="sans",
 
-	cat.pos=c(210, 180),
-	cat.dist=c(0.02,0.01),
+	cat.pos=c(200, 180),
+	cat.dist=c(0.025,0.015),
 	cat.default.pos="outer",
 	
 	# main="Number of Species Required to Explain 90% Variability", 
-	main="Species Needed to Account for 90% of Temporal Variability", 
+	main="Species Comprising 90% of Variability", 
 	eulder.d=TRUE, scale=TRUE, 
 	total.population=lu(unlist(contrib_venn)), hyper.contrib_venn=FALSE, 
 	
@@ -747,8 +753,9 @@ contrib2[(rich_only), lu(lcbd_spp)] # rich only
 contrib2[(both), lu(lcbd_spp)] # both
 
 # ---- Density plots of % contribution per species ----
-dev.new()
-par(mfrow=c(1,3), mar=c(1.5,1.5,0.5,0.1), mgp=c(1,0.1,0), tcl=-0.1, ps=14, cex=1, oma=c(1,1,0.1,0.1))
+# dev.new()
+png(file="~/Documents/School&Work/Presentations/GC2016/Figures/contrib_venn.png", width=5, height=3, res=300, units="in")
+par(mfrow=c(1,3), mar=c(1.5,1.5,0.5,0.1), mgp=c(1.15,0.15,0), tcl=-0.15, ps=18, cex=1, oma=c(1.2,1.2,0.1,0.1))
 contrib2[(rich_only), j={
 	dens_r <- density(lcbd_rich, from=0, to=1)
 	# dens_m <- density(lcbd_mass, from=0, to=1)
@@ -782,9 +789,9 @@ contrib2[(mass_only), j={
 	polygon(c(dens_m$x, rev(dens_m$x)[1], dens_m$x[1]), c(dens_m$y, 0, 0), border=NA, col=adjustcolor("blue",0.25))
 	# lines(dens_m$x, dens_m$y, col="blue")
 }]
-mtext("Contribution of a Species to Variability (%)", side=1, line=0, outer=TRUE)
+mtext("Contribution of a Species to Variability (%)", side=1, line=0.2, outer=TRUE)
 mtext("Density", side=2, line=0, outer=TRUE)
-
+dev.off()
 
 
 # ---- Pad region-specific time series with 0's ----
