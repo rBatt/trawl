@@ -31,7 +31,53 @@
 
 trophic_shape <- function(reg, t_res=0.5){
 
-	X <- trawlTrim(reg, c.add=c("trophicLevel","trophicLevel.se","sex"))[!is.na(trophicLevel)]
+	
+	
+	if(reg == "wc"){
+		X1 <- trawlTrim("wctri", c.add=c("trophicLevel","trophicLevel.se","sex"))#[year!=2004]
+		# X2 <- trawlTrim("wcann", c.add=c("trophicLevel","trophicLevel.se","sex"))
+		# X <- rbind(X1, X2, fill=TRUE)
+		X <- X1
+		X <- X[,reg:="wc"][!is.na(trophicLevel) & is.finite(wtcpue)]
+	}else{
+		X <- trawlTrim(reg, c.add=c("trophicLevel","trophicLevel.se","sex"))
+	}
+	
+	if(reg=="newf"){
+		X <- X[year>=1995]
+	}
+	
+	if(reg=="sa"){
+		X <- X[!spp%in%"Stomolophus meleagris"] # cannonball jelly not consistently identified for wtcpue
+	}
+	
+
+	X[,stratum:=ll2strat(lon, lat)]
+	strat_table <- X[,colSums(table(year, stratum)>0)]
+	goodStrat2 <- X[,names(strat_table)[strat_table>=(lu(year)-(0.2*lu(year)))]]
+	X[,keep_strat:=(stratum%in%goodStrat2)]	
+	X <- X[(keep_strat)]
+	
+	X <- X[!is.na(trophicLevel)]
+	
+	X[,lon:=roundGrid(lon)]
+	X[,lat:=roundGrid(lat)]
+	
+	
+	
+	X_btemp <- X[,list(year, haulid, btemp)]
+	setkey(X_btemp, year, haulid)
+	X_btemp[,btemp:=fill.mean(btemp), by=c("haulid","year")]
+	X_btemp[,btemp:=fill.mean(btemp), by=c("year")]
+	
+	X_btemp <- unique(X_btemp)
+	btemp <- X_btemp[,mean(btemp, na.rm=TRUE), by=c("year")][,V1]
+	btemp_09 <- X_btemp[,quantile(btemp, 0.9, na.rm=TRUE), by=c("year")][,V1]
+	btemp_01 <- X_btemp[,quantile(btemp, 0.1, na.rm=TRUE), by=c("year")][,V1]
+	
+	# plot(btemp, ylim=range(c(btemp, btemp_09, btemp_01), na.rm=TRUE), type="o")
+	# lines(btemp_09, type="o")
+	# lines(btemp_01, type="o")
 	
 	
 	if(reg=="neus"){
@@ -40,14 +86,20 @@ trophic_shape <- function(reg, t_res=0.5){
 		
 		Xa <- trawlAgg(X, bio_lvl="spp", space_lvl="haulid", time_lvl="haulid", bioFun=sumna, envFun=meanna, metaCols=c("reg","datetime","year","common","trophicLevel","trophicLevel.se"), meta.action="unique1")
 		Xa[,time_lvl:=NULL]
+		#
+		# Xa_strat <- trawlAgg(Xa, bio_lvl="spp", space_lvl="stratum", time_lvl="year", bioFun=meanna, envFun=meanna, metaCols=c("reg","common","trophicLevel","trophicLevel.se"), meta.action="unique1")
+		# setnames(Xa, "time_lvl", "year")
 		
-		Xa <- trawlAgg(Xa, bio_lvl="spp", space_lvl="reg", time_lvl="year", bioFun=meanna, envFun=meanna, metaCols=c("common","trophicLevel","trophicLevel.se"), meta.action="unique1")
+		Xa <- trawlAgg(Xa, bio_lvl="spp", space_lvl="reg", time_lvl="year", bioFun=meanna, envFun=meanna, metaCols=c("common","trophicLevel","trophicLevel.se", "lon", "lat"), meta.action="unique1")
 		
 		setnames(Xa, "time_lvl", "year")
 		
 	}else{
 		Xa <- trawlAgg(X, bio_lvl="spp", space_lvl="haulid", time_lvl="haulid", bioFun=sumna, envFun=meanna, metaCols=c("reg","datetime","year","common","trophicLevel","trophicLevel.se"), meta.action="unique1")
 		Xa[,time_lvl:=NULL]
+		#
+		# Xa_strat <- trawlAgg(Xa, bio_lvl="spp", space_lvl="stratum", time_lvl="year", bioFun=meanna, envFun=meanna, metaCols=c("reg","common","trophicLevel","trophicLevel.se"), meta.action="unique1")
+		# setnames(Xa, "time_lvl", "year")
 		
 		Xa <- trawlAgg(X, bio_lvl="spp", space_lvl="reg", time_lvl="year", bioFun=meanna, envFun=meanna, metaCols=c("common","trophicLevel","trophicLevel.se"), meta.action="unique1")
 		setnames(Xa, "time_lvl", "year")
@@ -67,6 +119,36 @@ trophic_shape <- function(reg, t_res=0.5){
 	Xa[,nAgg:=NULL]
 	Xa[,r:=1]
 	Xa[,datetime:=as.POSIXct(year, format="%Y")]
+	
+	
+	lcbd <- function(X, prop_out=1){
+		ss <- apply(X, 2, var)
+		l <- sort(ss/sum(ss), decreasing=TRUE)
+		# l <- sort(beta.div(X)$SCBD)
+		
+		out_ind <- cumsum(l) < prop_out
+		out_ind[which(!out_ind)[1]] <- TRUE
+		
+		list(lcbd=l[out_ind], lcbd_spp=names(l[out_ind]))
+	}
+	
+	mass_X <-  Xa[,reshape2::acast(.SD, year~spp, value.var="wtcpue", fill=0)]
+	# test <- lcbd(mass_X)[[1]]
+	# test <- test[order(names(test))]
+	# test2 <- beta.div(mass_X)$SCBD
+	# test2 <- test2[order(names(test2))]
+	# test2 <- test2[names(test2)%in%names(test)]
+	lcbd_mass <- Xa[,lcbd(reshape2::acast(.SD, year~spp, value.var="wtcpue", fill=0), prop_out=0.9), by=c("tg")]
+	
+	
+	lcbd_rich <- Xa[, j = {
+		t_x <- reshape2::acast(.SD, year~spp, value.var="r", fill=0)
+		# t_x[] <- pmin(1, ceiling(t_x))
+		lcbd(t_x, prop_out=0.9)
+	}, 
+	, by=c("tg")
+	]
+	
 	
 	
 	# Xs <- Xa[tg=="4",reshape2::acast(.SD, year~spp, value.var="cntcpue", fill=0)]
@@ -92,7 +174,7 @@ trophic_shape <- function(reg, t_res=0.5){
 		scale2 <- function(x){
 			x <- x - mean(x, na.rm=TRUE)
 			sd_x <- sd(x, na.rm=TRUE)
-			if(sd_x == 0){sd_x <- 1}
+			if(sd_x == 0 | !is.finite(sd_x)){sd_x <- 1}
 			x <- x/sd_x
 			x
 		}
@@ -126,15 +208,17 @@ trophic_shape <- function(reg, t_res=0.5){
 
 	mass_l <- cast_tl(Xa2, "m")
 	mass_l$mtl <- mtl_mass
+	mass_l$lcbd <- lcbd_mass
 	# image.plot(x=mass_l$x, y=mass_l$y, z=mass_l$z, xlab="year", ylab="trophic level")
 	# lines(x=mass_l$x, y=mass_l$mid, col="white", lwd=2)
 
 	rich_l <- cast_tl(Xa2, "r")
 	rich_l$mtl <- mtl_rich
+	rich_l$lcbd <- lcbd_rich
 	# image.plot(x=rich_l$x, y=rich_l$y, z=rich_l$z, xlab="year", ylab="trophic level")
 	# lines(x=rich_l$x, y=rich_l$mid, col="white", lwd=2)
 	
-	return(list(mass_l=mass_l, rich_l=rich_l))
+	return(list(mass_l=mass_l, rich_l=rich_l, X=Xa, btemp=btemp, btemp_09=btemp_09, btemp_01=btemp_01))
 	
 }
 
