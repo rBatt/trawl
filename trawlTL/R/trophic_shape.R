@@ -63,6 +63,8 @@ trophic_shape <- function(reg, t_res=0.5){
 	X[,lon:=roundGrid(lon)]
 	X[,lat:=roundGrid(lat)]
 	
+	ll <- X[!duplicated(stratum), list(lon, lat)]
+	
 	
 	
 	X_btemp <- X[,list(year, haulid, btemp)]
@@ -218,7 +220,7 @@ trophic_shape <- function(reg, t_res=0.5){
 	# image.plot(x=rich_l$x, y=rich_l$y, z=rich_l$z, xlab="year", ylab="trophic level")
 	# lines(x=rich_l$x, y=rich_l$mid, col="white", lwd=2)
 	
-	return(list(mass_l=mass_l, rich_l=rich_l, X=Xa, btemp=btemp, btemp_09=btemp_09, btemp_01=btemp_01))
+	return(list(mass_l=mass_l, rich_l=rich_l, X=Xa, btemp=btemp, btemp_09=btemp_09, btemp_01=btemp_01, ll=ll))
 	
 }
 
