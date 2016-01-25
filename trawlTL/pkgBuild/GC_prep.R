@@ -527,7 +527,7 @@ for(i in 1:length(regs)){
 # ======================================
 # = Core Figures after Experimentation =
 # ======================================
-pretty_reg <- c("ebs"="E. Berring Sea", "ai"="Aleutian Islands", "goa"="Gulf of Alaska", "wc"="West Coast US", "gmex"="Gulf of Mexico", "sa"="Southeast US", "neus"="Northeast US", "shelf"="Scotian Shelf", "newf"="Newfoundland")
+pretty_reg <- c("ebs"="E. Bering Sea", "ai"="Aleutian Islands", "goa"="Gulf of Alaska", "wc"="West Coast US", "gmex"="Gulf of Mexico", "sa"="Southeast US", "neus"="Northeast US", "shelf"="Scotian Shelf", "newf"="Newfoundland")
 
 # pretty_col <- c('#a6cee3', '#1f78b4', '#b2df8a', '#33a02c', '#fb9a99', '#e31a1c', '#fdbf6f', '#ff7f00', '#cab2d6', '#6a3d9a')
 # pretty_col <- c('#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628','#f781bf','#999999')
@@ -545,19 +545,35 @@ true_rich <- lapply(reg_ts, function(x)rowSums(x$rich_l$vv))
 true_rich <- lapply(true_rich, function(x)x/max(x))
 # pairs(data.frame(unlist(sum_rich), unlist(mid_rich), unlist(mtl_rich)))
 
+
+
 y_adj <- c()
 y_adj[1] <- -min(mid_rich[[1]])
 mid_rich_adj <- list()
 mid_rich_adj[[1]] <- mid_rich[[1]]+y_adj[1]
-png(file="~/Documents/School&Work/Presentations/GC2016/Figures/richness_anomaly_series.png", width=5, height=8, units="in", res=300)
+
+png(file="~/Documents/School&Work/Presentations/GC2016/Figures/richness_anomaly_series.png", width=5.5, height=10, units="in", res=500)
 par(mar=c(2.5,2.75,0.1,0.1), mgp=c(1.5,0.25,0), tcl=-0.25, cex=1, ps=18)
-plot(reg_ts[[1]]$rich_l$x, mid_rich_adj[[1]], xlim=year_lim, type="l", ylim=c(0,10), ylab="Richness-Weighted Trophic Level", xlab="Year", yaxt="n", col=pretty_col[1])
-text(1965, mid_rich_adj[[1]][1]-0.25, pretty_reg[regs[1]], cex=0.65, col=pretty_col[1], pos=4)
-for(i in 2:length(regs)){
-	y_adj[i] <- -(min(mid_rich[[i]]) - (max(mid_rich_adj[[i-1]]) + 0.0))
-	mid_rich_adj[[i]] <- mid_rich[[i]] + y_adj[i]
-	lines(reg_ts[[i]]$rich_l$x, mid_rich_adj[[i]], col=pretty_col[i])
-	text(1965, mid_rich_adj[[i]][1]-0.3, pretty_reg[regs[i]], cex=0.65, col=pretty_col[i], pos=4)
+
+# blank plot for setup
+plot(reg_ts[[1]]$rich_l$x, mid_rich_adj[[1]], xlim=year_lim, type="n", ylim=c(0,9), ylab="Richness-Weighted Trophic Level", xlab="Year", yaxt="n", col=pretty_col[1], lwd=3)
+
+for(i in 1:length(regs)){
+	if(i != 1){
+		y_adj[i] <- -(min(mid_rich[[i]]) - (max(mid_rich_adj[[i-1]]) + 0.0))
+		mid_rich_adj[[i]] <- mid_rich[[i]] + y_adj[i]
+	}
+	
+	segments(y0=mid_rich_adj[[i]][1], y1=mid_rich_adj[[i]][1], x0=reg_ts[[i]]$rich_l$x[1], x1=rev(reg_ts[[i]]$rich_l$x)[1], lty="dashed", col="black", lwd=1)
+	
+	lines(reg_ts[[i]]$rich_l$x, mid_rich_adj[[i]], col=pretty_col[i], lwd=3)
+	
+	if(min(reg_ts[[i]]$rich_l$x) > 1980){
+		text(1966, mid_rich_adj[[i]][1], pretty_reg[regs[i]], cex=0.65, col=pretty_col[i], pos=4, font=2)
+	}else{
+		y_use <- min(mid_rich_adj[[i]][which(reg_ts[[i]]$rich_l$x <= 1980)]) - 0.1
+		text(1966, y_use, pretty_reg[regs[i]], cex=0.65, col=pretty_col[i], pos=4, font=2)
+	}
 }
 dev.off()
 
@@ -569,20 +585,35 @@ mid_mass <- lapply(reg_ts, function(x)x$mass_l$mid)
 mtl_mass <- lapply(reg_ts, function(x)x$mass_l$mtl)
 # pairs(data.frame(unlist(sum_mass), unlist(mid_mass), unlist(mtl_mass)))
 
+
+
 y_adj <- c()
 y_adj[1] <- -min(mid_mass[[1]])
 mid_mass_adj <- list()
 mid_mass_adj[[1]] <- mid_mass[[1]]+y_adj[1]
-# dev.new(width=4, height=7)
-png(file="~/Documents/School&Work/Presentations/GC2016/Figures/biomass_anomaly_series.png", width=5, height=8, units="in", res=300)
+
+png(file="~/Documents/School&Work/Presentations/GC2016/Figures/biomass_anomaly_series.png", width=5.5, height=10, units="in", res=500)
 par(mar=c(2.5,2.75,0.1,0.1), mgp=c(1.5,0.25,0), tcl=-0.25, cex=1, ps=18)
-plot(reg_ts[[1]]$mass_l$x, mid_mass_adj[[1]], xlim=year_lim, type="l", ylim=c(0,11.2), ylab="Biomass-Weighted Trophic Level", xlab="Year", yaxt="n", col=pretty_col[1])
-text(1965, mid_mass_adj[[1]][1]-0.25, pretty_reg[regs[1]], cex=0.65, col=pretty_col[1], pos=4)
-for(i in 2:length(regs)){
-	y_adj[i] <- -(min(mid_mass[[i]]) - (max(mid_mass_adj[[i-1]]) + 0.0))
-	mid_mass_adj[[i]] <- mid_mass[[i]] + y_adj[i]
-	lines(reg_ts[[i]]$mass_l$x, mid_mass_adj[[i]], col=pretty_col[i])
-	text(1965, mid_mass_adj[[i]][1]-0.5, pretty_reg[regs[i]], cex=0.65, col=pretty_col[i], pos=4)
+
+# blank plot for setup
+plot(reg_ts[[1]]$mass_l$x, mid_mass_adj[[1]], xlim=year_lim, type="n", ylim=c(0,11.2), ylab="Biomass-Weighted Trophic Level", xlab="Year", yaxt="n", col=pretty_col[1], lwd=3)
+
+for(i in 1:length(regs)){
+	if(i != 1){
+		y_adj[i] <- -(min(mid_mass[[i]]) - (max(mid_mass_adj[[i-1]]) + 0.0))
+		mid_mass_adj[[i]] <- mid_mass[[i]] + y_adj[i]
+	}
+	
+	segments(y0=mid_mass_adj[[i]][1], y1=mid_mass_adj[[i]][1], x0=reg_ts[[i]]$mass_l$x[1], x1=rev(reg_ts[[i]]$mass_l$x)[1], lty="dashed", col="black", lwd=1)
+	
+	lines(reg_ts[[i]]$mass_l$x, mid_mass_adj[[i]], col=pretty_col[i], lwd=3)
+	
+	if(min(reg_ts[[i]]$mass_l$x) > 1980){
+		text(1966, mid_mass_adj[[i]][1], pretty_reg[regs[i]], cex=0.65, col=pretty_col[i], pos=4, , font=2)
+	}else{
+		y_use <- min(mid_mass_adj[[i]][which(reg_ts[[i]]$mass_l$x <= 1980)]) - 0.1
+		text(1966, y_use, pretty_reg[regs[i]], cex=0.65, col=pretty_col[i], pos=4, font=2)
+	}
 }
 dev.off()
 
@@ -652,10 +683,12 @@ anomaly_mr <- rbindlist(anomaly_mr_0, fill=TRUE)
 # 	abline(a=0, b=1)
 # }
 
-png(file="~/Documents/School&Work/Presentations/GC2016/Figures/biomass_richness_anomaly_scatter.png", width=5, height=5, units="in", res=300)
-par(mar=c(2.75,2.75,0.1,0.1), mgp=c(1.55,0.5,0), tcl=-0.25, ps=18, cex=1)
+png(file="~/Documents/School&Work/Presentations/GC2016/Figures/biomass_richness_anomaly_scatter.png", width=5, height=5, units="in", res=500)
+par(mar=c(2.8,2.9,0.1,0.1), mgp=c(1.75,0.5,0), tcl=-0.25, ps=18, cex=1)
+scatter_reg <- anomaly_mr[,lm(anomaly_m~anomaly_r)]
+summary(scatter_reg)
 anomaly_mr[,plot(anomaly_r, anomaly_m, type='n', ylab="Biomass Anomaly", xlab="Richness Anomaly")]
-anomaly_mr[,abline(lm(anomaly_m~anomaly_r), lty="dashed", lwd=2)]
+anomaly_mr[,abline(scatter_reg, lty="dashed", lwd=2)]
 anomaly_mr[,points(anomaly_r, anomaly_m, col=adjustcolor(pretty_col[reg], 0.35), pch=20)]
 dev.off()
 
@@ -724,7 +757,7 @@ names(contrib_venn) <- c("Biomass", "Richness")
 venn.diagram(
 	contrib_venn, 
 	filename="~/Documents/School&Work/Presentations/GC2016/Figures/contrib_venn.tiff", 
-	height=5, width=5, resolution=300, units="in",
+	height=5, width=5, resolution=500, units="in",
 	cex=1.5, cat.cex=1.5, main.cex=1.5,
 	main.fontface=1,
 	main.fontfamily="sans", fontfamily="sans", cat.fontfamily="sans",
@@ -754,14 +787,14 @@ contrib2[(both), lu(lcbd_spp)] # both
 
 # ---- Density plots of % contribution per species ----
 # dev.new()
-png(file="~/Documents/School&Work/Presentations/GC2016/Figures/contrib_venn.png", width=5, height=3, res=300, units="in")
-par(mfrow=c(1,3), mar=c(1.5,1.5,0.5,0.1), mgp=c(1.15,0.15,0), tcl=-0.15, ps=18, cex=1, oma=c(1.2,1.2,0.1,0.1))
+png(file="~/Documents/School&Work/Presentations/GC2016/Figures/contrib_venn.png", width=5, height=3, res=500, units="in")
+par(mfrow=c(1,3), mar=c(1.5,1.5,0.5,0.1), mgp=c(1.15,0.15,0), tcl=-0.15, ps=18, cex=1, oma=c(1.4,1.2,0.1,0.1))
 contrib2[(rich_only), j={
 	dens_r <- density(lcbd_rich, from=0, to=1)
 	# dens_m <- density(lcbd_mass, from=0, to=1)
 	# x_lim <- range(c(dens_r$x, dens_m$x))
 	# y_lim <- range(c(dens_r$y, dens_m$y))
-	plot(dens_r$x, dens_r$y, type="l", col="red", xlab="", ylab="", ylim=c(0, max(dens_r$y)))
+	plot(dens_r$x, dens_r$y, type="l", col="red", xlab="", ylab="", ylim=c(0, max(dens_r$y)), lwd=3)
 	polygon(c(dens_r$x, rev(dens_r$x)[1], dens_r$x[1]), c(dens_r$y, 0, 0), border=NA, col=adjustcolor("red",0.25))
 	# lines(dens_m$x, dens_m$y, col="blue")
 }]
@@ -771,10 +804,10 @@ contrib2[(both), j={
 	x_lim <- range(c(dens_r$x, dens_m$x))
 	y_lim <- c(0, max(c(dens_r$y, dens_m$y)))
 	
-	plot(dens_r$x, dens_r$y, xlim=x_lim, ylim=y_lim, type="l", col="red", xlab="", ylab="")
+	plot(dens_r$x, dens_r$y, xlim=x_lim, ylim=y_lim, type="l", col="red", xlab="", ylab="", lwd=3)
 	polygon(c(dens_r$x, rev(dens_r$x)[1], dens_r$x[1]), c(dens_r$y, 0, 0), border=NA, col=adjustcolor("red",0.25))
 	
-	lines(dens_m$x, dens_m$y, col="blue")
+	lines(dens_m$x, dens_m$y, col="blue", lwd=3)
 	polygon(c(dens_m$x, rev(dens_m$x)[1], dens_m$x[1]), c(dens_m$y, 0, 0), border=NA, col=adjustcolor("blue",0.25))
 	
 }]
@@ -785,7 +818,7 @@ contrib2[(mass_only), j={
 	dens_m <- density(lcbd_mass, from=0, to=1)
 	# x_lim <- range(c(dens_r$x, dens_m$x))
 	# y_lim <- range(c(dens_r$y, dens_m$y))
-	plot(dens_m$x, dens_m$y, type="l", col="blue", xlab="", ylab="", ylim=c(0, max(dens_m$y)))
+	plot(dens_m$x, dens_m$y, type="l", col="blue", xlab="", ylab="", ylim=c(0, max(dens_m$y)), lwd=3)
 	polygon(c(dens_m$x, rev(dens_m$x)[1], dens_m$x[1]), c(dens_m$y, 0, 0), border=NA, col=adjustcolor("blue",0.25))
 	# lines(dens_m$x, dens_m$y, col="blue")
 }]
@@ -866,3 +899,59 @@ contrib2[(colonizer) & (both) & !tg%in%c("2.5","3")]
 
 
 
+# ===================
+# = Test for trends =
+# ===================
+# ---- Mean trophic level (biomass) ----
+mass_mid_trend <- list()
+for(i in 1:length(regs)){
+	t_kendall <- kendallTrendTest(reg_ts[[i]]$mass_l$mid)[c('p.value','estimate')]
+	mass_mid_trend[[i]] <- data.table(reg=regs[i], var="mass_mid", tau=t_kendall[[2]][1], slope=t_kendall[[2]][2], p=t_kendall[[1]])
+	# mass_mid_trend[[i]] <- c(reg=regs[i], mass_mid_trend[[i]])
+}
+mass_mid_trend <- rbindlist(mass_mid_trend) # significant, positive
+
+
+# ---- Mean trophic level (richness) ----
+rich_mid_trend <- list()
+for(i in 1:length(regs)){
+	t_kendall <- kendallTrendTest(reg_ts[[i]]$rich_l$mid)[c('p.value','estimate')]
+	rich_mid_trend[[i]] <- data.table(reg=regs[i], var="rich_mid", tau=t_kendall[[2]][1], slope=t_kendall[[2]][2], p=t_kendall[[1]])
+	# rich_mid_trend[[i]] <- c(reg=regs[i], rich_mid_trend[[i]])
+}
+rich_mid_trend <- rbindlist(rich_mid_trend)  # 5 significant, all positive
+
+
+# ---- observed total richness ----
+rich_total_trend <- list()
+for(i in 1:length(regs)){
+	t_rich <- reg_ts[[i]]$X[,lu(spp), keyby='year'][,V1]
+	t_kendall <- kendallTrendTest(t_rich)[c('p.value','estimate')]
+	rich_total_trend[[i]] <- data.table(reg=regs[i], var="rich_total", tau=t_kendall[[2]][1], slope=t_kendall[[2]][2], p=t_kendall[[1]])
+}
+rich_total_trend <- rbindlist(rich_total_trend) # 5 significant, all positive
+
+
+# all_strat_lonlat <- lapply(reg_ts, function(x)x$X[!duplicated(stratum, list(lon,lat))])
+
+
+# ============
+# = haul map =
+# ============
+reg_ll <- lapply(reg_ts, function(x)x$ll)
+lims <- lapply(rbindlist(reg_ll), range)
+png("~/Documents/School&Work/Presentations/GC2016/Figures/haul_map.png", width=9, height=3, units="in", res=500)
+par(mar=c(0,0,0,0), oma=c(0,0,0,0), cex=1)
+plot(1,1, xlim=lims[[1]], ylim=lims[[2]], type='n', xaxt="n", yaxt="n", xlab="", ylab="", bty="n")
+map(add=TRUE)
+for(i in 1:length(regs)){
+	# td <- spline.poly(as.matrix(reg_ll[[regs[i]]][,list(x=lon, y=lat)]), 5E2)
+	# ch <- td[chull(td),]
+	# polygon(spline.poly(as.matrix(ch), 500), border=NA, col=adjustcolor(pretty_col[regs[i]], 0.75))
+	
+	td <- as.matrix(reg_ll[[regs[i]]][,list(x=lon, y=lat)])
+	td2 <- rbindlist(lapply(replicate(25, td, simplify=FALSE), as.data.table))
+	points(lapply(td2, jitter, amount=0.5), pch=20, cex=0.5, col=adjustcolor(pretty_col[regs[i]], 1))
+	
+}
+dev.off()
