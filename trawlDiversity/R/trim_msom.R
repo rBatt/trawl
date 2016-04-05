@@ -8,12 +8,13 @@
 #' @param depthStratum The depth range to use to define stratum; the default does not use depth at all. If using, a reasonable value might be 100.
 #' @param tolFraction The fraction of years that a stratum can not be sampled yet still be included in output. Default is 1/3, indicating that a stratum will be included in output so long as it is sampled for at least 2/3 of years. Actual number of years tolerated is rounded up. This value determines the strat_tol argument in \code{\link{check_strat}}
 #' @param plot Logical, default FALSE; for \code{check_strat}, should the stratum tolerance be plotted?
+#' @param cull_show_up Logical, default \code{FALSE}; should spp in \code{\link{show_up_spp}} be removed when trimming?
 #' 
 #' @return
 #' A data.table 
 #' 
 #' @export
-trim_msom <- function(reg, gridSize=1, grid_stratum=TRUE, depthStratum=NULL, tolFraction=1/3, plot=FALSE){
+trim_msom <- function(reg, gridSize=1, grid_stratum=TRUE, depthStratum=NULL, tolFraction=1/3, plot=FALSE, cull_show_up=FALSE){
 		#
 	# reg = 'neus'
 	# gridSize = 0.5
@@ -21,6 +22,18 @@ trim_msom <- function(reg, gridSize=1, grid_stratum=TRUE, depthStratum=NULL, tol
 	# depthStratum = 100
 	# tolFraction = 0.15
 	# plot=TRUE
+	
+	# notes on depthStratum
+	# neus doesn't need it, or set to 500
+	# shelf doesn't need it, or set to 500
+	# goa doesn't need it, or set to 500 (200 isn't bad either)
+	# gmex doesn't change much between 1000 or 100 ...
+	# ai loses about 20 strata going from 100 to 500 (keep at 100)
+	# ebs is basically same; loses 3 strata going from 500 to 100
+	# wctri loses almost half strata going from 100 to 500 (keep at 100)
+	# wcann loses 12 strata and gets gaps in coverage going from 500 to 100 (recommend 500)
+	# sa doesn't change at all between 100 and 500
+	# newf loses about 80 strata going from 500 to 100 and gets gaps in coverage (recommend 500)
 	
 	
 	# use default trimming
@@ -82,10 +95,16 @@ trim_msom <- function(reg, gridSize=1, grid_stratum=TRUE, depthStratum=NULL, tol
 		bad_spp_sa <- "Stomolophus meleagris"
 		X.t <- X.t[!spp%in%bad_spp_sa,]
 	}
+	if(reg == "newf"){
+		bad_spp_newf <- c("Thalarctos maritimus")
+		X.t <- X.t[!spp%in%bad_spp_newf,]
+	}
 	
-	o_reg <- reg
-	bad_spp <- show_up_spp[(reg)==o_reg,una(spp)]
-	X.t <- X.t[!spp%in%bad_spp,]
+	if(cull_show_up){
+		o_reg <- reg
+		bad_spp <- show_up_spp[(reg)==o_reg,una(spp)]
+		X.t <- X.t[!spp%in%bad_spp,]
+	}
 	
 	
 	# ---- Deal with consistent strata ----

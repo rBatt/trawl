@@ -1,18 +1,30 @@
-#' Get Colonizers
+#' Get Colonizations and Extinctions
 #' 
 #' Identify species colonizing, going extinct, and persisting between years
 #' 
-#' @param d An input data.table with columns spp, year (may have others, but they aren't used)
+#' @param d An input data.table with columns spp, year, stratum, haulid, depth, lon, lat (may have others, but they aren't used)
 #' 
 #' @return
 #' A list of length 5:
 #' \tabular{ll}{
-	#'\code{col_dt} \tab colonization events for each year-stratum-species. \code{col_logic} is specific to year-stratum-spp, \code{n_spp_col} is specific to year-stratum (number of species colonizing), and \code{n_strat_col} is specific to year-spp (number of strata occupied by that species in that year [if it colonized the region that year]). Like the weighted version, \code{n_spp_col_weighted} indicates the number of species colonizing a stratum in a year, but if a species colonizes 5 strata, it only contributes 0.2 to each, instead of 1. The number of years a stratum was sampled is \code{yrs_sampled}.
+	#'\code{col_dt} \tab colonization events for each year-stratum-species. \cr
 	#' \code{col_ext_dt} \tab colonization (1), extinction (-1), or no change for each species-year \cr
 	#' \code{n_cep} \tab the number of colonizations, extinctions, or no-change events in the whole region for each year \cr
 	#' \code{n_spp_col_weighted} \tab appropriate aggregation of the column by this name in \code{col_dt} \cr
 	#'\code{n_spp_col_weighted_tot} \tab like \code{n_spp_col_weighted}, but summed up across years (and divided by \code{yrs_sampled}) \cr
 #'	}
+#' 
+#' Note that for each element with "col" in its name, there is an extinction counterpart; i.e., \code{ext_dt}, \code{n_spp_ext_weighted}, \code{n_spp_ext_weighted_tot}.
+#' 
+#' The columns in \code{col_dt} (or \code{ext_dt} for extinction equivalent) are:
+#' \tabular{ll}{
+#' \code{col_logic} \tab logical indicating year-stratum-spp colonization (name is still \code{col_logic} in \code{ext_dt}) \cr
+#' \code{n_spp_col} \tab number of species that colonized a stratum in a year \cr
+#' \code{n_strat_col} \tab number of strata colonized by this specie sin this year \cr
+#' \code{n_spp_col_weighted} \tab Like \code{n_strat_col}, but divided by \code{n_strat_col} (e.g. if a species colonizes 5 strata, it only contributes 0.2 to each stratum). \cr
+#' \code{yrs_sampled} \tab The number of years a stratum was sampled. \cr
+#' }
+#' 
 #' 
 #' @export
 get_colonizers <- function(d){
