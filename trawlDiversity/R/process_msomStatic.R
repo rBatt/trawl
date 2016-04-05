@@ -59,11 +59,6 @@ process_msomStatic <- function(reg_out, save_mem=TRUE){
 	# ==============
 	# = Covariates =
 	# ==============
-	# ---- Bottom Temperature ----
-	# ---- Makes [bt] ----
-	bt0 <- lapply(inputData, function(x)x$U[,"bt"])	
-	bt2dt <- function(x,y)data.table(stratum=names(x), bt=x, year=y)
-	bt <- rbindlist(mapply(bt2dt, bt0, rd_yr, SIMPLIFY=FALSE))
 	strat2lld <- function(x){
 		s <- strsplit(x, split=" ")
 		lon <- sapply(s, function(x)x[1])
@@ -71,8 +66,32 @@ process_msomStatic <- function(reg_out, save_mem=TRUE){
 		depth_interval <- sapply(s, function(x)x[3])
 		data.table(lon=as.numeric(lon), lat=as.numeric(lat), depth_interval=as.numeric(depth_interval))
 	} 
+	
+	# ---- Bottom Temperature ----
+	# ---- Makes [bt] ----
+	get_bt <- function(id){
+		(id$U[,"bt"]*id$scaling["btemp.sd"]) + id$scaling["btemp.mu"]
+	}
+	bt0 <- lapply(inputData, get_bt)	
+	bt2dt <- function(x,y)data.table(stratum=names(x), bt=x, year=y)
+	bt <- rbindlist(mapply(bt2dt, bt0, rd_yr, SIMPLIFY=FALSE))
+
 	bt[,c("lon","lat","depth_interval"):=strat2lld(stratum)]
 	bt[,bt_col:=zCol(256, bt)]
+	
+	# ---- Depth ----
+	# ---- Adds to [bt] ----
+	get_depth <- function(id){
+		(id$U[,"depth"]*id$scaling["depth.sd"]) + id$scaling["depth.mu"]
+	}
+	depth0 <- lapply(inputData, get_depth)	
+	depth2dt <- function(x,y)data.table(stratum=names(x), depth=x, year=y)
+	depth <- rbindlist(mapply(depth2dt, depth0, rd_yr, SIMPLIFY=FALSE))
+
+	depth[,c("lon","lat","depth_interval"):=strat2lld(stratum)]
+	depth[,depth_col:=zCol(256, depth)]
+	
+	bt <- merge(bt, depth, by=c("stratum","lon","year","lat","depth_interval"), all=TRUE)
 	
 	
 	# ====================================================
@@ -97,6 +116,30 @@ process_msomStatic <- function(reg_out, save_mem=TRUE){
 	# Only for observed species (i.e., parameters that I can tie to a Latin name)
 	ab_all <- mapply(get_ab, inputData, out, rd_yr, SIMPLIFY=FALSE)
 	ab <- rbindlist(ab_all)
+	
+	
+	# ---- Unscale Alpha ----
+	# ---- Makes [alpha_unscale] ----
+	unscale_ab <- function(abDat){
+		ab_un <- unscale(
+			abDat[ab_ind==1, value],
+			abDat[ab_ind==2, value],
+			abDat[ab_ind==3, value],
+			abDat[ab_ind==4, value],
+			abDat[ab_ind==5, value],
+			abDat[ab_ind==1,btemp.mu],
+			abDat[ab_ind==1,depth.mu],
+			abDat[ab_ind==1,btemp.sd],
+			abDat[ab_ind==1,depth.sd]	
+		)
+		return(as.data.table(ab_un))
+	}
+	scaling <- rbindlist(lapply(inputData, function(x)as.list((x$scaling))))
+	scaling[,year:=as.numeric(sapply(info, function(x)x["year"]))]
+	ab2 <- merge(ab, scaling, by="year")
+	alpha_unscale <- ab2[par=="alpha", unscale_ab(.SD),by=c("spp","spp_id","year")]
+	rm(list="ab2")
+	
 	
 	
 	# =========================================
@@ -139,29 +182,24 @@ process_msomStatic <- function(reg_out, save_mem=TRUE){
 		reg_rich <- sapply(reg_pres, sum)
 		
 	}else if(lang == "JAGS"){
-		Z_big <- lapply(out, get_iters, pars="Z", lang="JAGS")
-		nr <- nrow(Z_big[[1]])
-		for(i in 1:length(Z_big)){
-			Z_big[[i]] <- Z_big[[i]][,iter:=(1:nr)]
-		}
-		
-		Z_big_long <- lapply(Z_big, data.table:::melt.data.table, id.vars=c("iter","chain"))
 		z_spp <- function(x){gsub("Z\\[[0-9]+\\,([0-9]+)\\]$", "\\1", x)}
 		z_j <- function(x){gsub("Z\\[([0-9]+)\\,[0-9]+\\]$", "\\1", x)}
-		for(i in 1:length(Z_big_long)){
-			td <- Z_big_long[[i]]
-			td[, c("sppID","jID"):=list(z_spp((variable)), z_j((variable))), by=c("variable")]
-			Z_big_long[[i]] <- td
-		}
-		
-		reg_rich <- rep(NA, length(Z_big_long))
-		for(i in 1:length(Z_big_long)){
-			mu_site_Z <- Z_big_long[[i]][,j={ list(mu_site_Z = max(value)) }, by=c("iter","chain","sppID")]
-			reg_rich_iter <- mu_site_Z[, j={list(reg_rich = sum(mu_site_Z))}, by=c("iter","chain")] # this is different than how I did it for Stan -- for Stan I calculated took the mean (across iterations) probability of a species being present somewhere in the region, then summed up across species to get richness. Here I get the pres/abs for each species in the region for each iteration, then I sum across species but w/in an iteration to get the posterior of region wide richness (that summing is done on this line), and then in the next line I take the mean of the posterior distribution of region-wide richness
+		reg_rich <- rep(NA, length(out))
+		for(i in 1:length(out)){
+			t_Z_big <- get_iters(out[[i]], pars="Z", lang="JAGS")
+			t_Z_big[,iter:=(1:nrow(t_Z_big))]
+				
+			t_Z_big_long <- data.table:::melt.data.table(t_Z_big, id.vars=c("iter","chain"))
+			t_Z_big_long[, c("sppID","jID"):=list(z_spp((variable)), z_j((variable))), by=c("variable")]
+			if(save_mem){rm(list="t_Z_big")}
+			
+			mu_site_Z <- t_Z_big_long[,j={ list(mu_site_Z = max(value)) }, by=c("iter","chain","sppID")]
+			reg_rich_iter <- mu_site_Z[, j={list(reg_rich = sum(mu_site_Z))}, by=c("iter","chain")]
 			reg_rich[i] <- reg_rich_iter[,mean(reg_rich)]
+			if(save_mem){rm(list="t_Z_big_long")}
+				
+			 # this is different than how I did it for Stan -- for Stan I calculated took the mean (across iterations) probability of a species being present somewhere in the region, then summed up across species to get richness. Here I get the pres/abs for each species in the region for each iteration, then I sum across species but w/in an iteration to get the posterior of region wide richness (that summing is done on this line), and then in the next line I take the mean of the posterior distribution of region-wide richness
 		}
-
-		if(save_mem){rm(list="Z_big_long")}
 	}
 	
 	# get unobserved but present species
@@ -174,7 +212,7 @@ process_msomStatic <- function(reg_out, save_mem=TRUE){
 	processed <- merge(processed, bt[,list(bt_ann=mean(bt)), by="year"], by="year", all=TRUE)
 	
 
-	return(list(rd=rd, colonization=colonization, bt=bt, param_iters=param_iters, processed=processed, ab=ab))
+	return(list(rd=rd, colonization=colonization, bt=bt, param_iters=param_iters, processed=processed, ab=ab, alpha_unscale=alpha_unscale))
 	
 }
 	
