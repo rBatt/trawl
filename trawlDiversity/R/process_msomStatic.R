@@ -4,11 +4,12 @@
 #' 
 #' @param reg_out A list with length equal to number of years in a region, with each element containing output from run_msom
 #' @param save_mem Save memory be deleting intermediate steps as function progresses; default TRUE (only reason for FALSE is for debugging)
+#' @param obs_yrs Optional vector of integers of calendar years used to process richness from observed data; used to subset years of MSOM analysis
 #' 
 #' @details Right now only intended for use with specific structuring of the output, so that it matches the output expected from running each year separately using the Stan version of the msomStatic model.
 #' 
 #' @export
-process_msomStatic <- function(reg_out, save_mem=TRUE){
+process_msomStatic <- function(reg_out, save_mem=TRUE, obs_yrs){
 	
 	# ====================
 	# = Organize Read-in =
@@ -19,7 +20,6 @@ process_msomStatic <- function(reg_out, save_mem=TRUE){
 	inputData <- lapply(reg_out, function(x)x$inputData)[!empty_ind]
 	info <- lapply(reg_out, function(x)x$info)[!empty_ind]
 	
-	
 	regs <- sapply(info, function(x)x["reg"])
 	stopifnot(lu(regs)==1)
 	reg <- unique(regs)
@@ -27,7 +27,31 @@ process_msomStatic <- function(reg_out, save_mem=TRUE){
 	langs <- unlist(sapply(info, function(x)x["language"]))
 	stopifnot(lu(langs)==1)
 	lang <- unique(langs)
-		
+	
+	
+	# =====================
+	# = Get Full Data Set =
+	# =====================
+	# ---- Makes [rd] ----
+	info_yrs <- sapply(info, function(x)as.integer(x['year']))
+	sub_reg <- reg
+	
+	
+	# ================================================
+	# = Subset MSOM Output to Years in Full Data Set =
+	# ================================================
+	if(!missing(obs_yrs)){
+		yr_match_msomSub <- info_yrs %in% obs_yrs
+		out <- out[yr_match_msomSub]
+		inputData <- inputData[yr_match_msomSub]
+		info <- info[yr_match_msomSub]
+		info_yrs <- info_yrs[yr_match_msomSub]
+	}
+	
+	
+	# ======================================
+	# = Memory Save by Deleting from 'out' =
+	# ======================================
 	if(save_mem){
 		# rm(list="reg_out")
 		if(lang == "JAGS"){
@@ -38,60 +62,6 @@ process_msomStatic <- function(reg_out, save_mem=TRUE){
 		}
 	}
 	
-	
-	# =====================
-	# = Get Full Data Set =
-	# =====================
-	# ---- Makes [rd] ----
-	info_yrs <- sapply(info, function(x)as.integer(x['year']))
-	sub_reg <- reg
-	rd <- data_all[year %in% info_yrs & sub_reg==(reg)] # data_all is an object associated with the trawlDiversity package!
-	rd_yr <- rd[,sort(unique(year))]
-	
-	
-	# ================================================
-	# = Get Colonization Patterns from Observations =
-	# ================================================
-	# ---- Makes [colonization] ----
-	colonization <- get_colonizers(d=rd)
-	
-	
-	# ==============
-	# = Covariates =
-	# ==============
-	strat2lld <- function(x){
-		s <- strsplit(x, split=" ")
-		lon <- sapply(s, function(x)x[1])
-		lat <- sapply(s, function(x)x[2])
-		depth_interval <- sapply(s, function(x)x[3])
-		data.table(lon=as.numeric(lon), lat=as.numeric(lat), depth_interval=as.numeric(depth_interval))
-	} 
-	
-	# ---- Bottom Temperature ----
-	# ---- Makes [bt] ----
-	get_bt <- function(id){
-		(id$U[,"bt"]*id$scaling["btemp.sd"]) + id$scaling["btemp.mu"]
-	}
-	bt0 <- lapply(inputData, get_bt)	
-	bt2dt <- function(x,y)data.table(stratum=names(x), bt=x, year=y)
-	bt <- rbindlist(mapply(bt2dt, bt0, rd_yr, SIMPLIFY=FALSE))
-
-	bt[,c("lon","lat","depth_interval"):=strat2lld(stratum)]
-	bt[,bt_col:=zCol(256, bt)]
-	
-	# ---- Depth ----
-	# ---- Adds to [bt] ----
-	get_depth <- function(id){
-		(id$U[,"depth"]*id$scaling["depth.sd"]) + id$scaling["depth.mu"]
-	}
-	depth0 <- lapply(inputData, get_depth)	
-	depth2dt <- function(x,y)data.table(stratum=names(x), depth=x, year=y)
-	depth <- rbindlist(mapply(depth2dt, depth0, rd_yr, SIMPLIFY=FALSE))
-
-	depth[,c("lon","lat","depth_interval"):=strat2lld(stratum)]
-	depth[,depth_col:=zCol(256, depth)]
-	
-	bt <- merge(bt, depth, by=c("stratum","lon","year","lat","depth_interval"), all=TRUE)
 	
 	
 	# ====================================================
@@ -107,16 +77,15 @@ process_msomStatic <- function(reg_out, save_mem=TRUE){
 	
 	param_iters <- list()
 	for(i in 1:length(out)){
-		param_iters[[i]] <- data.table(reg=reg, year=rd_yr[i], get_iters(out[[i]], pars_trace, lang))
+		param_iters[[i]] <- data.table(reg=reg, year=info_yrs[i], get_iters(out[[i]], pars_trace, lang))
 	}
 	param_iters <- rbindlist(param_iters)
 	
 	# ---- Species-specific Alpha and Beta Parameters ----
 	# ---- Makes [ab] ----
 	# Only for observed species (i.e., parameters that I can tie to a Latin name)
-	ab_all <- mapply(get_ab, inputData, out, rd_yr, SIMPLIFY=FALSE)
+	ab_all <- mapply(get_ab, inputData, out, info_yrs, SIMPLIFY=FALSE)
 	ab <- rbindlist(ab_all)
-	
 	
 	# ---- Unscale Alpha ----
 	# ---- Makes [alpha_unscale] ----
@@ -138,6 +107,7 @@ process_msomStatic <- function(reg_out, save_mem=TRUE){
 	scaling[,year:=as.numeric(sapply(info, function(x)x["year"]))]
 	ab2 <- merge(ab, scaling, by="year")
 	alpha_unscale <- ab2[par=="alpha", unscale_ab(.SD),by=c("spp","spp_id","year")]
+	ab <- ab[,list(value_mu=mean(value), value_sd=sd(value)),by=c("parameter","par","ab_ind","spp_id","spp","year")]
 	rm(list="ab2")
 	
 	
@@ -170,10 +140,11 @@ process_msomStatic <- function(reg_out, save_mem=TRUE){
 		X_obs <- lapply(inputData, function(x)x$X)
 	}
 	
-	# ---- Richness in the Region ----
+	# ---- Richness and Beta Diversity in the Region ----
+	# NOTE: Beta diversity not calculated for Stan at the moment; but it could be
 	Omega_iter <- param_iters[,list(year,Omega)] #lapply(out, get_iters, pars="Omega", lang="JAGS")
 	Omega_mean <- Omega_iter[,mean(Omega), by="year"][,V1] #sapply(Omega_iter, function(x)x[,mean(Omega)])
-	naive_rich <- sapply(inputData, function(x)x$N)
+	# naive_rich <- sapply(inputData, function(x)x$N)
 	rich_pureModel <- Omega_mean * sapply(inputData, function(x)x$nS)
 	
 	if(lang=="Stan"){
@@ -185,14 +156,31 @@ process_msomStatic <- function(reg_out, save_mem=TRUE){
 		z_spp <- function(x){gsub("Z\\[[0-9]+\\,([0-9]+)\\]$", "\\1", x)}
 		z_j <- function(x){gsub("Z\\[([0-9]+)\\,[0-9]+\\]$", "\\1", x)}
 		reg_rich <- rep(NA, length(out))
+		bd_list <- list()
 		for(i in 1:length(out)){
+			
+			# ---- Get Z Iters ----
 			t_Z_big <- get_iters(out[[i]], pars="Z", lang="JAGS")
 			t_Z_big[,iter:=(1:nrow(t_Z_big))]
 				
 			t_Z_big_long <- data.table:::melt.data.table(t_Z_big, id.vars=c("iter","chain"))
 			t_Z_big_long[, c("sppID","jID"):=list(z_spp((variable)), z_j((variable))), by=c("variable")]
 			if(save_mem){rm(list="t_Z_big")}
+				
+			# ---- Get Beta Diversity ----
+			bd_methods <- c("hellinger","jaccard", "sorensen", "ochiai")[1]
+			qbd <- function(m, t_mat){beta_div_quick(t_mat, method=m)}
+			bd_full <- t_Z_big_long[, j={
+				t_mat <- matrix(value, ncol=lu(sppID))
+				l_out <- lapply(bd_methods, qbd, t_mat=t_mat)
+				names(l_out) <- bd_methods
+				l_out
+			}, by="iter"]
+			bd_full_long <- data.table:::melt.data.table(bd_full, id.vars="iter", variable.name="method", value.name="beta_div")
+			bd_list[[i]] <- bd_full_long[, list(year=info_yrs[i], beta_div_mu=mean(beta_div), beta_div_sd=sd(beta_div)), by="method"]
+			if(save_mem){rm(list=c("bd_full","bd_full_long"))}
 			
+			# ---- Get Richness ----
 			mu_site_Z <- t_Z_big_long[,j={ list(mu_site_Z = max(value)) }, by=c("iter","chain","sppID")]
 			reg_rich_iter <- mu_site_Z[, j={list(reg_rich = sum(mu_site_Z))}, by=c("iter","chain")]
 			reg_rich[i] <- reg_rich_iter[,mean(reg_rich)]
@@ -202,17 +190,14 @@ process_msomStatic <- function(reg_out, save_mem=TRUE){
 		}
 	}
 	
-	# get unobserved but present species
-	unobs_rich <- reg_rich - naive_rich
-	frac_unobs_rich <- unobs_rich/reg_rich
-	
 	# create processed object
-	processed <- data.table(reg = reg, year=rd_yr, Omega=Omega_mean, reg_rich=reg_rich, naive_rich=naive_rich, unobs_rich=unobs_rich)
-	processed <- merge(processed, colonization$n_cep, by="year", all=TRUE)
-	processed <- merge(processed, bt[,list(bt_ann=mean(bt)), by="year"], by="year", all=TRUE)
+	processed <- data.table(reg = reg, year=info_yrs, Omega=Omega_mean, reg_rich=reg_rich)
 	
-
-	return(list(rd=rd, colonization=colonization, bt=bt, param_iters=param_iters, processed=processed, ab=ab, alpha_unscale=alpha_unscale))
+	# create beta_div object
+	beta_div <- rbindlist(bd_list)
+	
+	# return
+	return(list(param_iters=param_iters, processed=processed, ab=ab, alpha_unscale=alpha_unscale, beta_div=beta_div))
 	
 }
 	

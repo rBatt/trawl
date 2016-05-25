@@ -35,9 +35,17 @@ trim_msom <- function(reg, gridSize=1, grid_stratum=TRUE, depthStratum=NULL, tol
 	# sa doesn't change at all between 100 and 500
 	# newf loses about 80 strata going from 500 to 100 and gets gaps in coverage (recommend 500)
 	
+	if(reg == "shelf"){ # have to do this here b/c trimming drops
+		
+	}
 	
 	# use default trimming
-	X.t <- trawlTrim(reg)
+	if(reg == "shelf"){
+		X.t <- trawlTrim(reg, c.add=c("CODE"))
+	}else{
+		X.t <- trawlTrim(reg)
+	}
+	
 	
 	
 	if(grid_stratum){
@@ -52,6 +60,9 @@ trim_msom <- function(reg, gridSize=1, grid_stratum=TRUE, depthStratum=NULL, tol
 	# drop strata that weren't sampled every year
 	if(reg == "ai"){
 		X.t <- X.t[(year)>1900,]
+	}
+	if(reg == "ebs"){
+		X.t <- X.t[(year)>1983,]
 	}
 	if(reg == "gmex" | reg == "neus"){
 		X.t <- X.t[(year)!=2015,]
@@ -70,6 +81,9 @@ trim_msom <- function(reg, gridSize=1, grid_stratum=TRUE, depthStratum=NULL, tol
 	}
 	if(reg == "shelf"){
 		X.t <- X.t[(year)!=2011 & (year)>1950,]
+	}
+	if(reg == "wcann"){
+		X.t <- X.t[(year)>2003,]
 	}
 	
 	# ---- constratin/ standardize time of year (day of year) sampling occurred ----
@@ -91,13 +105,116 @@ trim_msom <- function(reg, gridSize=1, grid_stratum=TRUE, depthStratum=NULL, tol
 	)
 
 	# ---- Cut out methodologically suspicious species ----
+	if(reg == "ebs"){
+		bad_spp_ebs <- c(
+			"Lepidopsetta polyxystra", # showed up in 1996 and was prolific ever since; also line 182 in Kotwicki & Lauth
+			"Bathyraja parmifera", # line 182 Kotwicki & Lauth draft MS
+			# "Chrysaora melanaster", # jellyfish, showed up in 2003 and slightly increasingly prevalent; more gradual in ai; but not mentioned as of variable detectabilty, and actually rated as a 1 (best detectability) in every year
+			
+			# species that have variable detectability according to data providers
+			# "Bathyraja parmifera", # I already spotted this one
+			# "Lepidopsetta polyxystra", # I already spotted this one
+			"Acantholumpenus mackayi", "Atheresthes evermanni", "Atheresthes stomias", 
+			"Bathyraja aleutica", "Bathyraja interrupta", "Bathyraja maculata", 
+			 "Bathyraja taranetzi", "Boreogadus saida", 
+			"Careproctus rastrinus", "Ctenodiscus crispatus", "Elassochirus cavimanus", 
+			"Elassochirus tenuimanus", "Eurymen gyrinus", "Gymnocanthus detrisus", 
+			"Gymnocanthus galeatus", "Gymnocanthus pistilliger", "Gymnocanthus tricuspis", 
+			"Hemilepidotus papilio", "Isopsetta isolepis", "Labidochirus splendescens", 
+			"Lepidopsetta bilineata", "Leptychaster anomalus", 
+			"Lumpenella longirostris", "Lumpenus fabricii", "Lumpenus medius", 
+			"Lumpenus sagitta", "Myoxocephalus jaok", "Myoxocephalus polyacanthocephalus", 
+			"Myoxocephalus verrucosus", "Octopus dofleini", "Pagurus aleuticus", 
+			"Pagurus beringanus", "Pagurus brandti", "Pagurus capillatus", 
+			"Pagurus confragosus", "Pagurus cornutus", "Pagurus dalli", "Pagurus kennerlyi", 
+			"Pagurus ochotensis", "Pagurus rathbuni", "Pagurus tanneri", 
+			"Pagurus trigonocheirus", "Podothecus veternus", "Poroclinus rothrocki", 
+			"Raja binoculata", "Sebastes aleutianus", "Sebastes melanostictus", 
+			"Stichaeus punctatus"
+			
+		)
+		X.t <- X.t[!spp%in%bad_spp_ebs,]
+	}
+	
+	bad_spp_ai_goa <- c("Lethasterias nanimensis", "Elassochirus tenuimanus", "Sebastes variabilis", "Sebastes ciliatus", "Lepidopsetta bilineata", "Lepidopsetta polyxystra")
+	
+	if(reg == "ai"){
+		man_remove_ai <- c("Aphrocallistes vastus", "Aplidium soldatovi", "Ceramaster japonicus", "Ceramaster patagonicus", "Chlamys albida", "Chrysaora melanaster", "Clathrina blanca", "Crossaster papposus", "Cucumaria fallax", "Diplopteraster multipes", "Elassochirus cavimanus", "Fanellia compressa", "Geodia lendenfeldi", "Halichondria panicea", "Halichondria sitiens", "Halocynthia aurantium", "Henricia aspera", "Henricia leviuscula", "Hippasteria phrygiana", "Homaxinella amphispicula", "Isodictya rigida", "Lebbeus groenlandicus", "Leptasterias coei", "Muriceides nigra", "Mycale loveni", "Ophiura sarsii", "Pagurus brandti", "Pagurus confragosus", "Pagurus trigonocheirus", "Plakina tanaga", "Pododesmus macrochisma", "Porella compressa", "Pseudarchaster parelii", "Pteraster marsippus", "Pteraster tesselatus", "Sebastes melanostictus", "Stegophiura ponderosa", "Strongylocentrotus polyacanthus", "Styela rustica", "Suberites ficus", "")
+		bad_spp_ai <- c(
+			man_remove_ai,
+			bad_spp_ai_goa,
+			"Paragorgia arborea", # coral, shows up in 3rd year at ~15% strata
+			"Lepidopsetta polyxystra", # flatfish, shows up in 1997 for 80% strata (also in ebs)
+			"Pteraster militaris", # seastar, show sup at 40% in 1994
+			"Ophiopholis aculeata" # sea star, shows up in 1994 at ~35%
+		)
+		
+		X.t <- X.t[!spp%in%bad_spp_ai,]
+	}
+	if(reg == "goa"){
+		man_remove_goa <- c("Actinauge verrilli", "Alcyonidium pedunculatum", "Aphrodita negligens", "Asterias amurensis", "Buccinum plectrum", "Buccinum scalariforme", "Ceramaster japonicus", "Ceramaster patagonicus", "Cheiraster dawsoni", "Chrysaora melanaster", "Clathrina blanca", "Crossaster borealis", "Crossaster papposus", "Diplopteraster multipes", "Dipsacaster borealis", "Elassochirus cavimanus", "Elassochirus gilli", "Evasterias troscheli", "Fanellia compressa", "Halichondria panicea", "Halichondria sitiens", "Halipteris willemoesi", "Halocynthia dumosa", "Halocynthia igaboja", "Henricia leviuscula", "Hyas lyratus", "Laqueus californianus", "Metridium farcimen", "Mycale loveni", "Myxilla incrustans", "Neoesperiopsis infundibula", "Neptunea amianta", "Ophiopholis aculeata", "Ophiura sarsii", "Orthasterias koehleri", "Pagurus capillatus", "Pagurus confragosus", "Pagurus kennerlyi", "Pagurus trigonocheirus", "Phacellophora camtschatica", "Pododesmus macrochisma", "Pseudarchaster parelii", "Pseudostichopus mollis", "Pteraster militaris", "Pteraster tesselatus", "Ptilosarcus gurneyi", "Pyrulofusus harpa", "Sebastes melanostictus", "Solaster dawsoni", "Solaster endeca", "Stegophiura ponderosa", "Strongylocentrotus polyacanthus", "Styela rustica", "Suberites domuncula", "Suberites ficus", "Synallactes challengeri", "Terebratalia transversa", "")
+		bad_spp_goa <- c(
+			man_remove_goa,
+			bad_spp_ai_goa,
+			"Sebastes aleutianus", # shows up at 45% in 2007 and stays high (previously grouped w/ "Sebastes melanostictus")
+			"Lepidopsetta bilineata", # rock sole, shows up at 60% in 1996 and stays pretty high
+			"Lepidopsetta polyxystra" # rock sole/ flatfish that shows up at ~50% in 1996 and stays high
+		)
+		X.t <- X.t[!spp%in%bad_spp_goa,]
+	}
+	
+	if(reg == "wctri"){
+		man_remove_wctri <- c("Apostichopus leukothele", "Brisaster latifrons", "Lepidopsetta bilineata", "Liponema brevicorne", "Metridium farcimen", "Sardinops sagax", "Stylasterias forreri", "Tritonia diomedea", "")
+		bad_spp_wctri <- c(
+			man_remove_wctri,
+			""
+		) 
+		X.t <- X.t[!spp%in%bad_spp_wctri,]
+	}
+	
+	if(reg == "wcann"){
+		man_remove_wcann <- c("")
+		bad_spp_wcann <- c(
+			man_remove_wcann,
+			""
+		) 
+		X.t <- X.t[!spp%in%bad_spp_wcann,]
+	}
+	
+	if(reg == "gmex"){
+		man_remove_gmex <- c("Astropecten cingulatus", "Astropecten duplicatus", "Aurelia aurita", "Etropus cyclosquamus", "Luidia clathrata", "Ogcocephalus declivirostris", "Pareques iwamotoi", "Pitar cordatus", "Reilla mulleri", "")
+		bad_spp_gmex <- c(
+			man_remove_gmex,
+			"Ophiolepis elegans" # "from 1982-1988, Ophiolepis elegans probably was identified only to the order level of Ophiuroidea" -- Jeff Rester, email to rbatt and mpinsky 2016-04-18
+		) 
+		X.t <- X.t[!spp%in%bad_spp_gmex,]
+	}
+	
+	
 	if(reg == "sa"){
-		bad_spp_sa <- "Stomolophus meleagris"
+		bad_spp_sa <- c(
+			"Limulus polyphemus", # horseshoe crab weren't previously ID'd
+			"Libinia dubia", # disappeared b/c they started aggregating to genus
+			"Libinia emarginata", # aggreagting to genus
+			"Anchoa hepsetus", # aggregating to genus; removed beforehand in trawlData clean.trimRow
+			"Anchoa lyolepis", # aggregating to genus; removed beforehand in trawlData clean.trimRow
+			"Anchoa mitchilli", # aggregating to genus; removed beforehand in trawlData clean.trimRow
+			"Anchoa cubana", # aggregating to genus; removed beforehand in trawlData clean.trimRow
+			# "Sciaenops ocellatus", # long line red drum
+			"Stomolophus meleagris" # cannonball jelly; started ID'ing late
+		)
 		X.t <- X.t[!spp%in%bad_spp_sa,]
 	}
 	if(reg == "newf"){
 		bad_spp_newf <- c("Thalarctos maritimus")
 		X.t <- X.t[!spp%in%bad_spp_newf,]
+	}
+	if(reg == "shelf"){
+		bad_spp_shelf <- c("Strongylocentrotus droebachiensis","Cucumaria frondosa") # see email from Don Clark on May 3, 2016
+		bad_ref_shelf <- X.t[CODE>=1E3, una(ref)] # see email from Don Clark on May 3, 2016
+		X.t <- X.t[!ref%in%bad_ref_shelf,]
+		X.t <- X.t[!spp%in%bad_spp_shelf,]
+		X.t[,CODE:=NULL] # delete this column
 	}
 	
 	if(cull_show_up){
@@ -105,6 +222,10 @@ trim_msom <- function(reg, gridSize=1, grid_stratum=TRUE, depthStratum=NULL, tol
 		bad_spp <- show_up_spp[(reg)==o_reg,una(spp)]
 		X.t <- X.t[!spp%in%bad_spp,]
 	}
+	
+	
+	# manually removed species (eye-balled and based on confidence guides)
+	
 	
 	
 	# ---- Deal with consistent strata ----

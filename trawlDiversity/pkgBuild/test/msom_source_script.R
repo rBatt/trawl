@@ -2,17 +2,7 @@
 # run on amphiprion: 
 # nohup R CMD BATCH -cwd --no-save trawlDiversity/pkgBuild/test/msom_source_script.R &
 
-# nohup R CMD BATCH -cwd --no-save trawlDiversity/pkgBuild/test/msom_source_script.R msom_source_script_AllRegs_annual_jags_noCulling_r9-10.Rout &
-
-
-# amphiprion process id's
-# ebs: 2616
-# ai & goa: 2705
-# wctri & wcann: 2795
-# gmex & sa: 2884
-# neus: 2973
-# shelf & newf: 3063
-
+# nohup R CMD BATCH -cwd --no-save trawlDiversity/pkgBuild/test/msom_source_script.R msom_source_script_AllRegs_annual_jags_sppChecked_r9-10.Rout &
 
 
 # ========

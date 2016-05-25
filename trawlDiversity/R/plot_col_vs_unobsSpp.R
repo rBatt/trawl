@@ -14,29 +14,39 @@
 #' Returns the Figure object
 #' 
 #' @seealso 
-#' There are several functions that are run through the process_msom_figures script. Richness and temperature plots are \code{\link{plot_btemp_map}}, \code{\link{plot_rich_bt_scatter}}, and \code{\link{plot_rich_bt_ts}}. Figures for colonization, extinction, and the species and places associated with those processes are \code{\link{plot_ce_wrap}}, \code{\link{plot_col_vs_unobs}}, \code{\link{plot_colExt_perStrat}}, and \code{\link{plot_rank_temp}}. Figures for diagnostics are \code{\link{plot_traceplot}} and \code{\link{plot_post_corr}}.
+#' There are several functions that are run through the process_msom_figures script. Richness and temperature plots are \code{\link{plot_btemp_map}}, \code{\link{plot_rich_bt_scatter}}, and \code{\link{plot_rich_bt_ts}}. Figures for colonization, extinction, and the species and places associated with those processes are \code{\link{plot_ce_wrap}}, \code{\link{plot_col_vs_unobsSpp}}, \code{\link{plot_colExt_perStrat}}, and \code{\link{plot_rank_temp}}. Figures for diagnostics are \code{\link{plot_traceplot}} and \code{\link{plot_post_corr}}.
 #' 
 #' @export
 
-plot_col_vs_unobsSpp <- function(prn, Figures){
+plot_col_vs_unobsSpp <- function(prn, Figures, FUN="dev.new", ...){
 	unpack_p(prn)
 	
 	if(missing(Figures)){
 		Figures <- list()
 	}
 	
+	fig_num <- "Figure6"
+	
 	fig6_name <- paste0("Colonization_UnobsSpp_", reg, ".png")
 	fig6_dim <- c(3.5, 3.5)
 	
-	dev.new(fig6_dim[1], fig6_dim[2])
+	Figures[[reg]][[fig_num]][["figure"]] <- list()
+	Figures[[reg]][[fig_num]][["name"]] <- fig6_name
+	Figures[[reg]][[fig_num]][["dim"]] <- fig6_dim
+	
+	Figures[[reg]][[fig_num]] <- plot_device(Figures[[reg]][[fig_num]], FUN, ...)
+	
 	par(mar=c(1.75,1.75,0.2,0.2), cex=1, ps=8, mgp=c(0.85,0.1,0), tcl=-0.1)
 	processed[,plot(unobs_rich[-length(unobs_rich)], n_col[-1], xlab="Unobserved species present last year", ylab="Species colonizing this year")]
 	mtext(reg, side=3)
 	abline(a=0, b=1)
 	
-	Figures[[reg]][['Figure6']][["figure"]] <- recordPlot()
-	Figures[[reg]][['Figure6']][["name"]] <- fig6_name
-	Figures[[reg]][['Figure6']][["dim"]] <- fig6_dim
+	if(is.null(Figures[[reg]][[fig_num]][["fig_loc"]])){
+		Figures[[reg]][[fig_num]][["figure"]] <- recordPlot()
+	}else{
+		Figures[[reg]][[fig_num]][["figure"]] <- NULL
+		dev.off()
+	}
 	
 	return(Figures)
 }

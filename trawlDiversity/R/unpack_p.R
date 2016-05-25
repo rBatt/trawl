@@ -15,6 +15,7 @@ unpack_p <- function(p_rn){
 	colonization <<- p_rn$colonization
 	param_iters <<- p_rn$param_iters
 	ab <<- p_rn$ab
+	naive_rich <<- p_rn$naive_rich
 
 	reg <<- processed[,una(reg)]
 	lang <<- "JAGS"
@@ -25,16 +26,16 @@ unpack_p <- function(p_rn){
 		pars_trace <<- c("Omega","alpha_mu[1]", "alpha_mu[2]", "alpha_mu[3]", "alpha_mu[4]", "alpha_mu[5]", "beta_mu")
 	}
 
-	naive_rich <<- processed[,naive_rich, keyby='year']
+	naive_rich <<- naive_rich[,naive_rich, keyby='year']
 	reg_rich <<- processed[,reg_rich, keyby='year']
-	bt_ann <<- bt[,list(bt_ann=mean(bt)), keyby='year']
+	bt_ann <<- bt[,list(bt_ann=mean(bt, na.rm=TRUE)), keyby='year']
 
 	n_pars <<- length(pars_trace)
 	n_yrs <<- param_iters[,lu(year)]
 	n_spp <<- rd[,lu(spp)]
 	
-	spp_col <<- colonization[[1]][value==1, una(spp)]
-	spp_ext <<- colonization[[1]][value==-1, una(spp)]
+	spp_col <<- colonization[[1]][col==1, una(spp)]
+	spp_ext <<- colonization[[1]][ext==1, una(spp)]
 	spp_col_only <<- spp_col[!spp_col %in% spp_ext]
 	spp_ext_only <<- spp_ext[!spp_ext %in% spp_col]
 	spp_col_and_ext <<- spp_col[spp_col%in%spp_ext]
